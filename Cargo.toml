@@ -1,0 +1,7 @@
+[package]
+name = "nodo"
+version = "0.1.0"
+authors = ["Jeffas <dev@jeffas.io>"]
+edition = "2018"
+
+[dependencies]
