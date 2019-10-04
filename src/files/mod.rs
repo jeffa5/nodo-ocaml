@@ -1,4 +1,6 @@
 /// The files module provides readers and writers for different file types
+pub mod markdown;
+
 use crate::nodo::Nodo;
 
 #[derive(Debug)]
