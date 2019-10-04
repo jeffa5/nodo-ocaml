@@ -60,8 +60,8 @@ impl Nodo {
         self
     }
 
-    pub fn heading(&mut self, level: u32, text: String) -> &mut Self {
-        self.blocks.push(Block::Heading(level, text));
+    pub fn heading(&mut self, text: String, level: u32) -> &mut Self {
+        self.blocks.push(Block::Heading(text, level));
         self
     }
 
