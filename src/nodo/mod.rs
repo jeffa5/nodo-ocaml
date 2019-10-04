@@ -1,6 +1,6 @@
 /// A Nodo is a mixture of a todo and a note.
 ///
-/// They are formed of optional frontmatter which details the metadata of the Nodo
+/// They are formed of optional metadata and blocks.
 
 /// A block represents a block-like element in the document
 ///
@@ -29,14 +29,32 @@ impl Checkbox {
     }
 }
 
+/// Metadata stores information about the nodo
+#[derive(Debug, PartialEq)]
+pub struct Metadata {
+    projects: Vec<String>,
+    tags: Vec<String>,
+}
+
+impl Metadata {
+    fn new() -> Metadata {
+        Metadata {
+            projects: Vec::new(),
+            tags: Vec::new(),
+        }
+    }
+
+    pub fn tags(&self) -> &[String] {
+        &self.tags
+    }
+}
+
 /// Nodos have explicit fields for their metadata e.g. project and tags
 /// Other content within the nodo is represented as a sequence of Blocks
 #[derive(Debug, PartialEq)]
 pub struct Nodo {
-    /// The project the nodo belongs to
-    project: String,
-    /// The tags associated with this nodo
-    tags: Vec<String>,
+    /// The metadata associated with this nodo
+    metadata: Metadata,
     /// The rest of the content
     blocks: Vec<Block>,
 }
@@ -44,19 +62,18 @@ pub struct Nodo {
 impl Nodo {
     pub fn new() -> Nodo {
         Nodo {
-            project: "".to_string(),
-            tags: Vec::new(),
+            metadata: Metadata::new(),
             blocks: Vec::new(),
         }
     }
 
     pub fn project(&mut self, project: &str) -> &mut Self {
-        self.project = project.to_owned();
+        self.metadata.projects.push(project.to_owned());
         self
     }
 
     pub fn tags(&mut self, tags: &[String]) -> &mut Self {
-        self.tags = tags.to_vec();
+        self.metadata.tags = tags.to_vec();
         self
     }
 
@@ -73,5 +90,13 @@ impl Nodo {
     pub fn checkboxes(&mut self, items: &[Checkbox]) -> &mut Self {
         self.blocks.push(Block::Checkboxes(items.to_vec()));
         self
+    }
+
+    pub fn metadata(&self) -> &Metadata {
+        &self.metadata
+    }
+
+    pub fn blocks(&self) -> &Vec<Block> {
+        &self.blocks
     }
 }
