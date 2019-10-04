@@ -15,15 +15,10 @@ pub enum WriteError {
 
 /// A reader for nodos
 pub trait NodoReader {
-    fn read<R: std::io::Read>(&mut self, r: R) -> Result<(), ReadError>;
+    fn read<R: std::io::Read>(r: R) -> Result<Nodo, ReadError>;
 }
 
 /// A writer for nodos
 pub trait NodoWriter {
-    fn write<W: std::io::Write>(&mut self, w: W) -> Result<(), WriteError>;
-}
-
-/// A provider of nodos
-pub trait NodoProvider {
-    fn nodo(&self) -> &Nodo;
+    fn write<W: std::io::Write>(nodo: &Nodo, w: W) -> Result<(), WriteError>;
 }
