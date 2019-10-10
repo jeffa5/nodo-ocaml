@@ -10,6 +10,7 @@ structopt = "0.3"
 log = "0.4"
 stderrlog = "0.4"
 dirs = "2.0"
+walkdir = "2"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"

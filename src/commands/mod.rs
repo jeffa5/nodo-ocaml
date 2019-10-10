@@ -2,6 +2,7 @@ mod edit;
 mod format;
 mod list;
 mod new;
+mod overview;
 mod remove;
 
 use std::io;
@@ -14,6 +15,7 @@ pub use edit::Edit;
 pub use format::Format;
 pub use list::List;
 pub use new::New;
+pub use overview::Overview;
 pub use remove::Remove;
 
 #[derive(Debug)]
@@ -51,6 +53,12 @@ impl From<WriteError> for CommandError {
         match err {
             WriteError::Io(ioerr) => ioerr.into(),
         }
+    }
+}
+
+impl From<walkdir::Error> for CommandError {
+    fn from(err: walkdir::Error) -> Self {
+        CommandError(format!("{}", err))
     }
 }
 

@@ -13,7 +13,7 @@ mod util;
 
 use cli::{Cli, SubCommand};
 use commands::Command;
-use commands::{Edit, Format, List, New, Remove};
+use commands::{Edit, Format, List, New, Overview, Remove};
 use config::Config;
 
 use log::*;
@@ -33,7 +33,7 @@ fn main() {
     let mut nodo = files::get_nodo(config.default_filetype);
     let mut res = Ok(());
     match opts.sub_command {
-        None => println!("Something special"),
+        None => res = Overview::exec(config, nodo),
         Some(sub_command) => match sub_command {
             SubCommand::New(cli::New { nodo_opts }) => {
                 nodo = build_nodo(nodo, nodo_opts);
