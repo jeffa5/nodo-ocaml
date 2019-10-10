@@ -80,5 +80,4 @@ fn build_nodo<F: files::NodoFile>(nodo: nodo::Nodo<F>, nodo_opts: cli::NodoOpts)
     nodo.target(target.to_string())
         .projects(projects)
         .tags(&nodo_opts.tags)
-        .title(nodo_opts.title.join(" "))
 }

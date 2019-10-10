@@ -42,9 +42,6 @@ pub struct NodoOpts {
     /// A '/' separated value of the form project/subproject/.../nodo_name
     #[structopt(use_delimiter = true, value_delimiter = "/", require_delimiter = true)]
     pub target: Vec<String>,
-
-    /// The title for this nodo
-    pub title: Vec<String>,
 }
 
 #[derive(Debug, StructOpt)]
