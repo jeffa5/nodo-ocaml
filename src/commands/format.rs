@@ -1,5 +1,6 @@
 use log::*;
 use std::fs;
+use walkdir::WalkDir;
 
 use crate::commands::{Command, CommandError};
 use crate::config::Config;
@@ -14,22 +15,27 @@ impl Command for Format {
     fn exec<F: NodoFile>(config: Config, nodo: Nodo<F>) -> Result<(), CommandError> {
         trace!("Formatting a nodo");
         // get the file location
-        if nodo.metadata().target() == "" {
-            return Err(CommandError("Nodo must exist to format".to_string()));
-        }
         let path = file::build_path(&config, &nodo);
         let metadata = fs::metadata(&path)?;
         if metadata.is_dir() {
-            return Err(CommandError(format!(
-                "Can't format {} since it is a project",
-                path.to_string_lossy()
-            )));
+            for entry in WalkDir::new(&path) {
+                let entry = entry?;
+                if entry.file_type().is_file() {
+                    debug!("Formatting {}", entry.path().to_string_lossy());
+                    format::<F>(&entry.path())?
+                }
+            }
+        } else if metadata.is_file() {
+            format::<F>(&path)?
         }
-        F::write(
-            &F::read(nodo, &mut fs::File::open(&path)?)?,
-            &mut fs::File::create(&path)?,
-        )?;
-
         Ok(())
     }
+}
+
+fn format<F: NodoFile>(path: &std::path::Path) -> Result<(), CommandError> {
+    F::write(
+        &F::read(Nodo::new(), &mut fs::File::open(&path)?)?,
+        &mut fs::File::create(&path)?,
+    )?;
+    Ok(())
 }
