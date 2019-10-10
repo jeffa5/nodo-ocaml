@@ -358,4 +358,13 @@ tags: nodo, more tags, hey another tag
             get_test_nodo()
         );
     }
+
+    #[test]
+    fn test_read_without_frontmatter() {
+        let s = "# title";
+        assert_eq!(
+            Markdown::read(Nodo::new(), &mut s.as_bytes()).unwrap(),
+            Nodo::new().title("title".to_owned())
+        )
+    }
 }
