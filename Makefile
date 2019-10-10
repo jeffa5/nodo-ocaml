@@ -8,5 +8,4 @@ watch:
 
 .PHONY: install
 install:
-	cargo build --release
-	mv target/release/nodo ~/bin/nodo
+	cargo install --path . --force
