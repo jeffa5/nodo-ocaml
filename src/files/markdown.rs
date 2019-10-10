@@ -170,6 +170,13 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
                 if is_task {
                     return ListItem::Task(text, completed, nested_list);
                 } else {
+                    if text.starts_with("[]") {
+                        return ListItem::Task(
+                            text.trim_start_matches("[]").trim().to_string(),
+                            false,
+                            nested_list,
+                        );
+                    }
                     return ListItem::Text(text, nested_list);
                 }
             }
@@ -260,10 +267,37 @@ mod test {
                     ]),
                 ),
                 ListItem::Task("or a task list item".to_string(), false, None),
+                ListItem::Task(
+                    "and a technically ill-formed task, but should be allowed really".to_string(),
+                    false,
+                    None,
+                ),
             ])
     }
 
-    static TEST_NODO: &str = "---
+    static TEST_NODO_UNFORMATTED: &str = "---
+tags: nodo, more tags, hey another tag
+---
+
+# nodo header level 1, is the title
+
+- list item 1
+- list item 2
+
+## nodo header with level 2
+
+- [ ] An item to complete
+- [x] A completed item, yay
+    - [ ] Hey a nested task
+    - And a nested text
+- a text list item
+    -    nested list again
+    - [ ] and a task
+- [ ]   or a task list item
+- [] and a technically ill-formed task, but should be allowed really
+";
+
+    static TEST_NODO_FORMATTED: &str = "---
 tags: nodo, more tags, hey another tag
 ---
 
@@ -282,12 +316,25 @@ tags: nodo, more tags, hey another tag
     - nested list again
     - [ ] and a task
 - [ ] or a task list item
+- [ ] and a technically ill-formed task, but should be allowed really
 ";
+
+    #[test]
+    fn test_formatted_and_unformatted_should_give_same_nodo() {
+        assert_eq!(
+            Markdown::read(Nodo::new(), &mut TEST_NODO_FORMATTED.as_bytes()).unwrap(),
+            Markdown::read(Nodo::new(), &mut TEST_NODO_UNFORMATTED.as_bytes()).unwrap()
+        )
+    }
 
     #[test]
     fn test_read() {
         assert_eq!(
-            Markdown::read(Nodo::new(), &mut TEST_NODO.as_bytes()).unwrap(),
+            Markdown::read(Nodo::new(), &mut TEST_NODO_UNFORMATTED.as_bytes()).unwrap(),
+            get_test_nodo(),
+        );
+        assert_eq!(
+            Markdown::read(Nodo::new(), &mut TEST_NODO_FORMATTED.as_bytes()).unwrap(),
             get_test_nodo(),
         );
     }
@@ -296,7 +343,10 @@ tags: nodo, more tags, hey another tag
     fn test_write() {
         let mut writer: Vec<u8> = Vec::new();
         Markdown::write(&get_test_nodo(), &mut writer).unwrap();
-        assert_eq!(String::from_utf8(writer).unwrap(), TEST_NODO.to_owned());
+        assert_eq!(
+            String::from_utf8(writer).unwrap(),
+            TEST_NODO_FORMATTED.to_owned()
+        );
     }
 
     #[test]
