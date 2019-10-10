@@ -26,6 +26,8 @@ pub enum SubCommand {
     /// Edit a nodo in the editor
     Edit(Edit),
 
+    Format(Format),
+
     #[structopt(about = "Generates completion scripts for your shell")]
     Completions {
         #[structopt(possible_values = &structopt::clap::Shell::variants(), about="The shell to generate the script for")]
@@ -64,6 +66,12 @@ pub struct Remove {
 
 #[derive(Debug, StructOpt)]
 pub struct Edit {
+    #[structopt(flatten)]
+    pub nodo_opts: NodoOpts,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct Format {
     #[structopt(flatten)]
     pub nodo_opts: NodoOpts,
 }

@@ -13,7 +13,7 @@ mod util;
 
 use cli::{Cli, SubCommand};
 use commands::Command;
-use commands::{Edit, List, New, Remove};
+use commands::{Edit, Format, List, New, Remove};
 use config::Config;
 
 use log::*;
@@ -50,6 +50,10 @@ fn main() {
             SubCommand::Edit(cli::Edit { nodo_opts }) => {
                 nodo = build_nodo(nodo, nodo_opts);
                 res = Edit::exec(config, nodo)
+            }
+            SubCommand::Format(cli::Format { nodo_opts }) => {
+                nodo = build_nodo(nodo, nodo_opts);
+                res = Format::exec(config, nodo)
             }
             SubCommand::Completions { shell } => {
                 Cli::clap().gen_completions_to(

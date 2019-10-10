@@ -1,4 +1,5 @@
 mod edit;
+mod format;
 mod list;
 mod new;
 mod remove;
@@ -10,6 +11,7 @@ use crate::files::{NodoFile, ReadError, WriteError};
 use crate::nodo::Nodo;
 
 pub use edit::Edit;
+pub use format::Format;
 pub use list::List;
 pub use new::New;
 pub use remove::Remove;
