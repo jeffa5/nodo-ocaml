@@ -15,15 +15,12 @@ pub struct Cli {
 #[derive(StructOpt, Debug)]
 pub enum SubCommand {
     /// Create a new nodo
-    #[structopt(visible_aliases=&["create"])]
     New(New),
 
     /// List available projects and nodos
-    #[structopt(visible_aliases=&["ls"])]
     List(List),
 
     /// Remove a nodo
-    #[structopt(visible_aliases=&["rm"])]
     Remove(Remove),
 
     /// Edit a nodo in the editor
