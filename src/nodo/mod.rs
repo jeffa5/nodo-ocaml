@@ -16,23 +16,13 @@ pub enum Block {
     List(Vec<ListItem>),
 }
 
-/// A checkbox represents a todo item which can be completed or not
-#[derive(Debug, PartialEq, Clone)]
-pub struct Task {
-    pub text: String,
-    pub checked: bool,
-}
-
-impl Task {
-    pub fn new(text: String, checked: bool) -> Self {
-        Self { text, checked }
-    }
-}
-
+/// A list item is a possible item in a list
 #[derive(Debug, PartialEq)]
 pub enum ListItem {
-    Task(Task),
-    Text(String),
+    /// Tasks have text, completion status and optionally a sublist associated with them
+    Task(String, bool, Option<Vec<ListItem>>),
+    /// Texts have text and optionally a sublist associated with them
+    Text(String, Option<Vec<ListItem>>),
 }
 
 /// Metadata stores information about the nodo

@@ -2,7 +2,7 @@ use pulldown_cmark::{Event, Options, Parser, Tag};
 use std::io::{Read, Write};
 
 use crate::files::{NodoFile, ReadError, WriteError};
-use crate::nodo::{Block, ListItem, Nodo, Task};
+use crate::nodo::{Block, ListItem, Nodo};
 
 #[derive(Debug, PartialEq)]
 pub struct Markdown;
@@ -73,7 +73,7 @@ impl NodoFile for Markdown {
 
         for (i, block) in nodo.blocks().iter().enumerate() {
             match block {
-                Block::List(items) => write_list(writer, items)?,
+                Block::List(items) => write_list(writer, items, 0)?,
                 Block::Heading(t, l) => write_heading(writer, t, *l)?,
             }
             if i != nodo.blocks().len() - 1 {
@@ -134,7 +134,7 @@ fn read_body<F: NodoFile>(
                 nodo = nodo.heading(read_heading(&mut events_iter), level);
             }
             Event::Start(Tag::List(_first_index)) => nodo = nodo.list(read_list(&mut events_iter)),
-            _ => continue,
+            _ => unreachable!(),
         }
     }
     Ok(nodo)
@@ -144,7 +144,7 @@ fn read_heading(events_iter: &mut EventsIter) -> String {
     for event in events_iter {
         match event {
             Event::Text(t) => return t.into_string(),
-            _ => continue,
+            _ => unreachable!(),
         }
     }
     String::new()
@@ -156,34 +156,36 @@ fn read_list(mut events_iter: &mut EventsIter) -> Vec<ListItem> {
         match event {
             Event::Start(Tag::Item) => items.push(read_list_item(&mut events_iter)),
             Event::End(Tag::List(_first_index)) => return items,
-            _ => continue,
+            _ => unreachable!(),
         }
     }
     items
 }
 
-fn read_list_item(events_iter: &mut EventsIter) -> ListItem {
+fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
     let mut text = String::new();
     let mut is_task = false;
-    let mut checked = false;
-    for event in events_iter {
+    let mut completed = false;
+    let mut nested_list = None;
+    while let Some(event) = events_iter.next() {
         match event {
             Event::Text(t) => text += &t.into_string(),
             Event::End(Tag::Item) => {
                 if is_task {
-                    return ListItem::Task(Task::new(text, checked));
+                    return ListItem::Task(text, completed, nested_list);
                 } else {
-                    return ListItem::Text(text);
+                    return ListItem::Text(text, nested_list);
                 }
             }
+            Event::Start(Tag::List(_)) => nested_list = Some(read_list(events_iter)),
             Event::TaskListMarker(ticked) => {
                 is_task = true;
-                checked = ticked;
+                completed = ticked;
             }
-            _ => continue,
+            _ => unreachable!(),
         }
     }
-    ListItem::Text(String::new())
+    ListItem::Text(String::new(), None)
 }
 
 fn write_heading<W: Write>(writer: &mut W, text: &str, level: u32) -> Result<(), WriteError> {
@@ -195,15 +197,30 @@ fn write_heading<W: Write>(writer: &mut W, text: &str, level: u32) -> Result<(),
     Ok(())
 }
 
-fn write_list<W: Write>(writer: &mut W, list_items: &[ListItem]) -> Result<(), WriteError> {
+fn write_list<W: Write>(
+    writer: &mut W,
+    list_items: &[ListItem],
+    level: usize,
+) -> Result<(), WriteError> {
+    let indent = "    ".repeat(level);
     for item in list_items {
         match item {
-            ListItem::Text(s) => writeln!(writer, "{}", &format!("- {}", s))?,
-            ListItem::Task(task) => {
-                if task.checked {
-                    writeln!(writer, "- [x] {}", task.text)?
+            ListItem::Text(s, nested_list) => {
+                writeln!(writer, "{}", &format!("{}- {}", indent, s))?;
+                match nested_list {
+                    Some(nl) => write_list(writer, nl, level + 1)?,
+                    None => (),
+                }
+            }
+            ListItem::Task(text, completed, nested_list) => {
+                if *completed {
+                    writeln!(writer, "{}- [x] {}", indent, text)?
                 } else {
-                    writeln!(writer, "- [ ] {}", task.text)?
+                    writeln!(writer, "{}- [ ] {}", indent, text)?
+                }
+                match nested_list {
+                    Some(nl) => write_list(writer, nl, level + 1)?,
+                    None => (),
                 }
             }
         }
@@ -225,20 +242,32 @@ mod test {
             ])
             .title("nodo header level 1, is the title".to_owned())
             .list(vec![
-                ListItem::Text("list item 1".to_owned()),
-                ListItem::Text("list item 2".to_owned()),
+                ListItem::Text("list item 1".to_owned(), None),
+                ListItem::Text("list item 2".to_owned(), None),
             ])
             .heading("nodo header with level 2".to_owned(), 2)
             .list(vec![
-                ListItem::Task(Task::new("An item to complete".to_string(), false)),
-                ListItem::Task(Task::new("A completed item, yay".to_string(), true)),
-                ListItem::Text("a text list item".to_owned()),
-                ListItem::Task(Task::new("or a task list item".to_string(), false)),
+                ListItem::Task("An item to complete".to_string(), false, None),
+                ListItem::Task(
+                    "A completed item, yay".to_string(),
+                    true,
+                    Some(vec![
+                        ListItem::Task("Hey a nested task".to_owned(), false, None),
+                        ListItem::Text("And a nested text".to_owned(), None),
+                    ]),
+                ),
+                ListItem::Text(
+                    "a text list item".to_owned(),
+                    Some(vec![
+                        ListItem::Text("nested list again".to_owned(), None),
+                        ListItem::Task("and a task".to_owned(), false, None),
+                    ]),
+                ),
+                ListItem::Task("or a task list item".to_string(), false, None),
             ])
     }
 
-    fn get_test_nodo_string() -> &'static str {
-        "---
+    static TEST_NODO: &str = "---
 tags: nodo, more tags, hey another tag
 ---
 
@@ -251,16 +280,19 @@ tags: nodo, more tags, hey another tag
 
 - [ ] An item to complete
 - [x] A completed item, yay
+    - [ ] Hey a nested task
+    - And a nested text
 - a text list item
+    - nested list again
+    - [ ] and a task
 - [ ] or a task list item
-"
-    }
+";
 
     #[test]
     fn test_read() {
         assert_eq!(
-            Markdown::read(Nodo::new(), &mut get_test_nodo_string().as_bytes()).unwrap(),
-            get_test_nodo()
+            Markdown::read(Nodo::new(), &mut TEST_NODO.as_bytes()).unwrap(),
+            get_test_nodo(),
         );
     }
 
@@ -268,7 +300,7 @@ tags: nodo, more tags, hey another tag
     fn test_write() {
         let mut writer: Vec<u8> = Vec::new();
         Markdown::write(&get_test_nodo(), &mut writer).unwrap();
-        assert_eq!(String::from_utf8(writer).unwrap(), get_test_nodo_string());
+        assert_eq!(String::from_utf8(writer).unwrap(), TEST_NODO.to_owned());
     }
 
     #[test]
