@@ -11,7 +11,7 @@ use crate::util::file::build_path;
 pub struct List;
 
 impl Command for List {
-    fn exec<F: NodoFile>(config: Config, nodo: Nodo<F>) -> Result<(), CommandError> {
+    fn exec<F: NodoFile>(config: Config, mut nodo: Nodo<F>) -> Result<(), CommandError> {
         debug!("Listing with nodo: {:#?}", nodo);
 
         let path = build_path(&config, &nodo);
@@ -45,7 +45,7 @@ impl Command for List {
         } else if metadata.is_file() {
             // show the content of the nodo
             trace!("Target was a file");
-            let nodo = F::read(nodo, &mut fs::File::open(path)?)?;
+            nodo = F::read(nodo, &mut fs::File::open(path)?)?;
             debug!("{:#?}", nodo);
             F::write(&nodo, &mut std::io::stdout())?;
         }
