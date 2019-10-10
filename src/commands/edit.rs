@@ -17,7 +17,7 @@ impl Command for Edit {
         if nodo.metadata().target() == "" {
             return Err(CommandError::MissingFilename("Nodo must exist to edit"));
         }
-        let pb = file::build_filepath(&config, &nodo);
+        let pb = file::build_path(&config, &nodo);
         // launch the editor with that location
         let editor = get_editor();
         let mut command = Cmd::new(editor);

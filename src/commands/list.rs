@@ -1,30 +1,29 @@
 use log::*;
+use std::fs;
 use std::path::PathBuf;
 
 use crate::commands::{Command, CommandError};
 use crate::config::Config;
 use crate::files::NodoFile;
 use crate::nodo::Nodo;
-use crate::util::file::{build_filepath, list_dir};
+use crate::util::file::build_path;
 
 pub struct List;
 
 impl Command for List {
     fn exec<F: NodoFile>(config: Config, nodo: Nodo<F>) -> Result<(), CommandError> {
-        debug!("Listing with nodo: {:?}", nodo);
-        // get the files and projects listed in the folder given
-        if nodo.metadata().target() != "" {
-            trace!("Target wasn't empty");
-            // read the nodo file if it exists and print it for now
-            let pb = build_filepath(&config, &nodo);
-            let nodo = F::read(nodo, &mut std::fs::File::open(pb)?)?;
-            debug!("{:#?}", nodo);
-            F::write(&nodo, &mut std::io::stdout())?;
-            Ok(())
-        } else {
-            trace!("Target was empty, listing directory");
-            // just show the directory
-            let contents = list_dir(&config, &nodo);
+        debug!("Listing with nodo: {:#?}", nodo);
+
+        let path = build_path(&config, &nodo);
+        // nodo files don't have extensions so can only have a dir or a file of this name, no need
+        // to consider files with other names and extensions
+        let metadata = fs::metadata(&path)?;
+
+        if metadata.is_dir() {
+            // list the contents of the directory
+            trace!("Target was a directory");
+
+            let contents = fs::read_dir(path)?;
             for entry in contents {
                 let entry = entry.expect("Failed to get direntry");
                 let filetype = entry.file_type()?;
@@ -43,7 +42,13 @@ impl Command for List {
                         .to_string_lossy()
                 )
             }
-            Ok(())
+        } else if metadata.is_file() {
+            // show the content of the nodo
+            trace!("Target was a file");
+            let nodo = F::read(nodo, &mut fs::File::open(path)?)?;
+            debug!("{:#?}", nodo);
+            F::write(&nodo, &mut std::io::stdout())?;
         }
+        Ok(())
     }
 }
