@@ -26,7 +26,8 @@ impl std::fmt::Display for CommandError {
 impl From<io::Error> for CommandError {
     fn from(err: io::Error) -> Self {
         match err.kind() {
-            _ => CommandError(format!("{}", err)),
+            io::ErrorKind::NotFound => CommandError("Couldn't find target".to_string()),
+            _ => CommandError(format!("{:?}", err)),
         }
     }
 }
