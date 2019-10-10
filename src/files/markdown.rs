@@ -53,17 +53,10 @@ impl NodoFile for Markdown {
     }
 
     fn write<W: Write>(nodo: &Nodo<Self>, writer: &mut W) -> Result<(), WriteError> {
-        let mut metadata_lines = Vec::new();
-        let tag_string = nodo.metadata().tags().join(", ");
-        if tag_string != "" {
-            metadata_lines.push(format!("tags: {}", tag_string))
-        }
-        let metadata_str = metadata_lines.join("\n");
-        if metadata_str != "" {
-            writeln!(writer, "---")?;
-            writeln!(writer, "{}", &metadata_str)?;
-            writeln!(writer, "---\n")?;
-        }
+        writeln!(writer, "---")?;
+        writeln!(writer, "tags: {}", nodo.metadata().tags().join(", "))?;
+        writeln!(writer, "---")?;
+        writeln!(writer)?;
 
         // write title as header with level 1
 
@@ -141,9 +134,12 @@ fn read_body<F: NodoFile>(
 }
 
 fn read_heading(events_iter: &mut EventsIter) -> String {
+    let mut text = String::new();
     for event in events_iter {
         match event {
-            Event::Text(t) => return t.into_string(),
+            Event::Text(t) => text += &t.into_string(),
+            Event::Start(Tag::Heading(_)) => continue,
+            Event::End(Tag::Heading(_)) => return text,
             _ => unreachable!(),
         }
     }
