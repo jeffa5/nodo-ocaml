@@ -35,22 +35,13 @@ pub enum SubCommand {
 
 #[derive(Debug, StructOpt)]
 pub struct NodoOpts {
-    /// Projects can be nested using 'project/subproject/subsubproject' syntax
-    #[structopt(
-        short,
-        long,
-        use_delimiter = true,
-        require_delimiter = true,
-        value_delimiter = "/"
-    )]
-    pub projects: Vec<String>,
-
     /// A list of tags for the nodo, separated by ','
     #[structopt(short, long, use_delimiter = true, require_delimiter = true)]
     pub tags: Vec<String>,
 
-    /// Filename to use to store this nodo
-    pub filename: Option<String>,
+    /// A '/' separated value of the form project/subproject/.../nodo_name
+    #[structopt(use_delimiter = true, value_delimiter = "/", require_delimiter = true)]
+    pub target: Vec<String>,
 
     /// The title for this nodo
     pub title: Vec<String>,

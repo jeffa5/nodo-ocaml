@@ -21,7 +21,7 @@ impl Command for New {
         println!(
             "Created a new nodo: {}/{}",
             nodo.metadata().projects().join("/"),
-            nodo.metadata().filename()
+            nodo.metadata().target()
         );
         Ok(())
     }

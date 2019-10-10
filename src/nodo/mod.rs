@@ -31,7 +31,7 @@ pub struct Metadata {
     projects: Vec<String>,
     tags: Vec<String>,
     title: String,
-    filename: String,
+    target: String,
 }
 
 impl Metadata {
@@ -40,7 +40,7 @@ impl Metadata {
             projects: Vec::new(),
             tags: Vec::new(),
             title: String::new(),
-            filename: String::new(),
+            target: String::new(),
         }
     }
 
@@ -56,8 +56,8 @@ impl Metadata {
         &self.title
     }
 
-    pub fn filename(&self) -> &str {
-        &self.filename
+    pub fn target(&self) -> &str {
+        &self.target
     }
 }
 
@@ -91,8 +91,8 @@ impl<F: NodoFile> Nodo<F> {
         self
     }
 
-    pub fn filename(mut self, filename: String) -> Self {
-        self.metadata.filename = filename;
+    pub fn target(mut self, target: String) -> Self {
+        self.metadata.target = target;
         self
     }
 

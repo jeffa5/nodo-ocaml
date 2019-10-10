@@ -38,7 +38,7 @@ pub fn build_filepath<F: NodoFile>(config: &Config, nodo: &Nodo<F>) -> PathBuf {
         .projects()
         .iter()
         .for_each(|project| pb.push(project));
-    pb.push(nodo.metadata().filename());
+    pb.push(nodo.metadata().target());
     pb.set_extension(F::EXTENSION);
     debug!("Built filepath: {:?}", pb);
     pb

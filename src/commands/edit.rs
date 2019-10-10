@@ -14,7 +14,7 @@ impl Command for Edit {
     fn exec<F: NodoFile>(config: Config, nodo: Nodo<F>) -> Result<(), CommandError> {
         trace!("Editing a nodo");
         // get the file location
-        if nodo.metadata().filename() == "" {
+        if nodo.metadata().target() == "" {
             return Err(CommandError::MissingFilename("Nodo must exist to edit"));
         }
         let pb = file::build_filepath(&config, &nodo);

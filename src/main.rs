@@ -72,8 +72,13 @@ fn main() {
 }
 
 fn build_nodo<F: files::NodoFile>(nodo: nodo::Nodo<F>, nodo_opts: cli::NodoOpts) -> nodo::Nodo<F> {
-    nodo.filename(nodo_opts.filename.unwrap_or_default())
-        .projects(&nodo_opts.projects)
+    let empty_string = String::new();
+    let (target, projects) = nodo_opts
+        .target
+        .split_last()
+        .unwrap_or((&empty_string, &[]));
+    nodo.target(target.to_string())
+        .projects(projects)
         .tags(&nodo_opts.tags)
         .title(nodo_opts.title.join(" "))
 }

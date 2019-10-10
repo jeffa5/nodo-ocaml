@@ -14,13 +14,13 @@ impl Command for Remove {
                 println!(
                     "Removed nodo: {}/{}",
                     nodo.metadata().projects().join("/"),
-                    nodo.metadata().filename()
+                    nodo.metadata().target()
                 );
             }
             Err(_) => println!(
                 "No such nodo to remove: {}/{}",
                 nodo.metadata().projects().join("/"),
-                nodo.metadata().filename()
+                nodo.metadata().target()
             ),
         }
         Ok(())
