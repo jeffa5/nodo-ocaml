@@ -1,4 +1,5 @@
 use log::*;
+use std::fs;
 use std::process::Command as Cmd;
 
 use crate::commands::{Command, CommandError};
@@ -15,14 +16,21 @@ impl Command for Edit {
         trace!("Editing a nodo");
         // get the file location
         if nodo.metadata().target() == "" {
-            return Err(CommandError::MissingFilename("Nodo must exist to edit"));
+            return Err(CommandError("Nodo must exist to edit".to_string()));
         }
-        let pb = file::build_path(&config, &nodo);
+        let path = file::build_path(&config, &nodo);
         // launch the editor with that location
+        let metadata = fs::metadata(&path)?;
+        if metadata.is_dir() {
+            return Err(CommandError(format!(
+                "Can't edit {} since it is a project",
+                path.to_string_lossy()
+            )));
+        }
         let editor = get_editor();
         let mut command = Cmd::new(editor);
-        command.arg(pb);
-        debug!("Command is: {:?}", command);
+        command.arg(path);
+        debug!("Editor command is: {:?}", command);
         let status = command.status().expect("Failed to open editor");
         debug!("Editor finished with status: {}", status);
         Ok(())
