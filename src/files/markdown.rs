@@ -70,6 +70,7 @@ impl NodoFile for Markdown {
                 Block::Heading(t, l) => write_heading(writer, t, *l)?,
                 Block::Paragraph(lines) => write_paragraph(writer, lines)?,
                 Block::Rule => writeln!(writer, "---")?,
+                Block::BlockQuote(blocks) => write_blockquote(writer, blocks)?,
             }
             if i != nodo.blocks().len() - 1 {
                 writeln!(writer)?;
@@ -131,6 +132,9 @@ fn read_body<F: NodoFile>(
             Event::Start(Tag::List(_first_index)) => nodo = nodo.list(read_list(&mut events_iter)),
             Event::Start(Tag::Paragraph) => nodo = nodo.paragraph(read_paragraph(&mut events_iter)),
             Event::Rule => nodo = nodo.rule(),
+            Event::Start(Tag::BlockQuote) => {
+                nodo = nodo.blockquote(read_blockquote(&mut events_iter))
+            }
             e => {
                 error!("read body reached unimplemented event: {:?}", e);
                 unimplemented!()
@@ -138,6 +142,27 @@ fn read_body<F: NodoFile>(
         }
     }
     Ok(nodo)
+}
+
+fn read_blockquote(mut events_iter: &mut EventsIter) -> Vec<Block> {
+    let mut blocks = Vec::new();
+    while let Some(event) = events_iter.next() {
+        match event {
+            Event::End(Tag::BlockQuote) => return blocks,
+            Event::Start(Tag::Paragraph) => {
+                blocks.push(Block::Paragraph(read_paragraph(events_iter)))
+            }
+            Event::Start(Tag::BlockQuote) => {
+                blocks.push(Block::BlockQuote(read_blockquote(events_iter)))
+            }
+            Event::Start(Tag::Heading(level)) => {
+                blocks.push(Block::Heading(read_heading(events_iter), level))
+            }
+            Event::Start(Tag::List(_)) => blocks.push(Block::List(read_list(events_iter))),
+            _ => unimplemented!(),
+        }
+    }
+    Vec::new()
 }
 
 fn read_paragraph(mut events_iter: &mut EventsIter) -> Vec<Text> {
@@ -310,6 +335,20 @@ fn read_text_item(events_iter: &mut EventsIter) -> TextItem {
 fn write_paragraph<W: Write>(writer: &mut W, lines: &[Text]) -> Result<(), WriteError> {
     for line in lines {
         writeln!(writer, "{}", format_text(&line))?
+    }
+    Ok(())
+}
+
+fn write_blockquote<W: Write>(writer: &mut W, blocks: &[Block]) -> Result<(), WriteError> {
+    for block in blocks {
+        write!(writer, "> ")?;
+        match block {
+            Block::List(items) => write_list(writer, items, 0)?,
+            Block::Rule => writeln!(writer, "---")?,
+            Block::Heading(t, level) => write_heading(writer, t, *level)?,
+            Block::Paragraph(t) => write_paragraph(writer, t)?,
+            Block::BlockQuote(bs) => write_blockquote(writer, bs)?,
+        }
     }
     Ok(())
 }

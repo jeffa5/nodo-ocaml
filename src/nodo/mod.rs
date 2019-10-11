@@ -18,9 +18,11 @@ pub enum Block {
     Paragraph(Vec<Text>),
     /// A separator in the text, used to visually separate blocks
     Rule,
+    /// A block quoted sequence of blocks
+    BlockQuote(Vec<Block>),
 }
 
-/// A sequence of potentially decorated text
+/// A single line of potentially decorated text
 #[derive(Debug, PartialEq)]
 pub struct Text {
     pub inner: Vec<TextItem>,
@@ -180,6 +182,11 @@ impl<F: NodoFile> Nodo<F> {
 
     pub fn rule(mut self) -> Self {
         self.blocks.push(Block::Rule);
+        self
+    }
+
+    pub fn blockquote(mut self, lines: Vec<Block>) -> Self {
+        self.blocks.push(Block::BlockQuote(lines));
         self
     }
 
