@@ -182,21 +182,24 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
                     // check for [, then "\s", then ], then strip front whitespace of other
                     // FIXME: ugly code, probably a nicer and cleaner way to do it
                     let mut text_iter = text.iter_mut();
-                    if let Some(textitem) = text_iter.next() {
-                        if textitem.style.is_none() && textitem.text.trim() == "[" {
+                    if let Some(TextItem::PlainText(t)) = text_iter.next() {
+                        if t.trim() == "[" {
                             // \s then ]
-                            if let Some(textitem) = text_iter.next() {
-                                if textitem.style.is_none()
-                                    && ["x", "X", ""].iter().any(|x| x == &textitem.text.trim())
-                                {
-                                    let complete = textitem.text.trim() != "";
+                            if let Some(TextItem::PlainText(t)) = text_iter.next() {
+                                if ["x", "X", ""].iter().any(|x| x == &t.trim()) {
+                                    let complete = t.trim() != "";
                                     // ]
-                                    if let Some(textitem) = text_iter.next() {
-                                        if textitem.style.is_none() && textitem.text.trim() == "]" {
+                                    if let Some(TextItem::PlainText(t)) = text_iter.next() {
+                                        if t.trim() == "]" {
                                             // yay we have a task
                                             if let Some(textitem) = text_iter.next() {
-                                                textitem.text =
-                                                    textitem.text.trim_start().to_string();
+                                                match textitem {
+                                                    TextItem::PlainText(t)
+                                                    | TextItem::StyledText(t, _) => {
+                                                        *t = t.trim_start().to_string()
+                                                    }
+                                                    _ => unimplemented!(),
+                                                }
                                             }
                                             return ListItem::Task(
                                                 text[3..].to_vec().into(),
@@ -205,9 +208,14 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
                                             );
                                         }
                                     }
-                                } else if textitem.style.is_none() && "]" == textitem.text.trim() {
+                                } else if t.trim() == "]" {
                                     if let Some(textitem) = text_iter.next() {
-                                        textitem.text = textitem.text.trim_start().to_string();
+                                        match textitem {
+                                            TextItem::PlainText(t) | TextItem::StyledText(t, _) => {
+                                                *t = t.trim_start().to_string()
+                                            }
+                                            _ => unimplemented!(),
+                                        }
                                     }
                                     return ListItem::Task(
                                         text[2..].to_vec().into(),
@@ -230,6 +238,9 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
             Event::Start(Tag::Strong) => text.push(read_text_item(events_iter)),
             Event::Start(Tag::Strikethrough) => text.push(read_text_item(events_iter)),
             Event::Code(string) => text.push(TextItem::code(&string)),
+            Event::Start(Tag::Link(_inline, url, _title)) => {
+                text.push(read_link(events_iter, &url))
+            }
             e => {
                 error!("read list item reached unimplemented event: {:?}", e);
                 unimplemented!()
@@ -237,6 +248,18 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
         }
     }
     ListItem::Text(Vec::new().into(), None)
+}
+
+fn read_link(events_iter: &mut EventsIter, uri: &str) -> TextItem {
+    let mut name = String::new();
+    for event in events_iter {
+        match event {
+            Event::End(Tag::Link(_, _, _)) => return TextItem::link(&name, uri),
+            Event::Text(t) => name += &t,
+            _ => unimplemented!(),
+        }
+    }
+    TextItem::Link(String::new(), String::new())
 }
 
 fn read_text_item(events_iter: &mut EventsIter) -> TextItem {
@@ -271,14 +294,15 @@ fn format_text(text: &Text) -> String {
         if cfg!(test) {
             eprintln!("format_text with text item: {:?}", item);
         }
-        match &item.style {
-            None => s += &item.text,
-            Some(style) => match style {
-                TextStyle::Strikethrough => s += &format!("~~{}~~", item.text),
-                TextStyle::Strong => s += &format!("**{}**", item.text),
-                TextStyle::Emphasis => s += &format!("*{}*", item.text),
-                TextStyle::Code => s += &format!("`{}`", item.text),
+        match item {
+            TextItem::PlainText(t) => s += t,
+            TextItem::StyledText(t, style) => match style {
+                TextStyle::Strikethrough => s += &format!("~~{}~~", t),
+                TextStyle::Strong => s += &format!("**{}**", t),
+                TextStyle::Emphasis => s += &format!("*{}*", t),
+                TextStyle::Code => s += &format!("`{}`", t),
             },
+            TextItem::Link(name, uri) => s += &format!("[{}]({})", name, uri),
         }
     }
     s
@@ -488,6 +512,16 @@ tags: nodo, more tags, hey another tag
             Markdown::read(Nodo::new(), &mut &s[..]).unwrap(),
             get_test_nodo()
         );
+    }
+
+    #[test]
+    fn test_read_write_gives_same_output() {
+        let mut nodo = Nodo::new();
+        nodo = Markdown::read(nodo, &mut TEST_NODO_FORMATTED.as_bytes()).unwrap();
+        let mut s = Vec::new();
+
+        Markdown::write(&nodo, &mut s).unwrap();
+        assert_eq!(String::from_utf8(s).unwrap(), TEST_NODO_FORMATTED);
     }
 
     #[test]

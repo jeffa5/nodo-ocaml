@@ -30,45 +30,38 @@ impl From<Vec<TextItem>> for Text {
 
 /// A piece of text can be decorated with a style
 #[derive(Debug, PartialEq, Clone)]
-pub struct TextItem {
-    pub text: String,
-    pub style: Option<TextStyle>,
+pub enum TextItem {
+    /// Just text
+    PlainText(String),
+    /// A piece of styled text
+    StyledText(String, TextStyle),
+    /// A link, the first field is the name and the second the uri
+    Link(String, String),
 }
 
 impl TextItem {
     pub fn emphasis(text: &str) -> Self {
-        Self {
-            text: text.to_string(),
-            style: Some(TextStyle::Emphasis),
-        }
+        Self::StyledText(text.to_string(), TextStyle::Emphasis)
     }
 
     pub fn strong(text: &str) -> Self {
-        Self {
-            text: text.to_string(),
-            style: Some(TextStyle::Strong),
-        }
+        Self::StyledText(text.to_string(), TextStyle::Strong)
     }
 
     pub fn strikethrough(text: &str) -> Self {
-        Self {
-            text: text.to_string(),
-            style: Some(TextStyle::Strikethrough),
-        }
+        Self::StyledText(text.to_string(), TextStyle::Strikethrough)
     }
 
     pub fn code(text: &str) -> Self {
-        Self {
-            text: text.to_string(),
-            style: Some(TextStyle::Code),
-        }
+        Self::StyledText(text.to_string(), TextStyle::Code)
     }
 
     pub fn plain(text: &str) -> Self {
-        Self {
-            text: text.to_string(),
-            style: None,
-        }
+        Self::PlainText(text.to_string())
+    }
+
+    pub fn link(name: &str, uri: &str) -> Self {
+        Self::Link(name.to_string(), uri.to_string())
     }
 }
 
