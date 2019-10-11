@@ -55,6 +55,10 @@ fn main() {
                 nodo = build_nodo(nodo, nodo_opts);
                 res = Format::exec(config, nodo)
             }
+            SubCommand::Overview(cli::Overview { nodo_opts }) => {
+                nodo = build_nodo(nodo, nodo_opts);
+                res = Overview::exec(config, nodo)
+            }
             SubCommand::Completions { shell } => {
                 Cli::clap().gen_completions_to(
                     "nodo",

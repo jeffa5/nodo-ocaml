@@ -26,7 +26,11 @@ pub enum SubCommand {
     /// Edit a nodo in the editor
     Edit(Edit),
 
+    /// Format nodos or a target
     Format(Format),
+
+    /// Provide an overview of the target
+    Overview(Overview),
 
     #[structopt(about = "Generates completion scripts for your shell")]
     Completions {
@@ -72,6 +76,12 @@ pub struct Edit {
 
 #[derive(Debug, StructOpt)]
 pub struct Format {
+    #[structopt(flatten)]
+    pub nodo_opts: NodoOpts,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct Overview {
     #[structopt(flatten)]
     pub nodo_opts: NodoOpts,
 }
