@@ -38,8 +38,13 @@ impl Command for Edit {
 }
 
 fn get_editor<F: NodoFile>() -> Cmd {
-    let editor = env::var("EDITOR").unwrap_or_else(|_| "vi".to_owned());
-    if editor.starts_with("vi") {
+    let mut editor = "vi".to_string();
+    if let Ok(e) = env::var("VISUAL") {
+        editor = e
+    } else if let Ok(e) = env::var("EDITOR") {
+        editor = e
+    }
+    if ["vi", "vim", "nvim"].iter().any(|&x| editor == x) {
         let mut cmd = Cmd::new(editor);
         cmd.arg("-c").arg(format!("set ft={}", F::EXTENSION));
         return cmd;
