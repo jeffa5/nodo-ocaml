@@ -1,4 +1,6 @@
+use log::*;
 use pulldown_cmark::{Event, Options, Parser, Tag};
+use regex::Regex;
 use std::io::{Read, Write};
 
 use crate::files::{NodoFile, ReadError, WriteError};
@@ -170,12 +172,25 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
                 if is_task {
                     return ListItem::Task(text, completed, nested_list);
                 } else {
-                    if text.starts_with("[]") {
-                        return ListItem::Task(
-                            text.trim_start_matches("[]").trim().to_string(),
-                            false,
-                            nested_list,
+                    lazy_static! {
+                        static ref EMPTY_TASK_RE: Regex = Regex::new(r"^\[[ \t]*\][ \t]+").unwrap();
+                        static ref NONEMPTY_TASK_RE: Regex =
+                            Regex::new(r"^\[[ \t]*[xX][ \t]*\][ \t]+").unwrap();
+                    }
+                    if let Some(mat) = EMPTY_TASK_RE.find(&text) {
+                        debug!(
+                            "Found match for incomplete task: {}, {}",
+                            mat.start(),
+                            mat.end()
                         );
+                        return ListItem::Task(text[mat.end()..].to_string(), false, nested_list);
+                    } else if let Some(mat) = NONEMPTY_TASK_RE.find(&text) {
+                        debug!(
+                            "Found match for completed task: {}, {}",
+                            mat.start(),
+                            mat.end()
+                        );
+                        return ListItem::Task(text[mat.end()..].to_string(), true, nested_list);
                     }
                     return ListItem::Text(text, nested_list);
                 }
@@ -287,13 +302,13 @@ tags: nodo, more tags, hey another tag
 ## nodo header with level 2
 
 - [ ] An item to complete
-- [x] A completed item, yay
+- [  x       ]     A completed item, yay
     - [ ] Hey a nested task
     - And a nested text
 - a text list item
     -    nested list again
     - [ ] and a task
-- [ ]   or a task list item
+- [     ]      or a task list item
 - [] and a technically ill-formed task, but should be allowed really
 ";
 
