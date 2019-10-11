@@ -69,6 +69,7 @@ impl NodoFile for Markdown {
                 Block::List(items) => write_list(writer, items, 0)?,
                 Block::Heading(t, l) => write_heading(writer, t, *l)?,
                 Block::Paragraph(lines) => write_paragraph(writer, lines)?,
+                Block::Rule => writeln!(writer, "---")?,
             }
             if i != nodo.blocks().len() - 1 {
                 writeln!(writer)?;
@@ -129,6 +130,7 @@ fn read_body<F: NodoFile>(
             }
             Event::Start(Tag::List(_first_index)) => nodo = nodo.list(read_list(&mut events_iter)),
             Event::Start(Tag::Paragraph) => nodo = nodo.paragraph(read_paragraph(&mut events_iter)),
+            Event::Rule => nodo = nodo.rule(),
             e => {
                 error!("read body reached unimplemented event: {:?}", e);
                 unimplemented!()

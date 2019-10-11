@@ -16,6 +16,8 @@ pub enum Block {
     List(Vec<ListItem>),
     /// A sequence of lines of text
     Paragraph(Vec<Text>),
+    /// A separator in the text, used to visually separate blocks
+    Rule,
 }
 
 /// A sequence of potentially decorated text
@@ -173,6 +175,11 @@ impl<F: NodoFile> Nodo<F> {
 
     pub fn paragraph(mut self, lines: Vec<Text>) -> Self {
         self.blocks.push(Block::Paragraph(lines));
+        self
+    }
+
+    pub fn rule(mut self) -> Self {
+        self.blocks.push(Block::Rule);
         self
     }
 
