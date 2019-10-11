@@ -129,7 +129,10 @@ fn read_body<F: NodoFile>(
                 nodo = nodo.heading(read_heading(&mut events_iter), level);
             }
             Event::Start(Tag::List(_first_index)) => nodo = nodo.list(read_list(&mut events_iter)),
-            _ => unreachable!(),
+            e => {
+                error!("read body reached unimplemented event: {:?}", e);
+                unimplemented!()
+            }
         }
     }
     Ok(nodo)
@@ -142,7 +145,10 @@ fn read_heading(events_iter: &mut EventsIter) -> String {
             Event::Text(t) => text += &t.into_string(),
             Event::Start(Tag::Heading(_)) => continue,
             Event::End(Tag::Heading(_)) => return text,
-            _ => unreachable!(),
+            e => {
+                error!("read heading reached unimplemented event: {:?}", e);
+                unimplemented!()
+            }
         }
     }
     String::new()
@@ -154,7 +160,10 @@ fn read_list(mut events_iter: &mut EventsIter) -> Vec<ListItem> {
         match event {
             Event::Start(Tag::Item) => items.push(read_list_item(&mut events_iter)),
             Event::End(Tag::List(_first_index)) => return items,
-            _ => unreachable!(),
+            e => {
+                error!("read list reached unimplemented event: {:?}", e);
+                unimplemented!()
+            }
         }
     }
     items
@@ -200,7 +209,10 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
                 is_task = true;
                 completed = ticked;
             }
-            _ => unreachable!(),
+            e => {
+                error!("read list item reached unimplemented event: {:?}", e);
+                unimplemented!()
+            }
         }
     }
     ListItem::Text(String::new(), None)
