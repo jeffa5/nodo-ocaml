@@ -1,7 +1,8 @@
 use structopt::StructOpt;
 
+/// A task and notes tracker, combined
 #[derive(StructOpt, Debug)]
-#[structopt(name = "nodo", about = "A task and notes tracker, combined.")]
+#[structopt(name = "nodo")]
 pub struct Cli {
     #[structopt(subcommand)]
     pub sub_command: Option<SubCommand>,
@@ -32,9 +33,10 @@ pub enum SubCommand {
     /// Provide an overview of the target
     Overview(Overview),
 
-    #[structopt(about = "Generates completion scripts for your shell")]
+    /// Generates completion scripts for your shell
     Completions {
-        #[structopt(possible_values = &structopt::clap::Shell::variants(), about="The shell to generate the script for")]
+        /// The shell to generate the script for
+        #[structopt(possible_values = &structopt::clap::Shell::variants())]
         shell: String,
     },
 }
