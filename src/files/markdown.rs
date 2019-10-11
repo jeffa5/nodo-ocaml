@@ -29,7 +29,7 @@ impl<'a> Iterator for &mut EventsIter<'a> {
 }
 
 impl NodoFile for Markdown {
-    const EXTENSION: &'static str = "md";
+    const EXTENSION: &'static str = "markdown";
 
     fn read<R: Read>(mut nodo: Nodo<Self>, reader: &mut R) -> Result<Nodo<Self>, ReadError> {
         let mut s = String::new();

@@ -9,7 +9,7 @@ impl Config {
         Config {
             root_dir: get_root_dir(),
             projects_delimeter: "/",
-            default_filetype: "md",
+            default_filetype: "markdown",
         }
     }
 }

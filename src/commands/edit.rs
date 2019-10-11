@@ -1,4 +1,5 @@
 use log::*;
+use std::env;
 use std::fs;
 use std::process::Command as Cmd;
 
@@ -27,8 +28,7 @@ impl Command for Edit {
                 path.to_string_lossy()
             )));
         }
-        let editor = get_editor();
-        let mut command = Cmd::new(editor);
+        let mut command = get_editor::<F>();
         command.arg(path);
         debug!("Editor command is: {:?}", command);
         let status = command.status().expect("Failed to open editor");
@@ -37,9 +37,12 @@ impl Command for Edit {
     }
 }
 
-fn get_editor() -> String {
-    match std::env::var("EDITOR") {
-        Ok(editor) => editor,
-        Err(_) => String::from("vi"),
+fn get_editor<F: NodoFile>() -> Cmd {
+    let editor = env::var("EDITOR").unwrap_or_else(|_| "vi".to_owned());
+    if editor.starts_with("vi") {
+        let mut cmd = Cmd::new(editor);
+        cmd.arg("-c").arg(format!("set ft={}", F::EXTENSION));
+        return cmd;
     }
+    Cmd::new(editor)
 }
