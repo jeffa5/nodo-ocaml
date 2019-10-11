@@ -71,6 +71,7 @@ impl NodoFile for Markdown {
                 Block::Paragraph(lines) => write_paragraph(writer, lines)?,
                 Block::Rule => writeln!(writer, "---")?,
                 Block::BlockQuote(blocks) => write_blockquote(writer, blocks)?,
+                Block::Code(lines) => write_code(writer, lines)?,
             }
             if i != nodo.blocks().len() - 1 {
                 writeln!(writer)?;
@@ -159,6 +160,21 @@ fn read_blockquote(mut events_iter: &mut EventsIter) -> Vec<Block> {
                 blocks.push(Block::Heading(read_heading(events_iter), level))
             }
             Event::Start(Tag::List(_)) => blocks.push(Block::List(read_list(events_iter))),
+            Event::Start(Tag::CodeBlock(language)) => {
+                blocks.push(Block::Code(read_code(events_iter)))
+            }
+            _ => unimplemented!(),
+        }
+    }
+    Vec::new()
+}
+
+fn read_code(mut events_iter: &mut EventsIter) -> Vec<String> {
+    let mut lines = Vec::new();
+    for event in events_iter {
+        match event {
+            Event::End(Tag::CodeBlock(_language)) => return lines,
+            Event::Text(t) => lines.push(t.to_string()),
             _ => unimplemented!(),
         }
     }
@@ -294,6 +310,7 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
             Event::Start(Tag::Link(_inline, url, _title)) => {
                 text.push(read_link(events_iter, &url))
             }
+            Event::SoftBreak => continue,
             e => {
                 error!("read list item reached unimplemented event: {:?}", e);
                 unimplemented!()
@@ -348,8 +365,18 @@ fn write_blockquote<W: Write>(writer: &mut W, blocks: &[Block]) -> Result<(), Wr
             Block::Heading(t, level) => write_heading(writer, t, *level)?,
             Block::Paragraph(t) => write_paragraph(writer, t)?,
             Block::BlockQuote(bs) => write_blockquote(writer, bs)?,
+            Block::Code(lines) => write_code(writer, lines)?,
         }
     }
+    Ok(())
+}
+
+fn write_code<W: Write>(writer: &mut W, lines: &[String]) -> Result<(), WriteError> {
+    writeln!(writer, "```")?;
+    for line in lines {
+        writeln!(writer, "{}", line)?
+    }
+    writeln!(writer, "```")?;
     Ok(())
 }
 
