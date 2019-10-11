@@ -71,7 +71,7 @@ impl NodoFile for Markdown {
                 Block::Paragraph(lines) => write_paragraph(writer, lines)?,
                 Block::Rule => writeln!(writer, "---")?,
                 Block::BlockQuote(blocks) => write_blockquote(writer, blocks)?,
-                Block::Code(lines) => write_code(writer, lines)?,
+                Block::Code(lang, lines) => write_code(writer, lang, lines)?,
             }
             if i != nodo.blocks().len() - 1 {
                 writeln!(writer)?;
@@ -161,7 +161,7 @@ fn read_blockquote(mut events_iter: &mut EventsIter) -> Vec<Block> {
             }
             Event::Start(Tag::List(_)) => blocks.push(Block::List(read_list(events_iter))),
             Event::Start(Tag::CodeBlock(language)) => {
-                blocks.push(Block::Code(read_code(events_iter)))
+                blocks.push(Block::Code(language.to_string(), read_code(events_iter)))
             }
             _ => unimplemented!(),
         }
@@ -169,7 +169,7 @@ fn read_blockquote(mut events_iter: &mut EventsIter) -> Vec<Block> {
     Vec::new()
 }
 
-fn read_code(mut events_iter: &mut EventsIter) -> Vec<String> {
+fn read_code(events_iter: &mut EventsIter) -> Vec<String> {
     let mut lines = Vec::new();
     for event in events_iter {
         match event {
@@ -365,14 +365,14 @@ fn write_blockquote<W: Write>(writer: &mut W, blocks: &[Block]) -> Result<(), Wr
             Block::Heading(t, level) => write_heading(writer, t, *level)?,
             Block::Paragraph(t) => write_paragraph(writer, t)?,
             Block::BlockQuote(bs) => write_blockquote(writer, bs)?,
-            Block::Code(lines) => write_code(writer, lines)?,
+            Block::Code(lang, lines) => write_code(writer, lang, lines)?,
         }
     }
     Ok(())
 }
 
-fn write_code<W: Write>(writer: &mut W, lines: &[String]) -> Result<(), WriteError> {
-    writeln!(writer, "```")?;
+fn write_code<W: Write>(writer: &mut W, lang: &str, lines: &[String]) -> Result<(), WriteError> {
+    writeln!(writer, "```{}", lang)?;
     for line in lines {
         writeln!(writer, "{}", line)?
     }

@@ -20,8 +20,8 @@ pub enum Block {
     Rule,
     /// A block quoted sequence of blocks
     BlockQuote(Vec<Block>),
-    /// A code block
-    Code(Vec<String>),
+    /// A code block with language
+    Code(String, Vec<String>),
 }
 
 /// A single line of potentially decorated text
