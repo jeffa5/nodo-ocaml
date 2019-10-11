@@ -1,6 +1,4 @@
 extern crate dirs;
-#[macro_use]
-extern crate lazy_static;
 extern crate log;
 extern crate pulldown_cmark;
 extern crate stderrlog;

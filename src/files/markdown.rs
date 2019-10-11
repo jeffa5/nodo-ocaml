@@ -1,10 +1,9 @@
 use log::*;
 use pulldown_cmark::{Event, Options, Parser, Tag};
-use regex::Regex;
 use std::io::{Read, Write};
 
 use crate::files::{NodoFile, ReadError, WriteError};
-use crate::nodo::{Block, ListItem, Nodo};
+use crate::nodo::{Block, ListItem, Nodo, Text, TextItem, TextStyle};
 
 #[derive(Debug, PartialEq)]
 pub struct Markdown;
@@ -61,7 +60,6 @@ impl NodoFile for Markdown {
         writeln!(writer)?;
 
         // write title as header with level 1
-
         write_heading(writer, nodo.metadata().title(), 1)?;
         writeln!(writer)?;
         // write fields to the file
@@ -138,20 +136,20 @@ fn read_body<F: NodoFile>(
     Ok(nodo)
 }
 
-fn read_heading(events_iter: &mut EventsIter) -> String {
-    let mut text = String::new();
+fn read_heading(events_iter: &mut EventsIter) -> Text {
+    let mut text = Vec::new();
     for event in events_iter {
         match event {
-            Event::Text(t) => text += &t.into_string(),
+            Event::Text(t) => text.push(TextItem::plain(&t)),
             Event::Start(Tag::Heading(_)) => continue,
-            Event::End(Tag::Heading(_)) => return text,
+            Event::End(Tag::Heading(_)) => return text.into(),
             e => {
                 error!("read heading reached unimplemented event: {:?}", e);
                 unimplemented!()
             }
         }
     }
-    String::new()
+    Vec::new().into()
 }
 
 fn read_list(mut events_iter: &mut EventsIter) -> Vec<ListItem> {
@@ -170,38 +168,57 @@ fn read_list(mut events_iter: &mut EventsIter) -> Vec<ListItem> {
 }
 
 fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
-    let mut text = String::new();
+    let mut text = Vec::new();
     let mut is_task = false;
     let mut completed = false;
     let mut nested_list = None;
     while let Some(event) = events_iter.next() {
         match event {
-            Event::Text(t) => text += &t.into_string(),
+            Event::Text(t) => text.push(TextItem::plain(&t)),
             Event::End(Tag::Item) => {
                 if is_task {
-                    return ListItem::Task(text, completed, nested_list);
+                    return ListItem::Task(text.into(), completed, nested_list);
                 } else {
-                    lazy_static! {
-                        static ref EMPTY_TASK_RE: Regex = Regex::new(r"^\[[ \t]*\][ \t]+").unwrap();
-                        static ref NONEMPTY_TASK_RE: Regex =
-                            Regex::new(r"^\[[ \t]*[xX][ \t]*\][ \t]+").unwrap();
+                    // check for [, then "\s", then ], then strip front whitespace of other
+                    // FIXME: ugly code, probably a nicer and cleaner way to do it
+                    let mut text_iter = text.iter_mut();
+                    if let Some(textitem) = text_iter.next() {
+                        if textitem.style.is_none() && textitem.text.trim() == "[" {
+                            // \s then ]
+                            if let Some(textitem) = text_iter.next() {
+                                if textitem.style.is_none()
+                                    && ["x", "X", ""].iter().any(|x| x == &textitem.text.trim())
+                                {
+                                    let complete = textitem.text.trim() != "";
+                                    // ]
+                                    if let Some(textitem) = text_iter.next() {
+                                        if textitem.style.is_none() && textitem.text.trim() == "]" {
+                                            // yay we have a task
+                                            if let Some(textitem) = text_iter.next() {
+                                                textitem.text =
+                                                    textitem.text.trim_start().to_string();
+                                            }
+                                            return ListItem::Task(
+                                                text[3..].to_vec().into(),
+                                                complete,
+                                                nested_list,
+                                            );
+                                        }
+                                    }
+                                } else if textitem.style.is_none() && "]" == textitem.text.trim() {
+                                    if let Some(textitem) = text_iter.next() {
+                                        textitem.text = textitem.text.trim_start().to_string();
+                                    }
+                                    return ListItem::Task(
+                                        text[2..].to_vec().into(),
+                                        false,
+                                        nested_list,
+                                    );
+                                }
+                            }
+                        }
                     }
-                    if let Some(mat) = EMPTY_TASK_RE.find(&text) {
-                        debug!(
-                            "Found match for incomplete task: {}, {}",
-                            mat.start(),
-                            mat.end()
-                        );
-                        return ListItem::Task(text[mat.end()..].to_string(), false, nested_list);
-                    } else if let Some(mat) = NONEMPTY_TASK_RE.find(&text) {
-                        debug!(
-                            "Found match for completed task: {}, {}",
-                            mat.start(),
-                            mat.end()
-                        );
-                        return ListItem::Task(text[mat.end()..].to_string(), true, nested_list);
-                    }
-                    return ListItem::Text(text, nested_list);
+                    return ListItem::Text(text.into(), nested_list);
                 }
             }
             Event::Start(Tag::List(_)) => nested_list = Some(read_list(events_iter)),
@@ -209,22 +226,62 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
                 is_task = true;
                 completed = ticked;
             }
+            Event::Start(Tag::Emphasis) => text.push(read_text_item(events_iter)),
+            Event::Start(Tag::Strong) => text.push(read_text_item(events_iter)),
+            Event::Start(Tag::Strikethrough) => text.push(read_text_item(events_iter)),
+            Event::Code(string) => text.push(TextItem::code(&string)),
             e => {
                 error!("read list item reached unimplemented event: {:?}", e);
                 unimplemented!()
             }
         }
     }
-    ListItem::Text(String::new(), None)
+    ListItem::Text(Vec::new().into(), None)
 }
 
-fn write_heading<W: Write>(writer: &mut W, text: &str, level: u32) -> Result<(), WriteError> {
+fn read_text_item(events_iter: &mut EventsIter) -> TextItem {
+    let mut string = String::new();
+    for event in events_iter {
+        match event {
+            Event::Text(s) => string.push_str(&s),
+            Event::End(Tag::Emphasis) => return TextItem::emphasis(&string),
+            Event::End(Tag::Strong) => return TextItem::strong(&string),
+            Event::End(Tag::Strikethrough) => return TextItem::strikethrough(&string),
+            e => {
+                error!("read text item reached unimplemented event: {:?}", e);
+                unimplemented!()
+            }
+        }
+    }
+    TextItem::plain("")
+}
+
+fn write_heading<W: Write>(writer: &mut W, text: &Text, level: u32) -> Result<(), WriteError> {
     writeln!(
         writer,
         "{}",
-        &format!("{} {}", "#".repeat(level as usize), text)
+        &format!("{} {}", "#".repeat(level as usize), format_text(text))
     )?;
     Ok(())
+}
+
+fn format_text(text: &Text) -> String {
+    let mut s = String::new();
+    for item in text.inner.iter() {
+        if cfg!(test) {
+            eprintln!("format_text with text item: {:?}", item);
+        }
+        match &item.style {
+            None => s += &item.text,
+            Some(style) => match style {
+                TextStyle::Strikethrough => s += &format!("~~{}~~", item.text),
+                TextStyle::Strong => s += &format!("**{}**", item.text),
+                TextStyle::Emphasis => s += &format!("*{}*", item.text),
+                TextStyle::Code => s += &format!("`{}`", item.text),
+            },
+        }
+    }
+    s
 }
 
 fn write_list<W: Write>(
@@ -236,7 +293,7 @@ fn write_list<W: Write>(
     for item in list_items {
         match item {
             ListItem::Text(s, nested_list) => {
-                writeln!(writer, "{}", &format!("{}- {}", indent, s))?;
+                writeln!(writer, "{}", &format!("{}- {}", indent, format_text(s)))?;
                 match nested_list {
                     Some(nl) => write_list(writer, nl, level + 1)?,
                     None => (),
@@ -244,9 +301,9 @@ fn write_list<W: Write>(
             }
             ListItem::Task(text, completed, nested_list) => {
                 if *completed {
-                    writeln!(writer, "{}- [x] {}", indent, text)?
+                    writeln!(writer, "{}- [x] {}", indent, format_text(text))?
                 } else {
-                    writeln!(writer, "{}- [ ] {}", indent, text)?
+                    writeln!(writer, "{}- [ ] {}", indent, format_text(text))?
                 }
                 match nested_list {
                     Some(nl) => write_list(writer, nl, level + 1)?,
@@ -270,32 +327,79 @@ mod test {
                 "more tags".to_owned(),
                 "hey another tag".to_owned(),
             ])
-            .title("nodo header level 1, is the title".to_owned())
+            .title(vec![TextItem::plain("nodo header level 1, is the title")].into())
             .list(vec![
-                ListItem::Text("list item 1".to_owned(), None),
-                ListItem::Text("list item 2".to_owned(), None),
+                ListItem::Text(vec![TextItem::plain("list item 1")].into(), None),
+                ListItem::Text(vec![TextItem::plain("list item 2")].into(), None),
             ])
-            .heading("nodo header with level 2".to_owned(), 2)
+            .heading(vec![TextItem::plain("nodo header with level 2")].into(), 2)
             .list(vec![
-                ListItem::Task("An item to complete".to_string(), false, None),
                 ListItem::Task(
-                    "A completed item, yay".to_string(),
+                    vec![TextItem::plain("An item to complete")].into(),
+                    false,
+                    None,
+                ),
+                ListItem::Task(
+                    vec![
+                        TextItem::plain("A "),
+                        TextItem::emphasis("completed"),
+                        TextItem::plain(" item, yay"),
+                    ]
+                    .into(),
                     true,
                     Some(vec![
-                        ListItem::Task("Hey a nested task".to_owned(), false, None),
-                        ListItem::Text("And a nested text".to_owned(), None),
+                        ListItem::Task(
+                            vec![
+                                TextItem::plain("Hey a "),
+                                TextItem::strong("nested"),
+                                TextItem::plain(" task"),
+                            ]
+                            .into(),
+                            false,
+                            None,
+                        ),
+                        ListItem::Text(
+                            vec![
+                                TextItem::plain("And a "),
+                                TextItem::emphasis("nested"),
+                                TextItem::plain(" text"),
+                            ]
+                            .into(),
+                            None,
+                        ),
                     ]),
                 ),
                 ListItem::Text(
-                    "a text list item".to_owned(),
+                    vec![TextItem::plain("a text list item")].into(),
                     Some(vec![
-                        ListItem::Text("nested list again".to_owned(), None),
-                        ListItem::Task("and a task".to_owned(), false, None),
+                        ListItem::Text(
+                            vec![
+                                TextItem::plain("nested "),
+                                TextItem::strong("list"),
+                                TextItem::plain(" again"),
+                            ]
+                            .into(),
+                            None,
+                        ),
+                        ListItem::Task(
+                            vec![TextItem::plain("and a "), TextItem::code("task")].into(),
+                            false,
+                            None,
+                        ),
                     ]),
                 ),
-                ListItem::Task("or a task list item".to_string(), false, None),
                 ListItem::Task(
-                    "and a technically ill-formed task, but should be allowed really".to_string(),
+                    vec![TextItem::plain("or a ~task~ list item")].into(),
+                    false,
+                    None,
+                ),
+                ListItem::Task(
+                    vec![
+                        TextItem::plain("and a "),
+                        TextItem::strikethrough("technically"),
+                        TextItem::plain(" ill-formed task, but should be allowed really"),
+                    ]
+                    .into(),
                     false,
                     None,
                 ),
@@ -313,15 +417,15 @@ tags: nodo, more tags, hey another tag
 
 ## nodo header with level 2
 
-- [ ] An item to complete
-- [  x       ]     A completed item, yay
-    - [ ] Hey a nested task
-    - And a nested text
+- [   ] An item to complete
+- [  x       ]     A *completed* item, yay
+    - [ ] Hey a **nested** task
+    - And a *nested* text
 - a text list item
-    -    nested list again
-    - [ ] and a task
-- [     ]      or a task list item
-- [] and a technically ill-formed task, but should be allowed really
+    -    nested **list** again
+    - [ ] and a `task`
+- [     ]      or a ~task~ list item
+- [] and a ~~technically~~ ill-formed task, but should be allowed really
 ";
 
     static TEST_NODO_FORMATTED: &str = "---
@@ -336,14 +440,14 @@ tags: nodo, more tags, hey another tag
 ## nodo header with level 2
 
 - [ ] An item to complete
-- [x] A completed item, yay
-    - [ ] Hey a nested task
-    - And a nested text
+- [x] A *completed* item, yay
+    - [ ] Hey a **nested** task
+    - And a *nested* text
 - a text list item
-    - nested list again
-    - [ ] and a task
-- [ ] or a task list item
-- [ ] and a technically ill-formed task, but should be allowed really
+    - nested **list** again
+    - [ ] and a `task`
+- [ ] or a ~task~ list item
+- [ ] and a ~~technically~~ ill-formed task, but should be allowed really
 ";
 
     #[test]
@@ -357,11 +461,11 @@ tags: nodo, more tags, hey another tag
     #[test]
     fn test_read() {
         assert_eq!(
-            Markdown::read(Nodo::new(), &mut TEST_NODO_UNFORMATTED.as_bytes()).unwrap(),
+            Markdown::read(Nodo::new(), &mut TEST_NODO_FORMATTED.as_bytes()).unwrap(),
             get_test_nodo(),
         );
         assert_eq!(
-            Markdown::read(Nodo::new(), &mut TEST_NODO_FORMATTED.as_bytes()).unwrap(),
+            Markdown::read(Nodo::new(), &mut TEST_NODO_UNFORMATTED.as_bytes()).unwrap(),
             get_test_nodo(),
         );
     }
@@ -391,7 +495,7 @@ tags: nodo, more tags, hey another tag
         let s = "# title";
         assert_eq!(
             Markdown::read(Nodo::new(), &mut s.as_bytes()).unwrap(),
-            Nodo::new().title("title".to_owned())
+            Nodo::new().title(vec![TextItem::plain("title")].into())
         )
     }
 }

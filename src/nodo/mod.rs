@@ -11,18 +11,83 @@ use std::marker::PhantomData;
 #[derive(Debug, PartialEq)]
 pub enum Block {
     /// A heading text with a level
-    Heading(String, u32),
+    Heading(Text, u32),
     /// A sequence of elements, elements can be text or tasks
     List(Vec<ListItem>),
+}
+
+/// A sequence of potentially decorated text
+#[derive(Debug, PartialEq)]
+pub struct Text {
+    pub inner: Vec<TextItem>,
+}
+
+impl From<Vec<TextItem>> for Text {
+    fn from(vec: Vec<TextItem>) -> Self {
+        Self { inner: vec }
+    }
+}
+
+/// A piece of text can be decorated with a style
+#[derive(Debug, PartialEq, Clone)]
+pub struct TextItem {
+    pub text: String,
+    pub style: Option<TextStyle>,
+}
+
+impl TextItem {
+    pub fn emphasis(text: &str) -> Self {
+        Self {
+            text: text.to_string(),
+            style: Some(TextStyle::Emphasis),
+        }
+    }
+
+    pub fn strong(text: &str) -> Self {
+        Self {
+            text: text.to_string(),
+            style: Some(TextStyle::Strong),
+        }
+    }
+
+    pub fn strikethrough(text: &str) -> Self {
+        Self {
+            text: text.to_string(),
+            style: Some(TextStyle::Strikethrough),
+        }
+    }
+
+    pub fn code(text: &str) -> Self {
+        Self {
+            text: text.to_string(),
+            style: Some(TextStyle::Code),
+        }
+    }
+
+    pub fn plain(text: &str) -> Self {
+        Self {
+            text: text.to_string(),
+            style: None,
+        }
+    }
+}
+
+/// A style for a piece of text
+#[derive(Debug, PartialEq, Clone)]
+pub enum TextStyle {
+    Emphasis,
+    Strong,
+    Strikethrough,
+    Code,
 }
 
 /// A list item is a possible item in a list
 #[derive(Debug, PartialEq)]
 pub enum ListItem {
     /// Tasks have text, completion status and optionally a sublist associated with them
-    Task(String, bool, Option<Vec<ListItem>>),
+    Task(Text, bool, Option<Vec<ListItem>>),
     /// Texts have text and optionally a sublist associated with them
-    Text(String, Option<Vec<ListItem>>),
+    Text(Text, Option<Vec<ListItem>>),
 }
 
 /// Metadata stores information about the nodo
@@ -30,7 +95,7 @@ pub enum ListItem {
 pub struct Metadata {
     projects: Vec<String>,
     tags: Vec<String>,
-    title: String,
+    title: Text,
     target: String,
 }
 
@@ -39,7 +104,7 @@ impl Metadata {
         Self {
             projects: Vec::new(),
             tags: Vec::new(),
-            title: String::new(),
+            title: Text { inner: Vec::new() },
             target: String::new(),
         }
     }
@@ -52,7 +117,7 @@ impl Metadata {
         &self.projects
     }
 
-    pub fn title(&self) -> &str {
+    pub fn title(&self) -> &Text {
         &self.title
     }
 
@@ -86,7 +151,7 @@ impl<F: NodoFile> Nodo<F> {
         self
     }
 
-    pub fn title(mut self, title: String) -> Self {
+    pub fn title(mut self, title: Text) -> Self {
         self.metadata.title = title;
         self
     }
@@ -101,7 +166,7 @@ impl<F: NodoFile> Nodo<F> {
         self
     }
 
-    pub fn heading(mut self, text: String, level: u32) -> Self {
+    pub fn heading(mut self, text: Text, level: u32) -> Self {
         self.blocks.push(Block::Heading(text, level));
         self
     }
