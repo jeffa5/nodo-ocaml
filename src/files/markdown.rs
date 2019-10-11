@@ -68,6 +68,7 @@ impl NodoFile for Markdown {
             match block {
                 Block::List(items) => write_list(writer, items, 0)?,
                 Block::Heading(t, l) => write_heading(writer, t, *l)?,
+                Block::Paragraph(lines) => write_paragraph(writer, lines)?,
             }
             if i != nodo.blocks().len() - 1 {
                 writeln!(writer)?;
@@ -127,6 +128,7 @@ fn read_body<F: NodoFile>(
                 nodo = nodo.heading(read_heading(&mut events_iter), level);
             }
             Event::Start(Tag::List(_first_index)) => nodo = nodo.list(read_list(&mut events_iter)),
+            Event::Start(Tag::Paragraph) => nodo = nodo.paragraph(read_paragraph(&mut events_iter)),
             e => {
                 error!("read body reached unimplemented event: {:?}", e);
                 unimplemented!()
@@ -134,6 +136,30 @@ fn read_body<F: NodoFile>(
         }
     }
     Ok(nodo)
+}
+
+fn read_paragraph(mut events_iter: &mut EventsIter) -> Vec<Text> {
+    let mut lines = Vec::new();
+    let mut line = Vec::new();
+    while let Some(event) = events_iter.next() {
+        match event {
+            Event::End(Tag::Paragraph) => return vec![line.into()],
+            Event::Text(t) => line.push(TextItem::PlainText(t.to_string())),
+            Event::SoftBreak => {
+                lines.push(line);
+                line = Vec::new()
+            }
+            Event::Start(Tag::Emphasis) => line.push(read_text_item(events_iter)),
+            Event::Start(Tag::Strong) => line.push(read_text_item(events_iter)),
+            Event::Start(Tag::Strikethrough) => line.push(read_text_item(events_iter)),
+            Event::Code(string) => line.push(TextItem::code(&string)),
+            Event::Start(Tag::Link(_inline, url, _title)) => {
+                line.push(read_link(events_iter, &url))
+            }
+            _ => unimplemented!(),
+        }
+    }
+    Vec::new()
 }
 
 fn read_heading(events_iter: &mut EventsIter) -> Text {
@@ -277,6 +303,13 @@ fn read_text_item(events_iter: &mut EventsIter) -> TextItem {
         }
     }
     TextItem::plain("")
+}
+
+fn write_paragraph<W: Write>(writer: &mut W, lines: &[Text]) -> Result<(), WriteError> {
+    for line in lines {
+        writeln!(writer, "{}", format_text(&line))?
+    }
+    Ok(())
 }
 
 fn write_heading<W: Write>(writer: &mut W, text: &Text, level: u32) -> Result<(), WriteError> {

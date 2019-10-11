@@ -14,6 +14,8 @@ pub enum Block {
     Heading(Text, u32),
     /// A sequence of elements, elements can be text or tasks
     List(Vec<ListItem>),
+    /// A sequence of lines of text
+    Paragraph(Vec<Text>),
 }
 
 /// A sequence of potentially decorated text
@@ -166,6 +168,11 @@ impl<F: NodoFile> Nodo<F> {
 
     pub fn list(mut self, items: Vec<ListItem>) -> Self {
         self.blocks.push(Block::List(items));
+        self
+    }
+
+    pub fn paragraph(mut self, lines: Vec<Text>) -> Self {
+        self.blocks.push(Block::Paragraph(lines));
         self
     }
 
