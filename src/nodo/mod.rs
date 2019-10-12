@@ -85,10 +85,10 @@ pub enum TextStyle {
 /// A list item is a possible item in a list
 #[derive(Debug, PartialEq)]
 pub enum ListItem {
-    /// Tasks have text, completion status and optionally a sublist associated with them
-    Task(Text, bool, Option<Vec<ListItem>>),
     /// Texts have text and optionally a sublist associated with them
-    Text(Text, Option<Vec<ListItem>>),
+    Text(Vec<Block>, Option<Vec<ListItem>>),
+    /// Tasks have text, completion status and optionally a sublist associated with them
+    Task(Vec<Block>, bool, Option<Vec<ListItem>>),
 }
 
 /// Metadata stores information about the nodo

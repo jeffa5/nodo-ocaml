@@ -65,20 +65,25 @@ impl NodoFile for Markdown {
         // write fields to the file
 
         for (i, block) in nodo.blocks().iter().enumerate() {
-            match block {
-                Block::List(items) => write_list(writer, items, 0)?,
-                Block::Heading(t, l) => write_heading(writer, t, *l)?,
-                Block::Paragraph(lines) => write_paragraph(writer, lines)?,
-                Block::Rule => writeln!(writer, "---")?,
-                Block::BlockQuote(blocks) => write_blockquote(writer, blocks)?,
-                Block::Code(lang, lines) => write_code(writer, lang, lines)?,
-            }
+            write_block(writer, block)?;
             if i != nodo.blocks().len() - 1 {
                 writeln!(writer)?;
             }
         }
         Ok(())
     }
+}
+
+fn write_block<W: Write>(writer: &mut W, block: &Block) -> Result<(), WriteError> {
+    match block {
+        Block::List(items) => write_list(writer, &items, 0)?,
+        Block::Heading(t, l) => write_heading(writer, &t, *l)?,
+        Block::Paragraph(lines) => write_paragraph(writer, lines)?,
+        Block::Rule => writeln!(writer, "---")?,
+        Block::BlockQuote(blocks) => write_blockquote(writer, blocks)?,
+        Block::Code(lang, lines) => write_code(writer, lang, lines)?,
+    }
+    Ok(())
 }
 
 fn read_frontmatter<F: NodoFile>(
@@ -237,6 +242,7 @@ fn read_list(mut events_iter: &mut EventsIter) -> Vec<ListItem> {
 }
 
 fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
+    let mut blocks = Vec::new();
     let mut text = Vec::new();
     let mut is_task = false;
     let mut completed = false;
@@ -246,7 +252,10 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
             Event::Text(t) => text.push(TextItem::plain(&t)),
             Event::End(Tag::Item) => {
                 if is_task {
-                    return ListItem::Task(text.into(), completed, nested_list);
+                    if !text.is_empty() {
+                        blocks.push(Block::Paragraph(vec![text.into()]))
+                    }
+                    return ListItem::Task(blocks, completed, nested_list);
                 } else {
                     // check for [, then "\s", then ], then strip front whitespace of other
                     // FIXME: ugly code, probably a nicer and cleaner way to do it
@@ -270,11 +279,10 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
                                                     _ => unimplemented!(),
                                                 }
                                             }
-                                            return ListItem::Task(
-                                                text[3..].to_vec().into(),
-                                                complete,
-                                                nested_list,
-                                            );
+                                            blocks.push(Block::Paragraph(vec![text[3..]
+                                                .to_vec()
+                                                .into()]));
+                                            return ListItem::Task(blocks, complete, nested_list);
                                         }
                                     }
                                 } else if t.trim() == "]" {
@@ -286,16 +294,14 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
                                             _ => unimplemented!(),
                                         }
                                     }
-                                    return ListItem::Task(
-                                        text[2..].to_vec().into(),
-                                        false,
-                                        nested_list,
-                                    );
+                                    blocks.push(Block::Paragraph(vec![text[2..].to_vec().into()]));
+                                    return ListItem::Task(blocks, false, nested_list);
                                 }
                             }
                         }
                     }
-                    return ListItem::Text(text.into(), nested_list);
+                    blocks.push(Block::Paragraph(vec![text.into()]));
+                    return ListItem::Text(blocks, nested_list);
                 }
             }
             Event::Start(Tag::List(_)) => nested_list = Some(read_list(events_iter)),
@@ -311,13 +317,22 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
                 text.push(read_link(events_iter, &url))
             }
             Event::SoftBreak => continue,
+            Event::Start(Tag::Paragraph) => {
+                blocks.push(Block::Paragraph(read_paragraph(events_iter)))
+            }
+            Event::Start(Tag::BlockQuote) => {
+                blocks.push(Block::BlockQuote(read_blockquote(events_iter)))
+            }
+            Event::Start(Tag::CodeBlock(lang)) => {
+                blocks.push(Block::Code(lang.to_string(), read_code(events_iter)))
+            }
             e => {
                 error!("read list item reached unimplemented event: {:?}", e);
                 unimplemented!()
             }
         }
     }
-    ListItem::Text(Vec::new().into(), None)
+    ListItem::Text(Vec::new(), None)
 }
 
 fn read_link(events_iter: &mut EventsIter, uri: &str) -> TextItem {
@@ -417,18 +432,24 @@ fn write_list<W: Write>(
     let indent = "    ".repeat(level);
     for item in list_items {
         match item {
-            ListItem::Text(s, nested_list) => {
-                writeln!(writer, "{}", &format!("{}- {}", indent, format_text(s)))?;
+            ListItem::Text(blocks, nested_list) => {
+                write!(writer, "{}- ", indent)?;
+                for block in blocks {
+                    write_block(writer, block)?
+                }
                 match nested_list {
                     Some(nl) => write_list(writer, nl, level + 1)?,
                     None => (),
                 }
             }
-            ListItem::Task(text, completed, nested_list) => {
+            ListItem::Task(blocks, completed, nested_list) => {
                 if *completed {
-                    writeln!(writer, "{}- [x] {}", indent, format_text(text))?
+                    write!(writer, "{}- [x] ", indent)?
                 } else {
-                    writeln!(writer, "{}- [ ] {}", indent, format_text(text))?
+                    write!(writer, "{}- [ ] ", indent)?
+                }
+                for block in blocks {
+                    write_block(writer, block)?
                 }
                 match nested_list {
                     Some(nl) => write_list(writer, nl, level + 1)?,
@@ -454,77 +475,100 @@ mod test {
             ])
             .title(vec![TextItem::plain("nodo header level 1, is the title")].into())
             .list(vec![
-                ListItem::Text(vec![TextItem::plain("list item 1")].into(), None),
-                ListItem::Text(vec![TextItem::plain("list item 2")].into(), None),
+                ListItem::Text(
+                    vec![Block::Paragraph(vec![
+                        vec![TextItem::plain("list item 1")].into()
+                    ])],
+                    None,
+                ),
+                ListItem::Text(
+                    vec![Block::Paragraph(vec![
+                        vec![TextItem::plain("list item 2")].into()
+                    ])],
+                    None,
+                ),
             ])
             .heading(vec![TextItem::plain("nodo header with level 2")].into(), 2)
             .list(vec![
                 ListItem::Task(
-                    vec![TextItem::plain("An item to complete")].into(),
+                    vec![Block::Paragraph(vec![vec![TextItem::plain(
+                        "An item to complete",
+                    )]
+                    .into()])],
                     false,
                     None,
                 ),
                 ListItem::Task(
-                    vec![
+                    vec![Block::Paragraph(vec![vec![
                         TextItem::plain("A "),
                         TextItem::emphasis("completed"),
                         TextItem::plain(" item, yay"),
                     ]
-                    .into(),
+                    .into()])],
                     true,
                     Some(vec![
                         ListItem::Task(
-                            vec![
+                            vec![Block::Paragraph(vec![vec![
                                 TextItem::plain("Hey a "),
                                 TextItem::strong("nested"),
                                 TextItem::plain(" task"),
                             ]
-                            .into(),
+                            .into()])],
                             false,
                             None,
                         ),
                         ListItem::Text(
-                            vec![
+                            vec![Block::Paragraph(vec![vec![
                                 TextItem::plain("And a "),
                                 TextItem::emphasis("nested"),
                                 TextItem::plain(" text"),
                             ]
-                            .into(),
+                            .into()])],
                             None,
                         ),
                     ]),
                 ),
                 ListItem::Text(
-                    vec![TextItem::plain("a text list item")].into(),
+                    vec![Block::Paragraph(vec![vec![TextItem::plain(
+                        "a text list item",
+                    )]
+                    .into()])],
                     Some(vec![
                         ListItem::Text(
-                            vec![
+                            vec![Block::Paragraph(vec![vec![
                                 TextItem::plain("nested "),
                                 TextItem::strong("list"),
                                 TextItem::plain(" again"),
                             ]
-                            .into(),
+                            .into()])],
                             None,
                         ),
                         ListItem::Task(
-                            vec![TextItem::plain("and a "), TextItem::code("task")].into(),
+                            vec![Block::Paragraph(vec![vec![
+                                TextItem::plain("and a "),
+                                TextItem::code("task"),
+                            ]
+                            .into()])],
                             false,
                             None,
                         ),
                     ]),
                 ),
                 ListItem::Task(
-                    vec![TextItem::plain("or a ~task~ list item")].into(),
+                    vec![Block::Paragraph(vec![vec![TextItem::plain(
+                        "or a ~task~ list item",
+                    )]
+                    .into()])],
                     false,
                     None,
                 ),
                 ListItem::Task(
-                    vec![
+                    vec![Block::Paragraph(vec![vec![
                         TextItem::plain("and a "),
                         TextItem::strikethrough("technically"),
                         TextItem::plain(" ill-formed task, but should be allowed really"),
                     ]
-                    .into(),
+                    .into()])],
                     false,
                     None,
                 ),
