@@ -11,7 +11,7 @@ mod files;
 mod nodo;
 mod util;
 
-use cli::{Cli, SubCommand};
+use cli::{Cli, NodoOpts, SubCommand};
 use commands::Command;
 use commands::{Edit, Format, List, New, Overview, Remove};
 use config::Config;
@@ -30,34 +30,17 @@ fn main() {
         .expect("Failed to initialise logging");
     debug!("{:#?}", opts);
     let config = Config::new();
-    let mut nodo = files::get_nodo(config.default_filetype);
     let mut res = Ok(());
     match opts.sub_command {
-        None => res = Overview::exec(config, nodo),
+        None => res = Overview::exec(config, NodoOpts::default()),
         Some(sub_command) => match sub_command {
-            SubCommand::New(cli::New { nodo_opts }) => {
-                nodo = build_nodo(nodo, nodo_opts);
-                res = New::exec(config, nodo)
-            }
-            SubCommand::List(cli::List { nodo_opts }) => {
-                nodo = build_nodo(nodo, nodo_opts);
-                res = List::exec(config, nodo)
-            }
-            SubCommand::Remove(cli::Remove { nodo_opts }) => {
-                nodo = build_nodo(nodo, nodo_opts);
-                res = Remove::exec(config, nodo)
-            }
-            SubCommand::Edit(cli::Edit { nodo_opts }) => {
-                nodo = build_nodo(nodo, nodo_opts);
-                res = Edit::exec(config, nodo)
-            }
-            SubCommand::Format(cli::Format { nodo_opts }) => {
-                nodo = build_nodo(nodo, nodo_opts);
-                res = Format::exec(config, nodo)
-            }
+            SubCommand::New(cli::New { nodo_opts }) => res = New::exec(config, nodo_opts),
+            SubCommand::List(cli::List { nodo_opts }) => res = List::exec(config, nodo_opts),
+            SubCommand::Remove(cli::Remove { nodo_opts }) => res = Remove::exec(config, nodo_opts),
+            SubCommand::Edit(cli::Edit { nodo_opts }) => res = Edit::exec(config, nodo_opts),
+            SubCommand::Format(cli::Format { nodo_opts }) => res = Format::exec(config, nodo_opts),
             SubCommand::Overview(cli::Overview { nodo_opts }) => {
-                nodo = build_nodo(nodo, nodo_opts);
-                res = Overview::exec(config, nodo)
+                res = Overview::exec(config, nodo_opts)
             }
             SubCommand::Completions { shell } => {
                 Cli::clap().gen_completions_to(
@@ -77,15 +60,4 @@ fn main() {
             println!("{}", err)
         }
     }
-}
-
-fn build_nodo<F: files::NodoFile>(nodo: nodo::Nodo<F>, nodo_opts: cli::NodoOpts) -> nodo::Nodo<F> {
-    let empty_string = String::new();
-    let (target, projects) = nodo_opts
-        .target
-        .split_last()
-        .unwrap_or((&empty_string, &[]));
-    nodo.target(target.to_string())
-        .projects(projects)
-        .tags(&nodo_opts.tags)
 }

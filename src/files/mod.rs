@@ -1,12 +1,13 @@
 /// The files module provides readers and writers for different file types
 pub mod markdown;
 
-use crate::nodo::Nodo;
+use crate::nodo::{Nodo, NodoBuilder};
 
 #[derive(Debug)]
 pub enum ReadError {
     InvalidElement(String),
     Io(std::io::Error),
+    Str(String),
 }
 
 impl From<std::io::Error> for ReadError {
@@ -15,11 +16,18 @@ impl From<std::io::Error> for ReadError {
     }
 }
 
+impl From<String> for ReadError {
+    fn from(err: String) -> ReadError {
+        ReadError::Str(err)
+    }
+}
+
 impl std::fmt::Display for ReadError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             ReadError::InvalidElement(s) => write!(f, "{}", s),
             ReadError::Io(ioerr) => write!(f, "{}", ioerr),
+            ReadError::Str(s) => write!(f, "{}", s),
         }
     }
 }
@@ -47,21 +55,27 @@ impl std::fmt::Display for WriteError {
 
 impl std::error::Error for WriteError {}
 
-pub trait NodoFile: std::fmt::Debug {
+pub trait NodoFile: std::fmt::Debug + Default {
     const EXTENSION: &'static str;
-    fn read<R>(nodo: Nodo<Self>, r: &mut R) -> Result<Nodo<Self>, ReadError>
+
+    fn ext(&self) -> &'static str {
+        Self::EXTENSION
+    }
+
+    fn read<R>(&self, nodo: NodoBuilder, r: &mut R) -> Result<Nodo, ReadError>
     where
         Self: Sized + NodoFile,
         R: std::io::Read;
-    fn write<W>(nodo: &Nodo<Self>, w: &mut W) -> Result<(), WriteError>
+
+    fn write<W>(&self, nodo: &Nodo, w: &mut W) -> Result<(), WriteError>
     where
         W: std::io::Write,
         Self: Sized;
 }
 
-pub fn get_nodo(ft: &str) -> Nodo<impl NodoFile> {
+pub fn get_file_handler(ft: &str) -> impl NodoFile {
     match ft {
-        markdown::Markdown::EXTENSION => Nodo::<markdown::Markdown>::new(),
+        markdown::Markdown::EXTENSION => markdown::Markdown,
         _ => panic!("Couldn't get file handler"),
     }
 }

@@ -3,18 +3,17 @@ use std::fs;
 use std::path::Path;
 use walkdir::WalkDir;
 
+use crate::cli::NodoOpts;
 use crate::commands::{Command, CommandError};
 use crate::config::Config;
-use crate::files::NodoFile;
-use crate::nodo::Nodo;
 use crate::util::file::build_path;
 
 pub struct Overview;
 
 impl Command for Overview {
-    fn exec<F: NodoFile>(config: Config, nodo: Nodo<F>) -> Result<(), CommandError> {
-        let path = build_path(&config, &nodo);
-        if nodo.metadata().target() == "" {
+    fn exec(config: Config, nodo_opts: NodoOpts) -> Result<(), CommandError> {
+        let path = build_path(&config, &nodo_opts.target);
+        if nodo_opts.target.is_empty() {
             project_overview(&path)?;
         } else {
             let metadata = fs::metadata(&path)?;

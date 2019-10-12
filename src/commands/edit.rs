@@ -3,23 +3,24 @@ use std::env;
 use std::fs;
 use std::process::Command as Cmd;
 
+use crate::cli::NodoOpts;
 use crate::commands::{Command, CommandError};
 use crate::config::Config;
+use crate::files;
 use crate::files::NodoFile;
-use crate::nodo::Nodo;
 use crate::util::file;
 
 pub struct Edit;
 
 impl Command for Edit {
     /// Edit a current nodo in the editor
-    fn exec<F: NodoFile>(config: Config, nodo: Nodo<F>) -> Result<(), CommandError> {
+    fn exec(config: Config, nodo_opts: NodoOpts) -> Result<(), CommandError> {
         trace!("Editing a nodo");
         // get the file location
-        if nodo.metadata().target() == "" {
+        if nodo_opts.target.is_empty() {
             return Err(CommandError("Nodo must exist to edit".to_string()));
         }
-        let path = file::build_path(&config, &nodo);
+        let path = file::build_path(&config, &nodo_opts.target);
         // launch the editor with that location
         let metadata = fs::metadata(&path)?;
         if metadata.is_dir() {
@@ -28,7 +29,8 @@ impl Command for Edit {
                 path.to_string_lossy()
             )));
         }
-        let mut command = get_editor::<F>();
+        let handler = files::get_file_handler(config.default_filetype);
+        let mut command = get_editor(handler.ext());
         command.arg(path);
         debug!("Editor command is: {:?}", command);
         let status = command.status().expect("Failed to open editor");
@@ -37,7 +39,7 @@ impl Command for Edit {
     }
 }
 
-fn get_editor<F: NodoFile>() -> Cmd {
+fn get_editor(ext: &str) -> Cmd {
     let mut editor = "vi".to_string();
     if let Ok(e) = env::var("VISUAL") {
         editor = e
@@ -46,7 +48,7 @@ fn get_editor<F: NodoFile>() -> Cmd {
     }
     if ["vi", "vim", "nvim"].iter().any(|&x| editor == x) {
         let mut cmd = Cmd::new(editor);
-        cmd.arg("-c").arg(format!("set ft={}", F::EXTENSION));
+        cmd.arg("-c").arg(format!("set ft={}", ext));
         return cmd;
     }
     Cmd::new(editor)

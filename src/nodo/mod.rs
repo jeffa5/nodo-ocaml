@@ -1,5 +1,4 @@
-use crate::files::NodoFile;
-use std::marker::PhantomData;
+use crate::cli::NodoOpts;
 /// A Nodo is a mixture of a todo and a note.
 ///
 /// They are formed of optional metadata and blocks.
@@ -25,7 +24,7 @@ pub enum Block {
 }
 
 /// A single line of potentially decorated text
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Default)]
 pub struct Text {
     pub inner: Vec<TextItem>,
 }
@@ -91,112 +90,60 @@ pub enum ListItem {
     Task(Vec<Block>, bool, Option<Vec<ListItem>>),
 }
 
-/// Metadata stores information about the nodo
-#[derive(Debug, PartialEq)]
-pub struct Metadata {
-    projects: Vec<String>,
+/// Nodos have explicit fields for their metadata e.g. title and tags
+/// Other content within the nodo is represented as a sequence of Blocks
+#[derive(Debug, PartialEq, Default)]
+pub struct Nodo {
     tags: Vec<String>,
     title: Text,
-    target: String,
+    /// The rest of the content
+    blocks: Vec<Block>,
 }
 
-impl Metadata {
-    fn new() -> Self {
-        Self {
-            projects: Vec::new(),
-            tags: Vec::new(),
-            title: Text { inner: Vec::new() },
-            target: String::new(),
-        }
-    }
-
+impl Nodo {
     pub fn tags(&self) -> &[String] {
         &self.tags
-    }
-
-    pub fn projects(&self) -> &[String] {
-        &self.projects
     }
 
     pub fn title(&self) -> &Text {
         &self.title
     }
 
-    pub fn target(&self) -> &str {
-        &self.target
-    }
-}
-
-/// Nodos have explicit fields for their metadata e.g. project and tags
-/// Other content within the nodo is represented as a sequence of Blocks
-#[derive(Debug, PartialEq)]
-pub struct Nodo<F: NodoFile> {
-    filetype: PhantomData<F>,
-    /// The metadata associated with this nodo
-    metadata: Metadata,
-    /// The rest of the content
-    blocks: Vec<Block>,
-}
-
-impl<F: NodoFile> Nodo<F> {
-    pub fn new() -> Nodo<F> {
-        Nodo {
-            filetype: PhantomData,
-            metadata: Metadata::new(),
-            blocks: Vec::new(),
-        }
-    }
-
-    pub fn projects(mut self, projects: &[String]) -> Self {
-        self.metadata.projects.append(&mut projects.to_vec());
-        self
-    }
-
-    pub fn title(mut self, title: Text) -> Self {
-        self.metadata.title = title;
-        self
-    }
-
-    pub fn target(mut self, target: String) -> Self {
-        self.metadata.target = target;
-        self
-    }
-
-    pub fn tags(mut self, tags: &[String]) -> Self {
-        self.metadata.tags = tags.to_vec();
-        self
-    }
-
-    pub fn heading(mut self, text: Text, level: u32) -> Self {
-        self.blocks.push(Block::Heading(text, level));
-        self
-    }
-
-    pub fn list(mut self, items: Vec<ListItem>) -> Self {
-        self.blocks.push(Block::List(items));
-        self
-    }
-
-    pub fn paragraph(mut self, lines: Vec<Text>) -> Self {
-        self.blocks.push(Block::Paragraph(lines));
-        self
-    }
-
-    pub fn rule(mut self) -> Self {
-        self.blocks.push(Block::Rule);
-        self
-    }
-
-    pub fn blockquote(mut self, lines: Vec<Block>) -> Self {
-        self.blocks.push(Block::BlockQuote(lines));
-        self
-    }
-
-    pub fn metadata(&self) -> &Metadata {
-        &self.metadata
-    }
-
-    pub fn blocks(&self) -> &Vec<Block> {
+    pub fn blocks(&self) -> &[Block] {
         &self.blocks
+    }
+}
+
+#[derive(Debug, Default)]
+pub struct NodoBuilder {
+    nodo: Nodo,
+}
+
+impl NodoBuilder {
+    pub fn build(self) -> Nodo {
+        self.nodo
+    }
+
+    pub fn tags(&mut self, tags: Vec<String>) -> &mut Self {
+        self.nodo.tags = tags;
+        self
+    }
+
+    pub fn title(&mut self, title: Text) -> &mut Self {
+        self.nodo.title = title;
+        self
+    }
+
+    pub fn block(&mut self, block: Block) -> &mut Self {
+        self.nodo.blocks.push(block);
+        self
+    }
+}
+
+impl From<&NodoOpts> for NodoBuilder {
+    fn from(opts: &NodoOpts) -> Self {
+        let mut builder = Self::default();
+        builder.tags(opts.tags.to_vec());
+        builder
     }
 }

@@ -41,7 +41,7 @@ pub enum SubCommand {
     },
 }
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Default)]
 pub struct NodoOpts {
     /// A list of tags for the nodo, separated by ','
     #[structopt(short, long, use_delimiter = true, require_delimiter = true)]

@@ -7,9 +7,9 @@ mod remove;
 
 use std::io;
 
+use crate::cli::NodoOpts;
 use crate::config::Config;
-use crate::files::{NodoFile, ReadError, WriteError};
-use crate::nodo::Nodo;
+use crate::files::{ReadError, WriteError};
 
 pub use edit::Edit;
 pub use format::Format;
@@ -44,6 +44,7 @@ impl From<ReadError> for CommandError {
                 "Encountered invalid element when reading nodo: {}",
                 s
             )),
+            ReadError::Str(s) => CommandError(s),
         }
     }
 }
@@ -65,5 +66,5 @@ impl From<walkdir::Error> for CommandError {
 impl std::error::Error for CommandError {}
 
 pub trait Command {
-    fn exec<F: NodoFile>(config: Config, nodo: Nodo<F>) -> Result<(), CommandError>;
+    fn exec(config: Config, nodo_opts: NodoOpts) -> Result<(), CommandError>;
 }
