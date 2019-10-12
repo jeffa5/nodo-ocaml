@@ -5,12 +5,12 @@ authors = ["Jeffas <dev@jeffas.io>"]
 edition = "2018"
 
 [dependencies]
-pulldown-cmark = "0.6"
-structopt = "0.3"
-log = "0.4"
-stderrlog = "0.4"
-dirs = "2.0"
-walkdir = "2"
+pulldown-cmark = "0.6.0"
+structopt = "0.3.3"
+log = "0.4.8"
+stderrlog = "0.4.1"
+dirs = "2.0.2"
+walkdir = "2.2.9"
 
 [dev-dependencies]
 pretty_assertions = "0.6.1"
