@@ -804,25 +804,25 @@ tags: nodo, more tags, hey another tag
 
 # Markdown: Syntax
 
-* [Overview](#overview)
-    * [Philosophy](#philosophy)
-    * [Inline HTML](#html)
-    * [Automatic Escaping for Special Characters](#autoescape)
-* [Block Elements](#block)
-    * [Paragraphs and Line Breaks](#p)
-    * [Headers](#header)
-    * [Blockquotes](#blockquote)
-    * [Lists](#list)
-    * [Code Blocks](#precode)
-    * [Horizontal Rules](#hr)
-* [Span Elements](#span)
-    * [Links](#link)
-    * [Emphasis](#em)
-    * [Code](#code)
-    * [Images](#img)
-* [Miscellaneous](#misc)
-    * [Backslash Escapes](#backslash)
-    * [Automatic Links](#autolink)
+- [Overview](#overview)
+    - [Philosophy](#philosophy)
+    - [Inline HTML](#html)
+    - [Automatic Escaping for Special Characters](#autoescape)
+- [Block Elements](#block)
+    - [Paragraphs and Line Breaks](#p)
+    - [Headers](#header)
+    - [Blockquotes](#blockquote)
+    - [Lists](#list)
+    - [Code Blocks](#precode)
+    - [Horizontal Rules](#hr)
+- [Span Elements](#span)
+    - [Links](#link)
+    - [Emphasis](#em)
+    - [Code](#code)
+    - [Images](#img)
+- [Miscellaneous](#misc)
+    - [Backslash Escapes](#backslash)
+    - [Automatic Links](#autolink)
 
 **Note:** This document is itself written using Markdown; you
 can [see the source for it by adding '.text' to the URL](/projects/markdown/syntax.text).
@@ -927,9 +927,9 @@ Markdown supports ordered (numbered) and unordered (bulleted) lists.
 Unordered lists use asterisks, pluses, and hyphens -- interchangably
 -- as list markers:
 
-* Red
-* Green
-* Blue
+- Red
+- Green
+- Blue
 
 is equivalent to:
 
@@ -972,18 +972,18 @@ But if you want to be lazy, you don't have to.
 
 To make lists look nice, you can wrap items with hanging indents:
 
-*   Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+-   Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
     Aliquam hendrerit mi posuere lectus. Vestibulum enim wisi,
     viverra nec, fringilla in, laoreet vitae, risus.
-*   Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
+-   Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
     Suspendisse id sem consectetuer libero luctus adipiscing.
 
 But if you want to be lazy, you don't have to:
 
-*   Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+-   Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
 Aliquam hendrerit mi posuere lectus. Vestibulum enim wisi,
 viverra nec, fringilla in, laoreet vitae, risus.
-*   Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
+-   Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
 Suspendisse id sem consectetuer libero luctus adipiscing.
 
 List items may consist of multiple paragraphs. Each subsequent
@@ -1004,18 +1004,18 @@ It looks nice if you indent every line of the subsequent
 paragraphs, but here again, Markdown will allow you to be
 lazy:
 
-*   This is a list item with two paragraphs.
+-   This is a list item with two paragraphs.
 
     This is the second paragraph in the list item. You're
 only required to indent the first line. Lorem ipsum dolor
 sit amet, consectetuer adipiscing elit.
 
-*   Another item in the same list.
+-   Another item in the same list.
 
 To put a blockquote within a list item, the blockquote's `>`
 delimiters need to be indented:
 
-*   A list item with a blockquote:
+-   A list item with a blockquote:
 
     > This is a blockquote
     > inside a list item.
@@ -1023,7 +1023,7 @@ delimiters need to be indented:
 To put a code block within a list item, the code block needs
 to be indented *twice* -- 8 spaces or two tabs:
 
-*   A list item with a code block:
+-   A list item with a code block:
 
         <code goes here>
 
