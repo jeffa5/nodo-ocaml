@@ -61,12 +61,12 @@ impl NodoFile for Markdown {
         writeln!(writer)?;
 
         // write title as header with level 1
-        write_heading(writer, nodo.title(), 1)?;
+        write_heading(writer, "", false, nodo.title(), 1)?;
         writeln!(writer)?;
         // write fields to the file
 
         for (i, block) in nodo.blocks().iter().enumerate() {
-            write_block(writer, block)?;
+            write_block(writer, "", false, block)?;
             if i != nodo.blocks().len() - 1 {
                 writeln!(writer)?;
             }
@@ -75,14 +75,19 @@ impl NodoFile for Markdown {
     }
 }
 
-fn write_block<W: Write>(writer: &mut W, block: &Block) -> Result<(), WriteError> {
+fn write_block<W: Write>(
+    writer: &mut W,
+    prefix: &str,
+    prefix_first_line: bool,
+    block: &Block,
+) -> Result<(), WriteError> {
     match block {
-        Block::List(items) => write_list(writer, &items, 0)?,
-        Block::Heading(t, l) => write_heading(writer, &t, *l)?,
-        Block::Paragraph(lines) => write_paragraph(writer, lines)?,
-        Block::Rule => writeln!(writer, "---")?,
-        Block::BlockQuote(blocks) => write_blockquote(writer, blocks)?,
-        Block::Code(lang, lines) => write_code(writer, lang, lines)?,
+        Block::List(items) => write_list(writer, prefix, &items)?,
+        Block::Heading(t, l) => write_heading(writer, prefix, prefix_first_line, &t, *l)?,
+        Block::Paragraph(lines) => write_paragraph(writer, prefix, prefix_first_line, lines)?,
+        Block::Rule => writeln!(writer, "{}---", prefix)?,
+        Block::BlockQuote(blocks) => write_blockquote(writer, prefix, blocks)?,
+        Block::Code(lang, lines) => write_code(writer, prefix, lang, lines)?,
     }
     Ok(())
 }
@@ -141,6 +146,12 @@ fn read_body(nodo: &mut NodoBuilder, mut events_iter: &mut EventsIter) -> Result
             Event::Start(Tag::BlockQuote) => {
                 nodo.block(Block::BlockQuote(read_blockquote(&mut events_iter)));
             }
+            Event::Start(Tag::CodeBlock(lang)) => {
+                nodo.block(Block::Code(
+                    lang.to_string(),
+                    read_codeblock(&mut events_iter),
+                ));
+            }
             e => {
                 error!("read body reached unimplemented event: {:?}", e);
                 unimplemented!()
@@ -148,6 +159,18 @@ fn read_body(nodo: &mut NodoBuilder, mut events_iter: &mut EventsIter) -> Result
         }
     }
     Ok(())
+}
+
+fn read_codeblock(events_iter: &mut EventsIter) -> Vec<String> {
+    let mut text = Vec::new();
+    for event in events_iter {
+        match event {
+            Event::End(Tag::CodeBlock(_)) => return text,
+            Event::Text(t) => text.push(t.to_string()),
+            _ => unimplemented!(),
+        }
+    }
+    Vec::new()
 }
 
 fn read_blockquote(mut events_iter: &mut EventsIter) -> Vec<Block> {
@@ -191,10 +214,15 @@ fn read_paragraph(mut events_iter: &mut EventsIter) -> Vec<Text> {
     let mut line = Vec::new();
     while let Some(event) = events_iter.next() {
         match event {
-            Event::End(Tag::Paragraph) => return vec![line.into()],
+            Event::End(Tag::Paragraph) => {
+                if !line.is_empty() {
+                    lines.push(line.into())
+                }
+                return lines;
+            }
             Event::Text(t) => line.push(TextItem::PlainText(t.to_string())),
             Event::SoftBreak => {
-                lines.push(line);
+                lines.push(line.into());
                 line = Vec::new()
             }
             Event::Start(Tag::Emphasis) => line.push(read_text_item(events_iter)),
@@ -364,52 +392,81 @@ fn read_text_item(events_iter: &mut EventsIter) -> TextItem {
     TextItem::plain("")
 }
 
-fn write_paragraph<W: Write>(writer: &mut W, lines: &[Text]) -> Result<(), WriteError> {
+fn write_paragraph<W: Write>(
+    writer: &mut W,
+    prefix: &str,
+    prefix_first_line: bool,
+    lines: &[Text],
+) -> Result<(), WriteError> {
+    let mut first = true;
     for line in lines {
-        writeln!(writer, "{}", format_text(&line))?
-    }
-    Ok(())
-}
-
-fn write_blockquote<W: Write>(writer: &mut W, blocks: &[Block]) -> Result<(), WriteError> {
-    for block in blocks {
-        write!(writer, "> ")?;
-        match block {
-            Block::List(items) => write_list(writer, items, 0)?,
-            Block::Rule => writeln!(writer, "---")?,
-            Block::Heading(t, level) => write_heading(writer, t, *level)?,
-            Block::Paragraph(t) => write_paragraph(writer, t)?,
-            Block::BlockQuote(bs) => write_blockquote(writer, bs)?,
-            Block::Code(lang, lines) => write_code(writer, lang, lines)?,
+        if first && !prefix_first_line {
+            first = false;
+            writeln!(writer, "{}", format_text(&line))?
+        } else {
+            writeln!(writer, "{}{}", prefix, format_text(&line))?
         }
     }
     Ok(())
 }
 
-fn write_code<W: Write>(writer: &mut W, lang: &str, lines: &[String]) -> Result<(), WriteError> {
-    writeln!(writer, "```{}", lang)?;
-    for line in lines {
-        writeln!(writer, "{}", line)?
+fn write_blockquote<W: Write>(
+    writer: &mut W,
+    prefix: &str,
+    blocks: &[Block],
+) -> Result<(), WriteError> {
+    let prefix = &format!("{}> ", prefix);
+    write!(writer, "{}", prefix)?;
+    for (i, block) in blocks.iter().enumerate() {
+        write_block(writer, prefix, i != 0, block)?;
+        if i != blocks.len() - 1 {
+            writeln!(writer, "{}", prefix.trim())?;
+        }
     }
-    writeln!(writer, "```")?;
     Ok(())
 }
 
-fn write_heading<W: Write>(writer: &mut W, text: &Text, level: u32) -> Result<(), WriteError> {
-    writeln!(
-        writer,
-        "{}",
-        &format!("{} {}", "#".repeat(level as usize), format_text(text))
-    )?;
+fn write_code<W: Write>(
+    writer: &mut W,
+    prefix: &str,
+    lang: &str,
+    lines: &[String],
+) -> Result<(), WriteError> {
+    writeln!(writer, "{}```{}", prefix, lang)?;
+    for line in lines {
+        writeln!(writer, "{}{}", prefix, line)?
+    }
+    writeln!(writer, "{}```", prefix)?;
+    Ok(())
+}
+
+fn write_heading<W: Write>(
+    writer: &mut W,
+    prefix: &str,
+    prefix_first_line: bool,
+    text: &Text,
+    level: u32,
+) -> Result<(), WriteError> {
+    if prefix_first_line {
+        writeln!(
+            writer,
+            "{}{}",
+            prefix,
+            &format!("{} {}", "#".repeat(level as usize), format_text(text))
+        )?;
+    } else {
+        writeln!(
+            writer,
+            "{}",
+            &format!("{} {}", "#".repeat(level as usize), format_text(text))
+        )?;
+    }
     Ok(())
 }
 
 fn format_text(text: &Text) -> String {
     let mut s = String::new();
     for item in text.inner.iter() {
-        if cfg!(test) {
-            eprintln!("format_text with text item: {:?}", item);
-        }
         match item {
             TextItem::PlainText(t) => s += t,
             TextItem::StyledText(t, style) => match style {
@@ -426,33 +483,33 @@ fn format_text(text: &Text) -> String {
 
 fn write_list<W: Write>(
     writer: &mut W,
+    prefix: &str,
     list_items: &[ListItem],
-    level: usize,
 ) -> Result<(), WriteError> {
-    let indent = "    ".repeat(level);
+    let child_prefix = &format!("{}    ", prefix);
     for item in list_items {
         match item {
             ListItem::Text(blocks, nested_list) => {
-                write!(writer, "{}- ", indent)?;
+                write!(writer, "{}- ", prefix)?;
                 for block in blocks {
-                    write_block(writer, block)?
+                    write_block(writer, prefix, false, block)?
                 }
                 match nested_list {
-                    Some(nl) => write_list(writer, nl, level + 1)?,
+                    Some(nl) => write_list(writer, child_prefix, nl)?,
                     None => (),
                 }
             }
             ListItem::Task(blocks, completed, nested_list) => {
                 if *completed {
-                    write!(writer, "{}- [x] ", indent)?
+                    write!(writer, "{}- [x] ", prefix)?
                 } else {
-                    write!(writer, "{}- [ ] ", indent)?
+                    write!(writer, "{}- [ ] ", prefix)?
                 }
                 for block in blocks {
-                    write_block(writer, block)?
+                    write_block(writer, prefix, false, block)?
                 }
                 match nested_list {
-                    Some(nl) => write_list(writer, nl, level + 1)?,
+                    Some(nl) => write_list(writer, child_prefix, nl)?,
                     None => (),
                 }
             }
@@ -702,33 +759,36 @@ tags: nodo, more tags, hey another tag
         )
     }
 
-    const LARGE_MD_STRING:&str = r#"# Markdown: Syntax
+    const LARGE_MD_STRING:&str = r#"---
+tags: nodo, more tags, hey another tag
+---
 
-*   [Overview](#overview)
-    *   [Philosophy](#philosophy)
-    *   [Inline HTML](#html)
-    *   [Automatic Escaping for Special Characters](#autoescape)
-*   [Block Elements](#block)
-    *   [Paragraphs and Line Breaks](#p)
-    *   [Headers](#header)
-    *   [Blockquotes](#blockquote)
-    *   [Lists](#list)
-    *   [Code Blocks](#precode)
-    *   [Horizontal Rules](#hr)
-*   [Span Elements](#span)
-    *   [Links](#link)
-    *   [Emphasis](#em)
-    *   [Code](#code)
-    *   [Images](#img)
-*   [Miscellaneous](#misc)
-    *   [Backslash Escapes](#backslash)
-    *   [Automatic Links](#autolink)
+# Markdown: Syntax
 
+* [Overview](#overview)
+    * [Philosophy](#philosophy)
+    * [Inline HTML](#html)
+    * [Automatic Escaping for Special Characters](#autoescape)
+* [Block Elements](#block)
+    * [Paragraphs and Line Breaks](#p)
+    * [Headers](#header)
+    * [Blockquotes](#blockquote)
+    * [Lists](#list)
+    * [Code Blocks](#precode)
+    * [Horizontal Rules](#hr)
+* [Span Elements](#span)
+    * [Links](#link)
+    * [Emphasis](#em)
+    * [Code](#code)
+    * [Images](#img)
+* [Miscellaneous](#misc)
+    * [Backslash Escapes](#backslash)
+    * [Automatic Links](#autolink)
 
 **Note:** This document is itself written using Markdown; you
 can [see the source for it by adding '.text' to the URL](/projects/markdown/syntax.text).
 
-----
+---
 
 ## Overview
 
@@ -772,7 +832,6 @@ closing hashes don't even need to match the number of hashes
 used to open the header. (The number of opening hashes
 determines the header level.)
 
-
 ### Blockquotes
 
 Markdown uses email-style `>` characters for blockquoting. If you're
@@ -791,11 +850,11 @@ Markdown allows you to be lazy and only put the `>` before the first
 line of a hard-wrapped paragraph:
 
 > This is a blockquote with two paragraphs. Lorem ipsum dolor sit amet,
-consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus.
-Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.
+> consectetuer adipiscing elit. Aliquam hendrerit mi posuere lectus.
+> Vestibulum enim wisi, viverra nec, fringilla in, laoreet vitae, risus.
 
 > Donec sit amet nisl. Aliquam semper ipsum sit amet velit. Suspendisse
-id sem consectetuer libero luctus adipiscing.
+> id sem consectetuer libero luctus adipiscing.
 
 Blockquotes can be nested (i.e. a blockquote-in-a-blockquote) by
 adding additional levels of `>`:
@@ -811,8 +870,8 @@ and code blocks:
 
 > ## This is a header.
 >
-> 1.   This is the first list item.
-> 2.   This is the second list item.
+> 1. This is the first list item.
+> 2. This is the second list item.
 >
 > Here's some example code:
 >
@@ -822,7 +881,6 @@ Any decent text editor should make email-style quoting easy. For
 example, with BBEdit, you can make a selection and choose Increase
 Quote Level from the Text menu.
 
-
 ### Lists
 
 Markdown supports ordered (numbered) and unordered (bulleted) lists.
@@ -830,21 +888,21 @@ Markdown supports ordered (numbered) and unordered (bulleted) lists.
 Unordered lists use asterisks, pluses, and hyphens -- interchangably
 -- as list markers:
 
-*   Red
-*   Green
-*   Blue
+* Red
+* Green
+* Blue
 
 is equivalent to:
 
-+   Red
-+   Green
-+   Blue
++ Red
++ Green
++ Blue
 
 and:
 
--   Red
--   Green
--   Blue
+- Red
+- Green
+- Blue
 
 Ordered lists use numbers followed by periods:
 
@@ -1021,6 +1079,10 @@ Use the `printf()` function.
         let mut s = Vec::new();
 
         Markdown.write(&nodo, &mut s).unwrap();
-        assert_eq!(String::from_utf8(s).unwrap(), LARGE_MD_STRING);
+        let comp_string = String::from_utf8(s).unwrap();
+        for (linea, lineb) in comp_string.lines().zip(LARGE_MD_STRING.lines()) {
+            assert_eq!(linea, lineb);
+        }
+        assert_eq!(comp_string, LARGE_MD_STRING);
     }
 }
