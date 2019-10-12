@@ -1,9 +1,10 @@
 use log::*;
 use pulldown_cmark::{Event, Options, Parser, Tag};
+use std::convert::TryInto;
 use std::io::{Read, Write};
 
 use crate::files::{NodoFile, ReadError, WriteError};
-use crate::nodo::{Block, ListItem, Nodo, NodoBuilder, Text, TextItem, TextStyle};
+use crate::nodo::{Block, List, ListItem, Nodo, NodoBuilder, Text, TextItem, TextStyle};
 
 #[derive(Debug, PartialEq, Default)]
 pub struct Markdown;
@@ -82,7 +83,7 @@ fn write_block<W: Write>(
     block: &Block,
 ) -> Result<(), WriteError> {
     match block {
-        Block::List(items) => write_list(writer, prefix, &items)?,
+        Block::List(list) => write_list(writer, prefix, &list)?,
         Block::Heading(t, l) => write_heading(writer, prefix, prefix_first_line, &t, *l)?,
         Block::Paragraph(lines) => write_paragraph(writer, prefix, prefix_first_line, lines)?,
         Block::Rule => writeln!(writer, "{}---", prefix)?,
@@ -134,9 +135,17 @@ fn read_body(nodo: &mut NodoBuilder, mut events_iter: &mut EventsIter) -> Result
             Event::Start(Tag::Heading(level)) => {
                 nodo.block(Block::Heading(read_heading(&mut events_iter), level));
             }
-            Event::Start(Tag::List(_first_index)) => {
-                nodo.block(Block::List(read_list(&mut events_iter)));
-            }
+            Event::Start(Tag::List(first_index)) => match first_index {
+                None => {
+                    nodo.block(Block::List(List::Plain(read_list(&mut events_iter))));
+                }
+                Some(index) => {
+                    nodo.block(Block::List(List::Numbered(
+                        read_list(&mut events_iter),
+                        index.try_into().unwrap(),
+                    )));
+                }
+            },
             Event::Start(Tag::Paragraph) => {
                 nodo.block(Block::Paragraph(read_paragraph(&mut events_iter)));
             }
@@ -187,7 +196,17 @@ fn read_blockquote(mut events_iter: &mut EventsIter) -> Vec<Block> {
             Event::Start(Tag::Heading(level)) => {
                 blocks.push(Block::Heading(read_heading(events_iter), level))
             }
-            Event::Start(Tag::List(_)) => blocks.push(Block::List(read_list(events_iter))),
+            Event::Start(Tag::List(first_index)) => match first_index {
+                None => {
+                    blocks.push(Block::List(List::Plain(read_list(&mut events_iter))));
+                }
+                Some(index) => {
+                    blocks.push(Block::List(List::Numbered(
+                        read_list(&mut events_iter),
+                        index.try_into().unwrap(),
+                    )));
+                }
+            },
             Event::Start(Tag::CodeBlock(language)) => {
                 blocks.push(Block::Code(language.to_string(), read_code(events_iter)))
             }
@@ -332,7 +351,15 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
                     return ListItem::Text(blocks, nested_list);
                 }
             }
-            Event::Start(Tag::List(_)) => nested_list = Some(read_list(events_iter)),
+            Event::Start(Tag::List(first_index)) => match first_index {
+                None => nested_list = Some(List::Plain(read_list(&mut events_iter))),
+                Some(index) => {
+                    nested_list = Some(List::Numbered(
+                        read_list(&mut events_iter),
+                        index.try_into().unwrap(),
+                    ))
+                }
+            },
             Event::TaskListMarker(ticked) => {
                 is_task = true;
                 completed = ticked;
@@ -481,16 +508,25 @@ fn format_text(text: &Text) -> String {
     s
 }
 
-fn write_list<W: Write>(
-    writer: &mut W,
-    prefix: &str,
-    list_items: &[ListItem],
-) -> Result<(), WriteError> {
+fn write_list<W: Write>(writer: &mut W, prefix: &str, list: &List) -> Result<(), WriteError> {
     let child_prefix = &format!("{}    ", prefix);
+    let mut index = None;
+    let list_items = match list {
+        List::Plain(list_items) => list_items,
+        List::Numbered(list_items, first_index) => {
+            index = Some(*first_index);
+            list_items
+        }
+    };
     for item in list_items {
+        if let Some(i) = index {
+            write!(writer, "{}{}. ", prefix, i)?;
+            index = Some(i + 1)
+        } else {
+            write!(writer, "{}- ", prefix)?
+        }
         match item {
             ListItem::Text(blocks, nested_list) => {
-                write!(writer, "{}- ", prefix)?;
                 for block in blocks {
                     write_block(writer, prefix, false, block)?
                 }
@@ -501,9 +537,9 @@ fn write_list<W: Write>(
             }
             ListItem::Task(blocks, completed, nested_list) => {
                 if *completed {
-                    write!(writer, "{}- [x] ", prefix)?
+                    write!(writer, "[x] ")?
                 } else {
-                    write!(writer, "{}- [ ] ", prefix)?
+                    write!(writer, "[ ] ")?
                 }
                 for block in blocks {
                     write_block(writer, prefix, false, block)?
@@ -532,25 +568,28 @@ mod test {
                 "hey another tag".to_string(),
             ])
             .title(vec![TextItem::plain("nodo header level 1, is the title")].into())
-            .block(Block::List(vec![
-                ListItem::Text(
-                    vec![Block::Paragraph(vec![
-                        vec![TextItem::plain("list item 1")].into()
-                    ])],
-                    None,
-                ),
-                ListItem::Text(
-                    vec![Block::Paragraph(vec![
-                        vec![TextItem::plain("list item 2")].into()
-                    ])],
-                    None,
-                ),
-            ]))
+            .block(Block::List(List::Numbered(
+                vec![
+                    ListItem::Text(
+                        vec![Block::Paragraph(vec![
+                            vec![TextItem::plain("list item 1")].into()
+                        ])],
+                        None,
+                    ),
+                    ListItem::Text(
+                        vec![Block::Paragraph(vec![
+                            vec![TextItem::plain("list item 2")].into()
+                        ])],
+                        None,
+                    ),
+                ],
+                1,
+            )))
             .block(Block::Heading(
                 vec![TextItem::plain("nodo header with level 2")].into(),
                 2,
             ))
-            .block(Block::List(vec![
+            .block(Block::List(List::Plain(vec![
                 ListItem::Task(
                     vec![Block::Paragraph(vec![vec![TextItem::plain(
                         "An item to complete",
@@ -567,7 +606,7 @@ mod test {
                     ]
                     .into()])],
                     true,
-                    Some(vec![
+                    Some(List::Plain(vec![
                         ListItem::Task(
                             vec![Block::Paragraph(vec![vec![
                                 TextItem::plain("Hey a "),
@@ -587,14 +626,14 @@ mod test {
                             .into()])],
                             None,
                         ),
-                    ]),
+                    ])),
                 ),
                 ListItem::Text(
                     vec![Block::Paragraph(vec![vec![TextItem::plain(
                         "a text list item",
                     )]
                     .into()])],
-                    Some(vec![
+                    Some(List::Plain(vec![
                         ListItem::Text(
                             vec![Block::Paragraph(vec![vec![
                                 TextItem::plain("nested "),
@@ -613,7 +652,7 @@ mod test {
                             false,
                             None,
                         ),
-                    ]),
+                    ])),
                 ),
                 ListItem::Task(
                     vec![Block::Paragraph(vec![vec![TextItem::plain(
@@ -633,7 +672,7 @@ mod test {
                     false,
                     None,
                 ),
-            ]));
+            ])));
         builder.build()
     }
 
@@ -643,8 +682,8 @@ tags: nodo, more tags, hey another tag
 
 # nodo header level 1, is the title
 
-- list item 1
-- list item 2
+1. list item 1
+2. list item 2
 
 ## nodo header with level 2
 
@@ -665,8 +704,8 @@ tags: nodo, more tags, hey another tag
 
 # nodo header level 1, is the title
 
-- list item 1
-- list item 2
+1. list item 1
+2. list item 2
 
 ## nodo header with level 2
 

@@ -11,8 +11,8 @@ use crate::cli::NodoOpts;
 pub enum Block {
     /// A heading text with a level
     Heading(Text, u32),
-    /// A sequence of elements, elements can be text or tasks
-    List(Vec<ListItem>),
+    /// A sequence of elements, elements can be text or tasks, the list is either numbered or not
+    List(List),
     /// A sequence of lines of text
     Paragraph(Vec<Text>),
     /// A separator in the text, used to visually separate blocks
@@ -81,13 +81,19 @@ pub enum TextStyle {
     Code,
 }
 
+#[derive(Debug, PartialEq)]
+pub enum List {
+    Plain(Vec<ListItem>),
+    Numbered(Vec<ListItem>, u32),
+}
+
 /// A list item is a possible item in a list
 #[derive(Debug, PartialEq)]
 pub enum ListItem {
     /// Texts have text and optionally a sublist associated with them
-    Text(Vec<Block>, Option<Vec<ListItem>>),
+    Text(Vec<Block>, Option<List>),
     /// Tasks have text, completion status and optionally a sublist associated with them
-    Task(Vec<Block>, bool, Option<Vec<ListItem>>),
+    Task(Vec<Block>, bool, Option<List>),
 }
 
 /// Nodos have explicit fields for their metadata e.g. title and tags
