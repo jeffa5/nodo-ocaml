@@ -461,7 +461,7 @@ fn write_code<W: Write>(
 ) -> Result<(), WriteError> {
     writeln!(writer, "{}```{}", prefix, lang)?;
     for line in lines {
-        writeln!(writer, "{}{}", prefix, line)?
+        writeln!(writer, "{}{}", prefix, line.trim())?
     }
     writeln!(writer, "{}```", prefix)?;
     Ok(())
@@ -558,6 +558,25 @@ fn write_list<W: Write>(writer: &mut W, prefix: &str, list: &List) -> Result<(),
 mod test {
     use super::*;
     use pretty_assertions::assert_eq;
+    /// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
+    /// Used in different `assert*!` macros in combination with `pretty_assertions` crate to make
+    /// test failures to show nice diffs.
+    #[derive(PartialEq, Eq)]
+    #[doc(hidden)]
+    pub struct PrettyString<'a>(pub &'a str);
+
+    /// Make diff to display string as multi-line string
+    impl<'a> std::fmt::Debug for PrettyString<'a> {
+        fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+            f.write_str(self.0)
+        }
+    }
+
+    macro_rules! assert_eq_str {
+        ($left:expr, $right:expr) => {
+            pretty_assertions::assert_eq!(PrettyString($left), PrettyString($right));
+        };
+    }
 
     fn get_test_nodo() -> Nodo {
         let mut builder = NodoBuilder::default();
@@ -758,10 +777,7 @@ tags: nodo, more tags, hey another tag
     fn test_write() {
         let mut writer: Vec<u8> = Vec::new();
         Markdown.write(&get_test_nodo(), &mut writer).unwrap();
-        assert_eq!(
-            String::from_utf8(writer).unwrap(),
-            TEST_NODO_FORMATTED.to_owned()
-        );
+        assert_eq_str!(&String::from_utf8(writer).unwrap(), TEST_NODO_FORMATTED);
     }
 
     #[test]
@@ -782,7 +798,7 @@ tags: nodo, more tags, hey another tag
         let mut s = Vec::new();
 
         Markdown.write(&nodo, &mut s).unwrap();
-        assert_eq!(String::from_utf8(s).unwrap(), TEST_NODO_FORMATTED);
+        assert_eq_str!(&String::from_utf8(s).unwrap(), TEST_NODO_FORMATTED);
     }
 
     #[test]
@@ -914,7 +930,9 @@ and code blocks:
 >
 > Here's some example code:
 >
->     return shell_exec("echo $input | $markdown_script");
+> ```
+> return shell_exec("echo $input | $markdown_script");
+> ```
 
 Any decent text editor should make email-style quoting easy. For
 example, with BBEdit, you can make a selection and choose Increase
@@ -933,9 +951,9 @@ Unordered lists use asterisks, pluses, and hyphens -- interchangably
 
 is equivalent to:
 
-+ Red
-+ Green
-+ Blue
+- Red
+- Green
+- Blue
 
 and:
 
@@ -945,9 +963,9 @@ and:
 
 Ordered lists use numbers followed by periods:
 
-1.  Bird
-2.  McHale
-3.  Parish
+1. Bird
+2. McHale
+3. Parish
 
 It's important to note that the actual numbers you use to mark the
 list have no effect on the HTML output Markdown produces. The HTML
@@ -955,15 +973,15 @@ Markdown produces from the above list is:
 
 If you instead wrote the list in Markdown like this:
 
-1.  Bird
-1.  McHale
-1.  Parish
+1. Bird
+2. McHale
+3. Parish
 
 or even:
 
 3. Bird
-1. McHale
-8. Parish
+4. McHale
+5. Parish
 
 you'd get the exact same HTML output. The point is, if you want to,
 you can use ordinal numbers in your ordered Markdown lists, so that
@@ -972,10 +990,10 @@ But if you want to be lazy, you don't have to.
 
 To make lists look nice, you can wrap items with hanging indents:
 
--   Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+- Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
     Aliquam hendrerit mi posuere lectus. Vestibulum enim wisi,
     viverra nec, fringilla in, laoreet vitae, risus.
--   Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
+- Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
     Suspendisse id sem consectetuer libero luctus adipiscing.
 
 But if you want to be lazy, you don't have to:
@@ -1104,7 +1122,7 @@ __double underscores__
 
 ### Code
 
-To indicate a span of code, wrap it with backtick quotes (`` ` ``).
+To indicate a span of code, wrap it with backtick quotes (`c`).
 Unlike a pre-formatted code block, a code span indicates code within a
 normal paragraph. For example:
 
@@ -1119,9 +1137,6 @@ Use the `printf()` function.
 
         Markdown.write(&nodo, &mut s).unwrap();
         let comp_string = String::from_utf8(s).unwrap();
-        for (linea, lineb) in comp_string.lines().zip(LARGE_MD_STRING.lines()) {
-            assert_eq!(linea, lineb);
-        }
-        assert_eq!(comp_string, LARGE_MD_STRING);
+        assert_eq_str!(&comp_string, LARGE_MD_STRING);
     }
 }
