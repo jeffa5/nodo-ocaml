@@ -88,7 +88,7 @@ fn write_block<W: Write>(
         Block::Paragraph(lines) => write_paragraph(writer, prefix, prefix_first_line, lines)?,
         Block::Rule => writeln!(writer, "{}---", prefix)?,
         Block::BlockQuote(blocks) => write_blockquote(writer, prefix, blocks)?,
-        Block::Code(lang, lines) => write_code(writer, prefix, lang, lines)?,
+        Block::Code(lang, lines) => write_code(writer, prefix, prefix_first_line, lang, lines)?,
     }
     Ok(())
 }
@@ -188,7 +188,7 @@ fn read_blockquote(mut events_iter: &mut EventsIter) -> Vec<Block> {
         match event {
             Event::End(Tag::BlockQuote) => return blocks,
             Event::Start(Tag::Paragraph) => {
-                blocks.push(Block::Paragraph(read_paragraph(events_iter)))
+                blocks.push(Block::Paragraph(read_paragraph(&mut events_iter)))
             }
             Event::Start(Tag::BlockQuote) => {
                 blocks.push(Block::BlockQuote(read_blockquote(events_iter)))
@@ -241,7 +241,9 @@ fn read_paragraph(mut events_iter: &mut EventsIter) -> Vec<Text> {
             }
             Event::Text(t) => line.push(TextItem::PlainText(t.to_string())),
             Event::SoftBreak => {
-                lines.push(line.into());
+                if !line.is_empty() {
+                    lines.push(line.into())
+                }
                 line = Vec::new()
             }
             Event::Start(Tag::Emphasis) => line.push(read_text_item(events_iter)),
@@ -290,64 +292,114 @@ fn read_list(mut events_iter: &mut EventsIter) -> Vec<ListItem> {
 
 fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
     let mut blocks = Vec::new();
-    let mut text = Vec::new();
+    let mut lines = Vec::new();
+    let mut line = Vec::new();
     let mut is_task = false;
     let mut completed = false;
     let mut nested_list = None;
     while let Some(event) = events_iter.next() {
         match event {
-            Event::Text(t) => text.push(TextItem::plain(&t)),
+            Event::Text(t) => line.push(TextItem::plain(&t)),
             Event::End(Tag::Item) => {
+                if !line.is_empty() {
+                    lines.push(line.into())
+                }
+                if !lines.is_empty() {
+                    blocks.push(Block::Paragraph(lines));
+                }
                 if is_task {
-                    if !text.is_empty() {
-                        blocks.push(Block::Paragraph(vec![text.into()]))
-                    }
                     return ListItem::Task(blocks, completed, nested_list);
                 } else {
                     // check for [, then "\s", then ], then strip front whitespace of other
                     // FIXME: ugly code, probably a nicer and cleaner way to do it
-                    let mut text_iter = text.iter_mut();
-                    if let Some(TextItem::PlainText(t)) = text_iter.next() {
-                        if t.trim() == "[" {
-                            // \s then ]
-                            if let Some(TextItem::PlainText(t)) = text_iter.next() {
-                                if ["x", "X", ""].iter().any(|x| x == &t.trim()) {
-                                    let complete = t.trim() != "";
-                                    // ]
-                                    if let Some(TextItem::PlainText(t)) = text_iter.next() {
-                                        if t.trim() == "]" {
-                                            // yay we have a task
-                                            if let Some(textitem) = text_iter.next() {
-                                                match textitem {
-                                                    TextItem::PlainText(t)
-                                                    | TextItem::StyledText(t, _) => {
-                                                        *t = t.trim_start().to_string()
+
+                    if let Some(Block::Paragraph(text)) = blocks.first_mut() {
+                        if let Some(Text { inner }) = text.first_mut() {
+                            let mut text_iter = inner.iter_mut();
+                            if let Some(TextItem::PlainText(t1)) = text_iter.next() {
+                                if let Some(TextItem::PlainText(t2)) = text_iter.next() {
+                                    if t1.trim() == "[" {
+                                        match t2.trim() {
+                                            "]" => {
+                                                // empty incomplete task
+                                                if let Some(TextItem::PlainText(t3)) =
+                                                    text_iter.next()
+                                                {
+                                                    *t3 = t3.trim_start().to_string();
+                                                }
+                                                *inner = inner[2..].to_vec();
+                                                return ListItem::Task(blocks, false, nested_list);
+                                            }
+                                            "x" | "X" | "" => {
+                                                if let Some(TextItem::PlainText(t3)) =
+                                                    text_iter.next()
+                                                {
+                                                    if t3.trim() == "]" {
+                                                        let complete = t2.trim() != "";
+                                                        if let Some(TextItem::PlainText(t4)) =
+                                                            text_iter.next()
+                                                        {
+                                                            *t4 = t4.trim_start().to_string();
+                                                        }
+                                                        *inner = inner[3..].to_vec();
+                                                        return ListItem::Task(
+                                                            blocks,
+                                                            complete,
+                                                            nested_list,
+                                                        );
                                                     }
-                                                    _ => unimplemented!(),
                                                 }
                                             }
-                                            blocks.push(Block::Paragraph(vec![text[3..]
-                                                .to_vec()
-                                                .into()]));
-                                            return ListItem::Task(blocks, complete, nested_list);
+                                            _ => {}
                                         }
                                     }
-                                } else if t.trim() == "]" {
-                                    if let Some(textitem) = text_iter.next() {
-                                        match textitem {
-                                            TextItem::PlainText(t) | TextItem::StyledText(t, _) => {
-                                                *t = t.trim_start().to_string()
-                                            }
-                                            _ => unimplemented!(),
-                                        }
-                                    }
-                                    blocks.push(Block::Paragraph(vec![text[2..].to_vec().into()]));
-                                    return ListItem::Task(blocks, false, nested_list);
                                 }
                             }
                         }
                     }
-                    blocks.push(Block::Paragraph(vec![text.into()]));
+
+                    // if let Some(TextItem::PlainText(t)) = text_iter.next() {
+                    //     if t.trim() == "[" {
+                    //         // \s then ]
+                    //         if let Some(TextItem::PlainText(t)) = text_iter.next() {
+                    //             if ["x", "X", ""].iter().any(|x| x == &t.trim()) {
+                    //                 let complete = t.trim() != "";
+                    //                 // ]
+                    //                 if let Some(TextItem::PlainText(t)) = text_iter.next() {
+                    //                     if t.trim() == "]" {
+                    //                         // yay we have a task
+                    //                         if let Some(textitem) = text_iter.next() {
+                    //                             match textitem {
+                    //                                 TextItem::PlainText(t)
+                    //                                 | TextItem::StyledText(t, _) => {
+                    //                                     *t = t.trim_start().to_string()
+                    //                                 }
+                    //                                 _ => unimplemented!(),
+                    //                             }
+                    //                         }
+                    //                         lines.first_mut().unwrap().inner =
+                    //                             lines.first().unwrap().inner[3..].to_vec();
+                    //                         blocks.push(Block::Paragraph(lines));
+                    //                         return ListItem::Task(blocks, complete, nested_list);
+                    //                     }
+                    //                 }
+                    //             } else if t.trim() == "]" {
+                    //                 if let Some(textitem) = text_iter.next() {
+                    //                     match textitem {
+                    //                         TextItem::PlainText(t) | TextItem::StyledText(t, _) => {
+                    //                             *t = t.trim_start().to_string()
+                    //                         }
+                    //                         _ => unimplemented!(),
+                    //                     }
+                    //                 }
+                    //                 lines.first_mut().unwrap().inner =
+                    //                     lines.first().unwrap().inner[2..].to_vec();
+                    //                 blocks.push(Block::Paragraph(lines));
+                    //                 return ListItem::Task(blocks, false, nested_list);
+                    //             }
+                    //         }
+                    //     }
+                    // }
                     return ListItem::Text(blocks, nested_list);
                 }
             }
@@ -364,16 +416,21 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
                 is_task = true;
                 completed = ticked;
             }
-            Event::Start(Tag::Emphasis) => text.push(read_text_item(events_iter)),
-            Event::Start(Tag::Strong) => text.push(read_text_item(events_iter)),
-            Event::Start(Tag::Strikethrough) => text.push(read_text_item(events_iter)),
-            Event::Code(string) => text.push(TextItem::code(&string)),
+            Event::Start(Tag::Emphasis) => line.push(read_text_item(events_iter)),
+            Event::Start(Tag::Strong) => line.push(read_text_item(events_iter)),
+            Event::Start(Tag::Strikethrough) => line.push(read_text_item(events_iter)),
+            Event::Code(string) => line.push(TextItem::code(&string)),
             Event::Start(Tag::Link(_inline, url, _title)) => {
-                text.push(read_link(events_iter, &url))
+                line.push(read_link(events_iter, &url))
             }
-            Event::SoftBreak => continue,
+            Event::SoftBreak => {
+                if !line.is_empty() {
+                    lines.push(line.into());
+                    line = Vec::new();
+                }
+            }
             Event::Start(Tag::Paragraph) => {
-                blocks.push(Block::Paragraph(read_paragraph(events_iter)))
+                blocks.push(Block::Paragraph(read_paragraph(&mut events_iter)))
             }
             Event::Start(Tag::BlockQuote) => {
                 blocks.push(Block::BlockQuote(read_blockquote(events_iter)))
@@ -427,6 +484,10 @@ fn write_paragraph<W: Write>(
 ) -> Result<(), WriteError> {
     let mut first = true;
     for line in lines {
+        let text = format_text(&line);
+        if text == "" {
+            continue;
+        }
         if first && !prefix_first_line {
             first = false;
             writeln!(writer, "{}", format_text(&line))?
@@ -456,10 +517,15 @@ fn write_blockquote<W: Write>(
 fn write_code<W: Write>(
     writer: &mut W,
     prefix: &str,
+    prefix_first_line: bool,
     lang: &str,
     lines: &[String],
 ) -> Result<(), WriteError> {
-    writeln!(writer, "{}```{}", prefix, lang)?;
+    if prefix_first_line {
+        writeln!(writer, "{}```{}", prefix, lang)?;
+    } else {
+        writeln!(writer, "```{}", lang)?;
+    }
     for line in lines {
         writeln!(writer, "{}{}", prefix, line.trim())?
     }
@@ -527,8 +593,11 @@ fn write_list<W: Write>(writer: &mut W, prefix: &str, list: &List) -> Result<(),
         }
         match item {
             ListItem::Text(blocks, nested_list) => {
-                for block in blocks {
-                    write_block(writer, prefix, false, block)?
+                for (i, block) in blocks.iter().enumerate() {
+                    write_block(writer, child_prefix, i != 0, block)?;
+                    if i != blocks.len() - 1 {
+                        writeln!(writer)?;
+                    }
                 }
                 match nested_list {
                     Some(nl) => write_list(writer, child_prefix, nl)?,
@@ -541,8 +610,11 @@ fn write_list<W: Write>(writer: &mut W, prefix: &str, list: &List) -> Result<(),
                 } else {
                     write!(writer, "[ ] ")?
                 }
-                for block in blocks {
-                    write_block(writer, prefix, false, block)?
+                for (i, block) in blocks.iter().enumerate() {
+                    write_block(writer, prefix, i != 0, block)?;
+                    if i != blocks.len() - 1 {
+                        writeln!(writer)?;
+                    }
                 }
                 match nested_list {
                     Some(nl) => write_list(writer, child_prefix, nl)?,
@@ -743,13 +815,13 @@ tags: nodo, more tags, hey another tag
     fn test_formatted_and_unformatted_should_give_same_nodo() {
         assert_eq!(
             Markdown
-                .read(NodoBuilder::default(), &mut TEST_NODO_FORMATTED.as_bytes())
-                .unwrap(),
-            Markdown
                 .read(
                     NodoBuilder::default(),
                     &mut TEST_NODO_UNFORMATTED.as_bytes()
                 )
+                .unwrap(),
+            Markdown
+                .read(NodoBuilder::default(), &mut TEST_NODO_FORMATTED.as_bytes())
                 .unwrap()
         )
     }
@@ -998,42 +1070,40 @@ To make lists look nice, you can wrap items with hanging indents:
 
 But if you want to be lazy, you don't have to:
 
--   Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
-Aliquam hendrerit mi posuere lectus. Vestibulum enim wisi,
-viverra nec, fringilla in, laoreet vitae, risus.
--   Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
-Suspendisse id sem consectetuer libero luctus adipiscing.
+- Lorem ipsum dolor sit amet, consectetuer adipiscing elit.
+    Aliquam hendrerit mi posuere lectus. Vestibulum enim wisi,
+    viverra nec, fringilla in, laoreet vitae, risus.
+- Donec sit amet nisl. Aliquam semper ipsum sit amet velit.
+    Suspendisse id sem consectetuer libero luctus adipiscing.
 
 List items may consist of multiple paragraphs. Each subsequent
 paragraph in a list item must be indented by either 4 spaces
 or one tab:
 
-1.  This is a list item with two paragraphs. Lorem ipsum dolor
+1. This is a list item with two paragraphs. Lorem ipsum dolor
     sit amet, consectetuer adipiscing elit. Aliquam hendrerit
     mi posuere lectus.
 
     Vestibulum enim wisi, viverra nec, fringilla in, laoreet
     vitae, risus. Donec sit amet nisl. Aliquam semper ipsum
     sit amet velit.
-
-2.  Suspendisse id sem consectetuer libero luctus adipiscing.
+2. Suspendisse id sem consectetuer libero luctus adipiscing.
 
 It looks nice if you indent every line of the subsequent
 paragraphs, but here again, Markdown will allow you to be
 lazy:
 
--   This is a list item with two paragraphs.
+- This is a list item with two paragraphs.
 
     This is the second paragraph in the list item. You're
-only required to indent the first line. Lorem ipsum dolor
-sit amet, consectetuer adipiscing elit.
-
--   Another item in the same list.
+    only required to indent the first line. Lorem ipsum dolor
+    sit amet, consectetuer adipiscing elit.
+- Another item in the same list.
 
 To put a blockquote within a list item, the blockquote's `>`
 delimiters need to be indented:
 
--   A list item with a blockquote:
+- A list item with a blockquote:
 
     > This is a blockquote
     > inside a list item.
@@ -1041,9 +1111,11 @@ delimiters need to be indented:
 To put a code block within a list item, the code block needs
 to be indented *twice* -- 8 spaces or two tabs:
 
--   A list item with a code block:
+- A list item with a code block:
 
-        <code goes here>
+    ```
+    <code goes here>
+    ```
 
 ### Code Blocks
 
@@ -1057,13 +1129,17 @@ block by at least 4 spaces or 1 tab.
 
 This is a normal paragraph:
 
-    This is a code block.
+```
+This is a code block.
+```
 
 Here is an example of AppleScript:
 
-    tell application "Foo"
-        beep
-    end tell
+```
+tell application "Foo"
+    beep
+end tell
+```
 
 A code block continues until it reaches a line that is not indented
 (or the end of the article).
@@ -1074,9 +1150,11 @@ easy to include example HTML source code using Markdown -- just paste
 it and indent it, and Markdown will handle the hassle of encoding the
 ampersands and angle brackets. For example, this:
 
-    <div class="footer">
-        &copy; 2004 Foo Corporation
-    </div>
+```
+<div class="footer">
+    &copy; 2004 Foo Corporation
+</div>
+```
 
 Regular Markdown syntax is not processed within code blocks. E.g.,
 asterisks are just literal asterisks within a code block. This means
@@ -1114,11 +1192,11 @@ HTML `<em>` tag; double `*`'s or `_`'s will be wrapped with an HTML
 
 *single asterisks*
 
-_single underscores_
+*single underscores*
 
 **double asterisks**
 
-__double underscores__
+**double underscores**
 
 ### Code
 
@@ -1138,5 +1216,17 @@ Use the `printf()` function.
         Markdown.write(&nodo, &mut s).unwrap();
         let comp_string = String::from_utf8(s).unwrap();
         assert_eq_str!(&comp_string, LARGE_MD_STRING);
+    }
+
+    #[test]
+    fn test_write_doesnt_change_nodo() {
+        let nodo1 = Markdown
+            .read(NodoBuilder::default(), &mut LARGE_MD_STRING.as_bytes())
+            .unwrap();
+        let mut s = Vec::new();
+        Markdown.write(&nodo1, &mut s).unwrap();
+
+        let nodo2 = Markdown.read(NodoBuilder::default(), &mut &s[..]).unwrap();
+        assert_eq!(nodo1, nodo2)
     }
 }
