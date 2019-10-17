@@ -11,13 +11,6 @@ pub fn create_file(config: &Config, target: &[String]) -> io::Result<fs::File> {
     fs::File::create(pb)
 }
 
-pub fn remove_file(config: &Config, target: &[String]) -> io::Result<()> {
-    let pb = build_path(config, target);
-    info!("Removing file: {:?}", pb);
-    // don't care if it fails
-    fs::remove_file(pb)
-}
-
 pub fn build_path(config: &Config, target: &[String]) -> PathBuf {
     trace!("Building filepath");
     let mut pb = PathBuf::from(&config.root_dir);
