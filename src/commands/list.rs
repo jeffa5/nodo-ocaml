@@ -34,10 +34,7 @@ impl List {
                 println!(
                     "{} {}",
                     prefix,
-                    PathBuf::from(entry.file_name())
-                        .file_stem()
-                        .expect("Failed to have a name for listed direntry")
-                        .to_string_lossy()
+                    PathBuf::from(entry.file_name()).to_string_lossy()
                 )
             }
         } else if metadata.is_file() {
