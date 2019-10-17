@@ -10,8 +10,8 @@ use crate::util::file::build_path;
 
 impl Overview {
     pub fn exec(self, config: Config) -> Result<(), CommandError> {
-        let path = build_path(&config, &self.nodo_opts.target);
-        if self.nodo_opts.target.is_empty() {
+        let path = build_path(&config, &self.target.target);
+        if self.target.target.is_empty() {
             project_overview(&path)?;
         } else {
             let metadata = fs::metadata(&path)?;

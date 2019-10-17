@@ -12,9 +12,7 @@ use crate::util::file::build_path;
 
 impl List {
     pub fn exec(self, config: Config) -> Result<(), CommandError> {
-        debug!("Listing with nodo options: {:#?}", self.nodo_opts);
-
-        let path = build_path(&config, &self.nodo_opts.target);
+        let path = build_path(&config, &self.target.target);
         // nodo files don't have extensions so can only have a dir or a file of this name, no need
         // to consider files with other names and extensions
         let metadata = fs::metadata(&path)?;

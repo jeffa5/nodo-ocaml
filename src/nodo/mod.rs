@@ -1,4 +1,3 @@
-use crate::cli::NodoOpts;
 /// A Nodo is a mixture of a todo and a note.
 ///
 /// They are formed of optional metadata and blocks.
@@ -143,13 +142,5 @@ impl NodoBuilder {
     pub fn block(&mut self, block: Block) -> &mut Self {
         self.nodo.blocks.push(block);
         self
-    }
-}
-
-impl From<&NodoOpts> for NodoBuilder {
-    fn from(opts: &NodoOpts) -> Self {
-        let mut builder = Self::default();
-        builder.tags(opts.tags.to_vec());
-        builder
     }
 }

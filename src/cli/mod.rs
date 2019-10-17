@@ -41,12 +41,8 @@ pub enum SubCommand {
     },
 }
 
-#[derive(Debug, StructOpt, Default)]
-pub struct NodoOpts {
-    /// A list of tags for the nodo, separated by ','
-    #[structopt(short, long, use_delimiter = true, require_delimiter = true)]
-    pub tags: Vec<String>,
-
+#[derive(Debug, Default, StructOpt)]
+pub struct Target {
     /// A '/' separated value of the form project/subproject/.../nodo_name
     #[structopt(use_delimiter = true, value_delimiter = "/", require_delimiter = true)]
     pub target: Vec<String>,
@@ -55,31 +51,31 @@ pub struct NodoOpts {
 #[derive(Debug, StructOpt)]
 pub struct New {
     #[structopt(flatten)]
-    pub nodo_opts: NodoOpts,
+    pub target: Target,
 }
 
 #[derive(Debug, StructOpt)]
 pub struct List {
     #[structopt(flatten)]
-    pub nodo_opts: NodoOpts,
+    pub target: Target,
 }
 
 #[derive(Debug, StructOpt)]
 pub struct Remove {
     #[structopt(flatten)]
-    pub nodo_opts: NodoOpts,
+    pub target: Target,
 }
 
 #[derive(Debug, StructOpt)]
 pub struct Edit {
     #[structopt(flatten)]
-    pub nodo_opts: NodoOpts,
+    pub target: Target,
 }
 
 #[derive(Debug, StructOpt)]
 pub struct Format {
     #[structopt(flatten)]
-    pub nodo_opts: NodoOpts,
+    pub target: Target,
 
     /// Don't apply the formatting, instead write the formatted file to stdout
     #[structopt(short, long)]
@@ -89,5 +85,5 @@ pub struct Format {
 #[derive(Debug, StructOpt)]
 pub struct Overview {
     #[structopt(flatten)]
-    pub nodo_opts: NodoOpts,
+    pub target: Target,
 }

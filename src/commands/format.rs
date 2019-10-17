@@ -15,7 +15,7 @@ impl Format {
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         trace!("Formatting a nodo");
         // get the file location
-        let path = file::build_path(&config, &self.nodo_opts.target);
+        let path = file::build_path(&config, &self.target.target);
         let metadata = fs::metadata(&path)?;
         let handler = files::get_file_handler(config.default_filetype);
         if metadata.is_dir() {

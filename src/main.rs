@@ -11,7 +11,7 @@ mod files;
 mod nodo;
 mod util;
 
-use cli::{Cli, NodoOpts, SubCommand};
+use cli::{Cli, SubCommand};
 use config::Config;
 
 use log::*;
@@ -32,7 +32,7 @@ fn main() {
     match opts.sub_command {
         None => {
             let overview = cli::Overview {
-                nodo_opts: NodoOpts::default(),
+                target: cli::Target::default(),
             };
             res = overview.exec(config)
         }
