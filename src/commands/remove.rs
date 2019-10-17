@@ -1,18 +1,19 @@
-use crate::cli::NodoOpts;
-use crate::commands::{Command, CommandError};
+use crate::cli::Remove;
+use crate::commands::CommandError;
 use crate::config::Config;
 use crate::util::file;
 
-pub struct Remove;
-
-impl Command for Remove {
+impl Remove {
     /// Remove a nodo if it exists
-    fn exec(config: Config, nodo_opts: NodoOpts) -> Result<(), CommandError> {
-        match file::remove_file(&config, &nodo_opts.target) {
+    pub fn exec(self, config: Config) -> Result<(), CommandError> {
+        match file::remove_file(&config, &self.nodo_opts.target) {
             Ok(()) => {
-                println!("Removed nodo: {}", nodo_opts.target.join("/"));
+                println!("Removed nodo: {}", self.nodo_opts.target.join("/"));
             }
-            Err(_) => println!("No such nodo to remove: {}", nodo_opts.target.join("/")),
+            Err(_) => println!(
+                "No such nodo to remove: {}",
+                self.nodo_opts.target.join("/")
+            ),
         }
         Ok(())
     }

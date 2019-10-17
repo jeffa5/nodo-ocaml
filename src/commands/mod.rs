@@ -7,16 +7,7 @@ mod remove;
 
 use std::io;
 
-use crate::cli::NodoOpts;
-use crate::config::Config;
 use crate::files::{ReadError, WriteError};
-
-pub use edit::Edit;
-pub use format::Format;
-pub use list::List;
-pub use new::New;
-pub use overview::Overview;
-pub use remove::Remove;
 
 #[derive(Debug)]
 pub struct CommandError(String);
@@ -64,7 +55,3 @@ impl From<walkdir::Error> for CommandError {
 }
 
 impl std::error::Error for CommandError {}
-
-pub trait Command {
-    fn exec(config: Config, nodo_opts: NodoOpts) -> Result<(), CommandError>;
-}

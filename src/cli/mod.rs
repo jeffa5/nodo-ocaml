@@ -80,6 +80,10 @@ pub struct Edit {
 pub struct Format {
     #[structopt(flatten)]
     pub nodo_opts: NodoOpts,
+
+    /// Don't apply the formatting, instead write the formatted file to stdout
+    #[structopt(short, long)]
+    pub dry_run: bool,
 }
 
 #[derive(Debug, StructOpt)]

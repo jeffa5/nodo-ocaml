@@ -3,24 +3,22 @@ use std::env;
 use std::fs;
 use std::process::Command as Cmd;
 
-use crate::cli::NodoOpts;
-use crate::commands::{Command, CommandError};
+use crate::cli::Edit;
+use crate::commands::CommandError;
 use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
 use crate::util::file;
 
-pub struct Edit;
-
-impl Command for Edit {
+impl Edit {
     /// Edit a current nodo in the editor
-    fn exec(config: Config, nodo_opts: NodoOpts) -> Result<(), CommandError> {
+    pub fn exec(self, config: Config) -> Result<(), CommandError> {
         trace!("Editing a nodo");
         // get the file location
-        if nodo_opts.target.is_empty() {
+        if self.nodo_opts.target.is_empty() {
             return Err(CommandError("Nodo must exist to edit".to_string()));
         }
-        let path = file::build_path(&config, &nodo_opts.target);
+        let path = file::build_path(&config, &self.nodo_opts.target);
         // launch the editor with that location
         let metadata = fs::metadata(&path)?;
         if metadata.is_dir() {

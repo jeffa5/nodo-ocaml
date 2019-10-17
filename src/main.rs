@@ -12,8 +12,6 @@ mod nodo;
 mod util;
 
 use cli::{Cli, NodoOpts, SubCommand};
-use commands::Command;
-use commands::{Edit, Format, List, New, Overview, Remove};
 use config::Config;
 
 use log::*;
@@ -32,16 +30,19 @@ fn main() {
     let config = Config::new();
     let mut res = Ok(());
     match opts.sub_command {
-        None => res = Overview::exec(config, NodoOpts::default()),
+        None => {
+            let overview = cli::Overview {
+                nodo_opts: NodoOpts::default(),
+            };
+            res = overview.exec(config)
+        }
         Some(sub_command) => match sub_command {
-            SubCommand::New(cli::New { nodo_opts }) => res = New::exec(config, nodo_opts),
-            SubCommand::List(cli::List { nodo_opts }) => res = List::exec(config, nodo_opts),
-            SubCommand::Remove(cli::Remove { nodo_opts }) => res = Remove::exec(config, nodo_opts),
-            SubCommand::Edit(cli::Edit { nodo_opts }) => res = Edit::exec(config, nodo_opts),
-            SubCommand::Format(cli::Format { nodo_opts }) => res = Format::exec(config, nodo_opts),
-            SubCommand::Overview(cli::Overview { nodo_opts }) => {
-                res = Overview::exec(config, nodo_opts)
-            }
+            SubCommand::New(new) => res = new.exec(config),
+            SubCommand::List(list) => res = list.exec(config),
+            SubCommand::Remove(remove) => res = remove.exec(config),
+            SubCommand::Edit(edit) => res = edit.exec(config),
+            SubCommand::Format(format) => res = format.exec(config),
+            SubCommand::Overview(overview) => res = overview.exec(config),
             SubCommand::Completions { shell } => {
                 Cli::clap().gen_completions_to(
                     "nodo",
