@@ -13,7 +13,9 @@ use crate::util::file::build_path;
 
 impl Overview {
     pub fn exec(self, config: Config) -> Result<(), CommandError> {
-        let path = build_path(&config, &self.target, true);
+        dbg!(&self.target);
+        let path = build_path(&config, &self.target, false);
+        dbg!(&path);
         if self.target.is_empty() {
             project_overview(&config, &path)?;
         } else {
@@ -93,4 +95,92 @@ fn get_num_complete(config: &Config, path: &Path) -> Result<(u32, u32), CommandE
         }
     }
     Ok((complete, total))
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::cli::Target;
+    use tempfile::tempdir;
+
+    #[test]
+    fn no_args_is_not_error() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let overview = Overview {
+            target: Target { target: Vec::new() },
+        };
+        assert_eq!(overview.exec(config), Ok(()));
+    }
+
+    #[test]
+    fn empty_args_is_not_an_error() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let overview = Overview {
+            target: Target {
+                target: "".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(overview.exec(config), Ok(()));
+    }
+
+    #[test]
+    fn cant_overview_non_existent_dir() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let overview = Overview {
+            target: Target {
+                target: "testdir".split('/').map(String::from).collect(),
+            },
+        };
+        assert!(overview.exec(config).is_err());
+    }
+
+    #[test]
+    fn can_overview_existing_dir() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        std::fs::create_dir(dir.path().join("testdir")).expect("Failed to create testdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let overview = Overview {
+            target: Target {
+                target: "testdir".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(overview.exec(config), Ok(()));
+    }
+
+    #[test]
+    fn cant_overview_non_existent_file() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let overview = Overview {
+            target: Target {
+                target: "testfile.md".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(
+            overview.exec(config),
+            Err(CommandError("Couldn't find target".into()))
+        );
+    }
+
+    // #[test]
+    // fn can_overview_existing_file() {
+    //     let dir = tempdir().expect("Couldn't make tempdir");
+    //     std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
+    //     let mut config = Config::new();
+    //     config.root_dir = std::path::PathBuf::from(dir.path());
+    //     let overview = Overview {
+    //         target: Target {
+    //             target: "testfile.md".split('/').map(String::from).collect(),
+    //         },
+    //     };
+    //     assert_eq!(overview.exec(config), Ok(()));
+    // }
 }
