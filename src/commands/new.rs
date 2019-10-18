@@ -11,16 +11,102 @@ use crate::util::{file, project};
 impl New {
     /// Create a new nodo with the given options
     pub fn exec(self, config: Config) -> Result<(), CommandError> {
+        if self.target.is_empty() || self.target.last().unwrap() == "" {
+            return Err(CommandError("Must have a target".into()));
+        }
         // ensure the project exists
         project::make_dirs(&config, &self.target)?;
         // write the nodo to the default location
-        let mut file = file::create_file(&config, &self.target)?;
-        // get the default filetype (md for now)
+        let pb = file::build_path(&config, &self.target);
+        let mut file = file::create_file(&pb)?;
         info!("Writing nodo to: {:?}", file);
         let handler = files::get_file_handler(config.default_filetype);
         let nodo = NodoBuilder::default().build();
         handler.write(&nodo, &mut file, &config)?;
         println!("Created a new nodo: {}", self.target.join("/"));
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::cli::Target;
+    use tempfile::tempdir;
+
+    #[test]
+    fn no_args_is_error() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let new = New {
+            target: Target { target: Vec::new() },
+        };
+        assert!(new.exec(config).is_err());
+    }
+
+    #[test]
+    fn empty_args_is_error() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let new = New {
+            target: Target {
+                target: "".split('/').map(String::from).collect(),
+            },
+        };
+        assert!(new.exec(config).is_err());
+    }
+
+    #[test]
+    fn creates_file() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let new = New {
+            target: Target {
+                target: "testdir/testfile".split('/').map(String::from).collect(),
+            },
+        };
+        new.exec(config).expect("Exec failed");
+        // dir should now contain another dir and that should contain a file
+        assert!(dir
+            .path()
+            .join("testdir")
+            .metadata()
+            .expect("Failed to get metadata for testdir")
+            .is_dir());
+        assert!(dir
+            .path()
+            .join("testdir/testfile.md")
+            .metadata()
+            .expect("Failed to get metadata for testfile")
+            .is_file());
+    }
+
+    #[test]
+    fn creates_file_ext() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let new = New {
+            target: Target {
+                target: "testdir/testfile.md".split('/').map(String::from).collect(),
+            },
+        };
+        new.exec(config).expect("Exec failed");
+        // dir should now contain another dir and that should contain a file
+        assert!(dir
+            .path()
+            .join("testdir")
+            .metadata()
+            .expect("Failed to get metadata for testdir")
+            .is_dir());
+        assert!(dir
+            .path()
+            .join("testdir/testfile.md")
+            .metadata()
+            .expect("Failed to get metadata for testfile")
+            .is_file());
     }
 }
