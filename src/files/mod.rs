@@ -1,6 +1,7 @@
 /// The files module provides readers and writers for different file types
 pub mod markdown;
 
+use crate::config::Config;
 use crate::nodo::{Nodo, NodoBuilder};
 
 #[derive(Debug)]
@@ -62,12 +63,12 @@ pub trait NodoFile: std::fmt::Debug + Default {
         Self::EXTENSION
     }
 
-    fn read<R>(&self, nodo: NodoBuilder, r: &mut R) -> Result<Nodo, ReadError>
+    fn read<R>(&self, nodo: NodoBuilder, r: &mut R, config: &Config) -> Result<Nodo, ReadError>
     where
         Self: Sized + NodoFile,
         R: std::io::Read;
 
-    fn write<W>(&self, nodo: &Nodo, w: &mut W) -> Result<(), WriteError>
+    fn write<W>(&self, nodo: &Nodo, w: &mut W, config: &Config) -> Result<(), WriteError>
     where
         W: std::io::Write,
         Self: Sized;

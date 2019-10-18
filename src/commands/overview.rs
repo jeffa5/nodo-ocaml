@@ -58,14 +58,15 @@ fn project_overview(config: &Config, base_path: &Path) -> Result<(), CommandErro
                 String::new()
             };
             println!(
-                "{}Nodo: {}{}",
+                "{}Nodo: {}{} ({:.1}%)",
                 "  ".repeat(depth + 1),
                 entry
                     .path()
                     .strip_prefix(&base_path)
                     .unwrap()
                     .to_string_lossy(),
-                complete_string
+                complete_string,
+                100. * f64::from(complete) / f64::from(total)
             );
         }
     }
@@ -74,7 +75,7 @@ fn project_overview(config: &Config, base_path: &Path) -> Result<(), CommandErro
 
 fn get_num_complete(config: &Config, path: &Path) -> Result<(u32, u32), CommandError> {
     let handler = files::get_file_handler(config.default_filetype);
-    let nodo = handler.read(NodoBuilder::default(), &mut fs::File::open(&path)?)?;
+    let nodo = handler.read(NodoBuilder::default(), &mut fs::File::open(&path)?, config)?;
     let mut total = 0;
     let mut complete = 0;
     for block in nodo.blocks() {

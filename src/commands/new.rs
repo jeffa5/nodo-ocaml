@@ -19,7 +19,7 @@ impl New {
         info!("Writing nodo to: {:?}", file);
         let handler = files::get_file_handler(config.default_filetype);
         let nodo = NodoBuilder::default().build();
-        handler.write(&nodo, &mut file)?;
+        handler.write(&nodo, &mut file, &config)?;
         println!("Created a new nodo: {}", self.target.join("/"));
         Ok(())
     }

@@ -4,6 +4,7 @@ use pulldown_cmark::{Event, Options, Parser, Tag};
 use std::convert::TryInto;
 use std::io::{Read, Write};
 
+use crate::config::Config;
 use crate::files::{NodoFile, ReadError, WriteError};
 use crate::nodo::{Block, List, ListItem, Nodo, NodoBuilder, Text, TextItem, TextStyle};
 
@@ -34,7 +35,12 @@ impl<'a> Iterator for &mut EventsIter<'a> {
 impl NodoFile for Markdown {
     const EXTENSION: &'static str = "markdown";
 
-    fn read<R: Read>(&self, mut nodo: NodoBuilder, reader: &mut R) -> Result<Nodo, ReadError> {
+    fn read<R: Read>(
+        &self,
+        mut nodo: NodoBuilder,
+        reader: &mut R,
+        config: &Config,
+    ) -> Result<Nodo, ReadError> {
         let mut s = String::new();
         reader.read_to_string(&mut s)?;
 
@@ -46,7 +52,7 @@ impl NodoFile for Markdown {
             index: 0,
         };
 
-        read_frontmatter(&mut nodo, &mut events_iter)?;
+        read_frontmatter(&mut nodo, &mut events_iter, config)?;
 
         nodo.title(read_heading(&mut events_iter));
 
@@ -56,13 +62,27 @@ impl NodoFile for Markdown {
         Ok(nodo)
     }
 
-    fn write<W: Write>(&self, nodo: &Nodo, writer: &mut W) -> Result<(), WriteError> {
+    fn write<W: Write>(
+        &self,
+        nodo: &Nodo,
+        writer: &mut W,
+        config: &Config,
+    ) -> Result<(), WriteError> {
         writeln!(writer, "---")?;
         writeln!(writer, "tags: {}", nodo.tags().join(", "))?;
         if let Some(start_date) = nodo.start_date() {
-            writeln!(writer, "start_date: {}", start_date.format("%d/%m/%Y"))?
+            writeln!(
+                writer,
+                "start_date: {}",
+                start_date.format(config.date_format)
+            )?
         } else {
             writeln!(writer, "start_date:")?
+        }
+        if let Some(due_date) = nodo.due_date() {
+            writeln!(writer, "due_date: {}", due_date.format(config.date_format))?
+        } else {
+            writeln!(writer, "due_date:")?
         }
         writeln!(writer, "---")?;
         writeln!(writer)?;
@@ -99,7 +119,11 @@ fn write_block<W: Write>(
     Ok(())
 }
 
-fn read_frontmatter(nodo: &mut NodoBuilder, events_iter: &mut EventsIter) -> Result<(), ReadError> {
+fn read_frontmatter(
+    nodo: &mut NodoBuilder,
+    events_iter: &mut EventsIter,
+    config: &Config,
+) -> Result<(), ReadError> {
     let mut in_frontmatter = false;
     for event in events_iter {
         if !in_frontmatter {
@@ -124,10 +148,18 @@ fn read_frontmatter(nodo: &mut NodoBuilder, events_iter: &mut EventsIter) -> Res
                     } else if text.starts_with("start_date:") {
                         let date = NaiveDate::parse_from_str(
                             text.trim_start_matches("start_date:"),
-                            "%d/%m/%Y",
+                            config.date_format,
                         );
                         if let Ok(date) = date {
                             nodo.start_date(date);
+                        }
+                    } else if text.starts_with("due_date:") {
+                        let date = NaiveDate::parse_from_str(
+                            text.trim_start_matches("due_date:"),
+                            config.date_format,
+                        );
+                        if let Ok(date) = date {
+                            nodo.due_date(date);
                         }
                     }
                 }
@@ -673,6 +705,7 @@ mod test {
                 "hey another tag".to_string(),
             ])
             .start_date(NaiveDate::from_ymd(2015, 3, 14))
+            .due_date(NaiveDate::from_ymd(2015, 4, 16))
             .title(vec![TextItem::plain("nodo header level 1, is the title")].into())
             .block(Block::List(List::Numbered(
                 vec![
@@ -785,6 +818,7 @@ mod test {
     static TEST_NODO_UNFORMATTED: &str = "---
 tags: nodo, more tags, hey another tag
 start_date: 14/03/2015
+due_date: 16/04/2015
 ---
 
 # nodo header level 1, is the title
@@ -808,6 +842,7 @@ start_date: 14/03/2015
     static TEST_NODO_FORMATTED: &str = "---
 tags: nodo, more tags, hey another tag
 start_date: 14/03/2015
+due_date: 16/04/2015
 ---
 
 # nodo header level 1, is the title
@@ -834,11 +869,16 @@ start_date: 14/03/2015
             Markdown
                 .read(
                     NodoBuilder::default(),
-                    &mut TEST_NODO_UNFORMATTED.as_bytes()
+                    &mut TEST_NODO_UNFORMATTED.as_bytes(),
+                    &Config::new()
                 )
                 .unwrap(),
             Markdown
-                .read(NodoBuilder::default(), &mut TEST_NODO_FORMATTED.as_bytes())
+                .read(
+                    NodoBuilder::default(),
+                    &mut TEST_NODO_FORMATTED.as_bytes(),
+                    &Config::new()
+                )
                 .unwrap()
         )
     }
@@ -847,7 +887,11 @@ start_date: 14/03/2015
     fn test_read() {
         assert_eq!(
             Markdown
-                .read(NodoBuilder::default(), &mut TEST_NODO_FORMATTED.as_bytes())
+                .read(
+                    NodoBuilder::default(),
+                    &mut TEST_NODO_FORMATTED.as_bytes(),
+                    &Config::new()
+                )
                 .unwrap(),
             get_test_nodo(),
         );
@@ -855,7 +899,8 @@ start_date: 14/03/2015
             Markdown
                 .read(
                     NodoBuilder::default(),
-                    &mut TEST_NODO_UNFORMATTED.as_bytes()
+                    &mut TEST_NODO_UNFORMATTED.as_bytes(),
+                    &Config::new()
                 )
                 .unwrap(),
             get_test_nodo(),
@@ -865,16 +910,22 @@ start_date: 14/03/2015
     #[test]
     fn test_write() {
         let mut writer: Vec<u8> = Vec::new();
-        Markdown.write(&get_test_nodo(), &mut writer).unwrap();
+        Markdown
+            .write(&get_test_nodo(), &mut writer, &Config::new())
+            .unwrap();
         assert_eq_str!(&String::from_utf8(writer).unwrap(), TEST_NODO_FORMATTED);
     }
 
     #[test]
     fn test_write_read_gives_same_nodo() {
         let mut s = Vec::new();
-        Markdown.write(&get_test_nodo(), &mut s).unwrap();
+        Markdown
+            .write(&get_test_nodo(), &mut s, &Config::new())
+            .unwrap();
         assert_eq!(
-            Markdown.read(NodoBuilder::default(), &mut &s[..]).unwrap(),
+            Markdown
+                .read(NodoBuilder::default(), &mut &s[..], &Config::new())
+                .unwrap(),
             get_test_nodo()
         );
     }
@@ -882,11 +933,15 @@ start_date: 14/03/2015
     #[test]
     fn test_read_write_gives_same_output() {
         let nodo = Markdown
-            .read(NodoBuilder::default(), &mut TEST_NODO_FORMATTED.as_bytes())
+            .read(
+                NodoBuilder::default(),
+                &mut TEST_NODO_FORMATTED.as_bytes(),
+                &Config::new(),
+            )
             .unwrap();
         let mut s = Vec::new();
 
-        Markdown.write(&nodo, &mut s).unwrap();
+        Markdown.write(&nodo, &mut s, &Config::new()).unwrap();
         assert_eq_str!(&String::from_utf8(s).unwrap(), TEST_NODO_FORMATTED);
     }
 
@@ -897,7 +952,7 @@ start_date: 14/03/2015
         builder.title(vec![TextItem::plain("title")].into());
         assert_eq!(
             Markdown
-                .read(NodoBuilder::default(), &mut s.as_bytes())
+                .read(NodoBuilder::default(), &mut s.as_bytes(), &Config::new())
                 .unwrap(),
             builder.build()
         )
@@ -906,6 +961,7 @@ start_date: 14/03/2015
     const LARGE_MD_STRING:&str = r#"---
 tags: nodo, more tags, hey another tag
 start_date: 14/03/2015
+due_date: 16/04/2015
 ---
 
 # Markdown: Syntax
@@ -1227,11 +1283,15 @@ Use the `printf()` function.
     #[test]
     fn test_commonmark_parses() {
         let nodo = Markdown
-            .read(NodoBuilder::default(), &mut LARGE_MD_STRING.as_bytes())
+            .read(
+                NodoBuilder::default(),
+                &mut LARGE_MD_STRING.as_bytes(),
+                &Config::new(),
+            )
             .unwrap();
         let mut s = Vec::new();
 
-        Markdown.write(&nodo, &mut s).unwrap();
+        Markdown.write(&nodo, &mut s, &Config::new()).unwrap();
         let comp_string = String::from_utf8(s).unwrap();
         assert_eq_str!(&comp_string, LARGE_MD_STRING);
     }
@@ -1239,12 +1299,18 @@ Use the `printf()` function.
     #[test]
     fn test_write_doesnt_change_nodo() {
         let nodo1 = Markdown
-            .read(NodoBuilder::default(), &mut LARGE_MD_STRING.as_bytes())
+            .read(
+                NodoBuilder::default(),
+                &mut LARGE_MD_STRING.as_bytes(),
+                &Config::new(),
+            )
             .unwrap();
         let mut s = Vec::new();
-        Markdown.write(&nodo1, &mut s).unwrap();
+        Markdown.write(&nodo1, &mut s, &Config::new()).unwrap();
 
-        let nodo2 = Markdown.read(NodoBuilder::default(), &mut &s[..]).unwrap();
+        let nodo2 = Markdown
+            .read(NodoBuilder::default(), &mut &s[..], &Config::new())
+            .unwrap();
         assert_eq!(nodo1, nodo2)
     }
 }

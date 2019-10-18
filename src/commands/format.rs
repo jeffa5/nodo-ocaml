@@ -23,25 +23,32 @@ impl Format {
                 let entry = entry?;
                 if entry.file_type().is_file() {
                     debug!("Formatting {}", entry.path().to_string_lossy());
-                    self.format(&handler, &entry.path())?
+                    self.format(&handler, &entry.path(), &config)?
                 }
             }
         } else if metadata.is_file() {
-            self.format(&handler, &path)?
+            self.format(&handler, &path, &config)?
         }
         Ok(())
     }
 
-    fn format<F: NodoFile>(&self, handler: &F, path: &std::path::Path) -> Result<(), CommandError> {
+    fn format<F: NodoFile>(
+        &self,
+        handler: &F,
+        path: &std::path::Path,
+        config: &Config,
+    ) -> Result<(), CommandError> {
         if self.dry_run {
             handler.write(
-                &handler.read(NodoBuilder::default(), &mut fs::File::open(&path)?)?,
+                &handler.read(NodoBuilder::default(), &mut fs::File::open(&path)?, config)?,
                 &mut std::io::stdout(),
+                config,
             )?;
         } else {
             handler.write(
-                &handler.read(NodoBuilder::default(), &mut fs::File::open(&path)?)?,
+                &handler.read(NodoBuilder::default(), &mut fs::File::open(&path)?, config)?,
                 &mut fs::File::create(&path)?,
+                config,
             )?;
         }
         Ok(())

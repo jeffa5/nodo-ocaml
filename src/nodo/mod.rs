@@ -102,6 +102,7 @@ pub enum ListItem {
 pub struct Nodo {
     tags: Vec<String>,
     start_date: Option<NaiveDate>,
+    due_date: Option<NaiveDate>,
     title: Text,
     /// The rest of the content
     blocks: Vec<Block>,
@@ -114,6 +115,10 @@ impl Nodo {
 
     pub fn start_date(&self) -> Option<NaiveDate> {
         self.start_date
+    }
+
+    pub fn due_date(&self) -> Option<NaiveDate> {
+        self.due_date
     }
 
     pub fn title(&self) -> &Text {
@@ -142,6 +147,11 @@ impl NodoBuilder {
 
     pub fn start_date(&mut self, start_date: NaiveDate) -> &mut Self {
         self.nodo.start_date = Some(start_date);
+        self
+    }
+
+    pub fn due_date(&mut self, due_date: NaiveDate) -> &mut Self {
+        self.nodo.due_date = Some(due_date);
         self
     }
 

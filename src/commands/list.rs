@@ -41,9 +41,10 @@ impl List {
             // show the content of the nodo
             trace!("Target was a file");
             let file_handler = files::get_file_handler(config.default_filetype);
-            let nodo = file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?)?;
+            let nodo =
+                file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?, &config)?;
             debug!("{:#?}", nodo);
-            file_handler.write(&nodo, &mut std::io::stdout())?;
+            file_handler.write(&nodo, &mut std::io::stdout(), &config)?;
         }
         Ok(())
     }

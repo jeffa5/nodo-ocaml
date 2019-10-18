@@ -2,6 +2,7 @@ pub struct Config {
     pub root_dir: std::path::PathBuf,
     pub projects_delimeter: &'static str,
     pub default_filetype: &'static str,
+    pub date_format: &'static str,
 }
 
 impl Config {
@@ -10,6 +11,7 @@ impl Config {
             root_dir: get_root_dir(),
             projects_delimeter: "/",
             default_filetype: "markdown",
+            date_format: "%d/%m/%Y",
         }
     }
 }
