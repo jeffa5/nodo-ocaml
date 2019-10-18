@@ -33,7 +33,7 @@ impl<'a> Iterator for &mut EventsIter<'a> {
 }
 
 impl NodoFile for Markdown {
-    const EXTENSION: &'static str = "markdown";
+    const EXTENSION: &'static str = "md";
 
     fn read<R: Read>(
         &self,

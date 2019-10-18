@@ -10,7 +10,7 @@ impl Config {
         Config {
             root_dir: get_root_dir(),
             projects_delimeter: "/",
-            default_filetype: "markdown",
+            default_filetype: "md",
             date_format: "%d/%m/%Y",
         }
     }
