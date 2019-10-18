@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use log::*;
 use pulldown_cmark::{Event, Options, Parser, Tag};
 use std::convert::TryInto;
@@ -58,6 +59,11 @@ impl NodoFile for Markdown {
     fn write<W: Write>(&self, nodo: &Nodo, writer: &mut W) -> Result<(), WriteError> {
         writeln!(writer, "---")?;
         writeln!(writer, "tags: {}", nodo.tags().join(", "))?;
+        if let Some(start_date) = nodo.start_date() {
+            writeln!(writer, "start_date: {}", start_date.format("%d/%m/%Y"))?
+        } else {
+            writeln!(writer, "start_date:")?
+        }
         writeln!(writer, "---")?;
         writeln!(writer)?;
 
@@ -115,6 +121,14 @@ fn read_frontmatter(nodo: &mut NodoBuilder, events_iter: &mut EventsIter) -> Res
                                 .map(|t| t.trim().to_string())
                                 .collect::<Vec<_>>(),
                         );
+                    } else if text.starts_with("start_date:") {
+                        let date = NaiveDate::parse_from_str(
+                            text.trim_start_matches("start_date:"),
+                            "%d/%m/%Y",
+                        );
+                        if let Ok(date) = date {
+                            nodo.start_date(date);
+                        }
                     }
                 }
                 _ => {
@@ -658,6 +672,7 @@ mod test {
                 "more tags".to_string(),
                 "hey another tag".to_string(),
             ])
+            .start_date(NaiveDate::from_ymd(2015, 3, 14))
             .title(vec![TextItem::plain("nodo header level 1, is the title")].into())
             .block(Block::List(List::Numbered(
                 vec![
@@ -769,6 +784,7 @@ mod test {
 
     static TEST_NODO_UNFORMATTED: &str = "---
 tags: nodo, more tags, hey another tag
+start_date: 14/03/2015
 ---
 
 # nodo header level 1, is the title
@@ -791,6 +807,7 @@ tags: nodo, more tags, hey another tag
 
     static TEST_NODO_FORMATTED: &str = "---
 tags: nodo, more tags, hey another tag
+start_date: 14/03/2015
 ---
 
 # nodo header level 1, is the title
@@ -888,6 +905,7 @@ tags: nodo, more tags, hey another tag
 
     const LARGE_MD_STRING:&str = r#"---
 tags: nodo, more tags, hey another tag
+start_date: 14/03/2015
 ---
 
 # Markdown: Syntax

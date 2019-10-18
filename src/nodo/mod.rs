@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 /// A Nodo is a mixture of a todo and a note.
 ///
 /// They are formed of optional metadata and blocks.
@@ -100,6 +101,7 @@ pub enum ListItem {
 #[derive(Debug, PartialEq, Default)]
 pub struct Nodo {
     tags: Vec<String>,
+    start_date: Option<NaiveDate>,
     title: Text,
     /// The rest of the content
     blocks: Vec<Block>,
@@ -108,6 +110,10 @@ pub struct Nodo {
 impl Nodo {
     pub fn tags(&self) -> &[String] {
         &self.tags
+    }
+
+    pub fn start_date(&self) -> Option<NaiveDate> {
+        self.start_date
     }
 
     pub fn title(&self) -> &Text {
@@ -131,6 +137,11 @@ impl NodoBuilder {
 
     pub fn tags(&mut self, tags: Vec<String>) -> &mut Self {
         self.nodo.tags = tags;
+        self
+    }
+
+    pub fn start_date(&mut self, start_date: NaiveDate) -> &mut Self {
+        self.nodo.start_date = Some(start_date);
         self
     }
 
