@@ -27,9 +27,9 @@ impl List {
                 let filetype = entry.file_type()?;
                 let mut prefix = "";
                 if filetype.is_dir() {
-                    prefix = "P "
+                    prefix = "P"
                 } else if filetype.is_file() {
-                    prefix = "N "
+                    prefix = "N"
                 }
                 println!(
                     "{} {}",
