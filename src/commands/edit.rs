@@ -15,10 +15,10 @@ impl Edit {
     pub fn exec(self, config: Config) -> Result<(), CommandError> {
         trace!("Editing a nodo");
         // get the file location
-        if self.target.target.is_empty() {
+        if self.target.is_empty() {
             return Err(CommandError("Nodo must exist to edit".to_string()));
         }
-        let path = file::build_path(&config, &self.target.target);
+        let path = file::build_path(&config, &self.target);
         // launch the editor with that location
         let metadata = fs::metadata(&path)?;
         if metadata.is_dir() {

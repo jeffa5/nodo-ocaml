@@ -27,6 +27,12 @@ impl From<io::Error> for CommandError {
     }
 }
 
+impl From<&str> for CommandError {
+    fn from(err: &str) -> Self {
+        CommandError(err.to_string())
+    }
+}
+
 impl From<ReadError> for CommandError {
     fn from(err: ReadError) -> Self {
         match err {

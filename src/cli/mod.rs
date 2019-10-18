@@ -1,3 +1,4 @@
+use std::ops;
 use structopt::StructOpt;
 
 /// A task and notes tracker, combined
@@ -46,6 +47,14 @@ pub struct Target {
     /// A '/' separated value of the form project/subproject/.../nodo_name
     #[structopt(use_delimiter = true, value_delimiter = "/", require_delimiter = true)]
     pub target: Vec<String>,
+}
+
+impl ops::Deref for Target {
+    type Target = Vec<String>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.target
+    }
 }
 
 #[derive(Debug, StructOpt)]
