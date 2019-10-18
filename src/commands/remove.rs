@@ -8,7 +8,7 @@ use crate::util::file;
 impl Remove {
     /// Remove a nodo if it exists
     pub fn exec(self, config: Config) -> Result<(), CommandError> {
-        let path = file::build_path(&config, &self.target);
+        let path = file::build_path(&config, &self.target, true);
         let metadata = fs::metadata(&path)?;
         let res = if metadata.is_file() {
             fs::remove_file(&path)

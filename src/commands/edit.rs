@@ -18,7 +18,7 @@ impl Edit {
         if self.target.is_empty() || self.target.last().unwrap() == "" {
             return Err(CommandError("Please provide a nodo to edit".to_string()));
         }
-        let path = file::build_path(&config, &self.target);
+        let path = file::build_path(&config, &self.target, true);
         // launch the editor with that location
         let metadata = path.metadata();
         if let Err(err) = &metadata {

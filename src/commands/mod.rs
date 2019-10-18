@@ -9,7 +9,7 @@ use std::io;
 
 use crate::files::{ReadError, WriteError};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub struct CommandError(String);
 
 impl std::fmt::Display for CommandError {

@@ -17,7 +17,7 @@ impl New {
         // ensure the project exists
         project::make_dirs(&config, &self.target)?;
         // write the nodo to the default location
-        let pb = file::build_path(&config, &self.target);
+        let pb = file::build_path(&config, &self.target, true);
         let mut file = file::create_file(&pb)?;
         info!("Writing nodo to: {:?}", file);
         let handler = files::get_file_handler(config.default_filetype);

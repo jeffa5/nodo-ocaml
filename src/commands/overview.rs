@@ -13,7 +13,7 @@ use crate::util::file::build_path;
 
 impl Overview {
     pub fn exec(self, config: Config) -> Result<(), CommandError> {
-        let path = build_path(&config, &self.target);
+        let path = build_path(&config, &self.target, true);
         if self.target.is_empty() {
             project_overview(&config, &path)?;
         } else {
