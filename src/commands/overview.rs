@@ -9,18 +9,31 @@ use crate::commands::CommandError;
 use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
+use crate::nodo::TextItem;
 use crate::nodo::{Block, List, ListItem, NodoBuilder};
 use crate::util::file::build_path;
 
 impl Overview {
+    /// Provide an overview of the target
+    /// Accepts an empty target, dir or file
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         debug!("target: {:?}", &self.target);
-        let path = build_path(&config, &self.target, false);
+        let mut path = build_path(&config, &self.target, false);
         debug!("path: {:?}", &path);
         if self.target.is_empty() {
-            project_overview(&config, &path)?;
+            dir_overview(&config, &path)?;
             return Ok(());
         } else {
+            if let Err(err) = path.metadata() {
+                if std::io::ErrorKind::NotFound == err.kind() {
+                    if path.extension().is_none() {
+                        path.set_extension(config.default_filetype);
+                        debug!("path: {:?}", &path);
+                    }
+                } else {
+                    return Err(err.into());
+                }
+            }
             match path.metadata() {
                 Err(err) => {
                     return Err(match err.kind() {
@@ -30,9 +43,9 @@ impl Overview {
                 }
                 Ok(metadata) => {
                     if metadata.is_dir() {
-                        project_overview(&config, &path)?;
+                        dir_overview(&config, &path)?;
                     } else if metadata.is_file() {
-                        unimplemented!()
+                        file_overview(&config, &path)?;
                     }
                 }
             }
@@ -41,7 +54,7 @@ impl Overview {
     }
 }
 
-fn project_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandError<'a>> {
+fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandError<'a>> {
     let mut depth = 0;
     for entry in WalkDir::new(&base_path).min_depth(1) {
         let entry = entry?;
@@ -87,6 +100,37 @@ fn project_overview<'a>(config: &Config, base_path: &Path) -> Result<(), Command
             );
         }
     }
+    Ok(())
+}
+
+fn file_overview<'a>(config: &Config, path: &Path) -> Result<(), CommandError<'a>> {
+    let handler = files::get_file_handler(config.default_filetype);
+    let nodo = handler.read(
+        NodoBuilder::default(),
+        &mut std::fs::File::open(path)?,
+        config,
+    )?;
+    let (complete, total) = get_num_complete(config, path)?;
+    let complete_string = if total > 0 {
+        format!(
+            " completed {}/{} ({:.1}%)",
+            complete,
+            total,
+            100. * f64::from(complete) / f64::from(total)
+        )
+    } else {
+        String::new()
+    };
+    let title_text = nodo
+        .title()
+        .inner
+        .iter()
+        .fold(String::new(), |acc, ti| match ti {
+            TextItem::PlainText(s) => acc + s,
+            TextItem::StyledText(s, _) => acc + s,
+            TextItem::Link(s, _) => acc + s,
+        });
+    println!("{}{}", title_text, complete_string,);
     Ok(())
 }
 
@@ -182,28 +226,42 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
-                target: "testfile.md".split('/').map(String::from).collect(),
+                target: "testfile".split('/').map(String::from).collect(),
             },
         };
         assert_eq!(
             overview.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testfile.md".split('/').map(String::from).collect(),
+                target: "testfile".split('/').map(String::from).collect(),
             }))
         );
     }
 
-    // #[test]
-    // fn can_overview_existing_file() {
-    //     let dir = tempdir().expect("Couldn't make tempdir");
-    //     std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
-    //     let mut config = Config::new();
-    //     config.root_dir = std::path::PathBuf::from(dir.path());
-    //     let overview = Overview {
-    //         target: Target {
-    //             target: "testfile.md".split('/').map(String::from).collect(),
-    //         },
-    //     };
-    //     assert_eq!(overview.exec(config), Ok(()));
-    // }
+    #[test]
+    fn can_overview_existing_file() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let overview = Overview {
+            target: Target {
+                target: "testfile".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(overview.exec(config), Ok(()));
+    }
+
+    #[test]
+    fn can_overview_existing_file_ext() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let overview = Overview {
+            target: Target {
+                target: "testfile.md".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(overview.exec(config), Ok(()));
+    }
 }
