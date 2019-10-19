@@ -78,6 +78,9 @@ pub struct List {
 pub struct Remove {
     #[structopt(flatten)]
     pub target: Target,
+    /// Force removal of the target, allows removal of projects
+    #[structopt(short, long)]
+    pub force: bool,
 }
 
 #[derive(Debug, StructOpt)]

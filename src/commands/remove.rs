@@ -1,3 +1,4 @@
+use log::*;
 use std::fs;
 
 use crate::cli::Remove;
@@ -11,20 +12,47 @@ impl Remove {
         if self.target.is_empty() || self.target.last().unwrap() == "" {
             return Err(CommandError("Must provide a target".into()));
         }
-        let path = file::build_path(&config, &self.target, true);
-        let metadata = fs::metadata(&path)?;
+        let mut path = file::build_path(&config, &self.target, false);
+        debug!("path: {:?}", &path);
+        let metadata = path.metadata();
+        debug!("metadata: {:?}", &metadata);
+        if let Err(err) = metadata {
+            if let std::io::ErrorKind::NotFound = err.kind() {
+                if path.extension().is_none() {
+                    path.set_extension(config.default_filetype);
+                    debug!("path: {:?}", &path);
+                } else {
+                    return Err(err.into());
+                }
+            }
+        }
+        let metadata = path.metadata()?;
+        debug!("metadata: {:?}", &metadata);
         let res = if metadata.is_file() {
+            trace!("found a file");
             fs::remove_file(&path)
         } else if metadata.is_dir() {
-            fs::remove_dir(&path)
+            trace!("found a dir");
+            if self.force {
+                fs::remove_dir_all(&path)
+            } else {
+                return Err(CommandError(format!(
+                    "'{}' is a directory, can't remove without '-f'",
+                    self.target
+                )));
+            }
         } else {
             return Err("Not sure what type of file the target was".into());
         };
         match res {
             Ok(()) => {
-                println!("Removed nodo: {}", self.target.join("/"));
+                if metadata.is_dir() {
+                    println!("Removed project: {}", self.target);
+                } else if metadata.is_file() {
+                    println!("Removed nodo: {}", self.target);
+                }
             }
-            Err(_) => println!("No such nodo to remove: {}", self.target.join("/")),
+            Err(_) => println!("No such nodo to remove: {}", self.target),
         }
         Ok(())
     }
@@ -43,6 +71,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
+            force: false,
             target: Target { target: Vec::new() },
         };
         assert_eq!(
@@ -57,6 +86,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
+            force: false,
             target: Target {
                 target: "".split('/').map(String::from).collect(),
             },
@@ -73,6 +103,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
+            force: false,
             target: Target {
                 target: "testdir".split('/').map(String::from).collect(),
             },
@@ -84,21 +115,38 @@ mod test {
     }
 
     #[test]
-    fn cant_remove_an_existing_dir() {
-        // should need --force
+    fn cant_remove_an_existing_dir_without_force() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::create_dir(dir.path().join("testdir")).expect("Failed to create testdir");
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
+            force: false,
             target: Target {
                 target: "testdir".split('/').map(String::from).collect(),
             },
         };
         assert_eq!(
             remove.exec(config),
-            Err(CommandError("Couldn't find target".into()))
+            Err(CommandError(
+                "'testdir' is a directory, can't remove without '-f'".into()
+            ))
         );
+    }
+
+    #[test]
+    fn can_remove_an_existing_dir_with_force() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        std::fs::create_dir(dir.path().join("testdir")).expect("Failed to create testdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let remove = Remove {
+            force: true,
+            target: Target {
+                target: "testdir".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(remove.exec(config), Ok(()));
     }
 
     #[test]
@@ -107,6 +155,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
+            force: false,
             target: Target {
                 target: "testfile.md".split('/').map(String::from).collect(),
             },
@@ -124,6 +173,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
+            force: false,
             target: Target {
                 target: "testfile".split('/').map(String::from).collect(),
             },
@@ -138,6 +188,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
+            force: false,
             target: Target {
                 target: "testfile.md".split('/').map(String::from).collect(),
             },
