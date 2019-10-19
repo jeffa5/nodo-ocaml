@@ -62,6 +62,7 @@ fn get_editor(ext: &str) -> Cmd {
 mod test {
     use super::*;
     use crate::cli::Target;
+    use pretty_assertions::assert_eq;
     use tempfile::tempdir;
 
     #[test]
@@ -72,7 +73,10 @@ mod test {
         let edit = Edit {
             target: Target { target: Vec::new() },
         };
-        assert!(edit.exec(config).is_err());
+        assert_eq!(
+            edit.exec(config),
+            Err(CommandError("Please provide a nodo to edit".into()))
+        );
     }
 
     #[test]
@@ -85,7 +89,10 @@ mod test {
                 target: "".split('/').map(String::from).collect(),
             },
         };
-        assert!(edit.exec(config).is_err());
+        assert_eq!(
+            edit.exec(config),
+            Err(CommandError("Please provide a nodo to edit".into()))
+        );
     }
 
     #[test]
@@ -98,7 +105,10 @@ mod test {
                 target: "testdir/testfile".split('/').map(String::from).collect(),
             },
         };
-        assert!(edit.exec(config).is_err());
+        assert_eq!(
+            edit.exec(config),
+            Err(CommandError("Nodo must exist in order to edit".into()))
+        );
     }
 
     #[test]
@@ -111,6 +121,9 @@ mod test {
                 target: "testdir/testfile.md".split('/').map(String::from).collect(),
             },
         };
-        assert!(edit.exec(config).is_err());
+        assert_eq!(
+            edit.exec(config),
+            Err(CommandError("Nodo must exist in order to edit".into()))
+        );
     }
 }

@@ -32,6 +32,7 @@ impl New {
 mod test {
     use super::*;
     use crate::cli::Target;
+    use pretty_assertions::assert_eq;
     use tempfile::tempdir;
 
     #[test]
@@ -42,7 +43,10 @@ mod test {
         let new = New {
             target: Target { target: Vec::new() },
         };
-        assert!(new.exec(config).is_err());
+        assert_eq!(
+            new.exec(config),
+            Err(CommandError("Must have a target".into()))
+        );
     }
 
     #[test]
@@ -55,7 +59,10 @@ mod test {
                 target: "".split('/').map(String::from).collect(),
             },
         };
-        assert!(new.exec(config).is_err());
+        assert_eq!(
+            new.exec(config),
+            Err(CommandError("Must have a target".into()))
+        );
     }
 
     #[test]

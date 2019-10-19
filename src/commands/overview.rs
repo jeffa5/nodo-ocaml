@@ -101,6 +101,7 @@ fn get_num_complete(config: &Config, path: &Path) -> Result<(u32, u32), CommandE
 mod test {
     use super::*;
     use crate::cli::Target;
+    use pretty_assertions::assert_eq;
     use tempfile::tempdir;
 
     #[test]
@@ -137,7 +138,10 @@ mod test {
                 target: "testdir".split('/').map(String::from).collect(),
             },
         };
-        assert!(overview.exec(config).is_err());
+        assert_eq!(
+            overview.exec(config),
+            Err(CommandError("Couldn't find target".into()))
+        );
     }
 
     #[test]
