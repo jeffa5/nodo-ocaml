@@ -13,10 +13,27 @@ use crate::util::file;
 impl Format {
     /// Format a nodo
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
+        debug!("target: {:?}", &self.target);
         trace!("Formatting a nodo");
         // get the file location
-        let path = file::build_path(&config, &self.target, true);
-        let metadata = fs::metadata(&path)?;
+        let mut path = file::build_path(&config, &self.target, false);
+        debug!("path: {:?}", &path);
+        let metadata = path.metadata();
+        debug!("metadata: {:?}", &metadata);
+        if let Err(err) = metadata {
+            if let std::io::ErrorKind::NotFound = err.kind() {
+                if path.extension().is_none() {
+                    path.set_extension(config.default_filetype);
+                    debug!("path: {:?}", &path);
+                } else {
+                    return Err(err.into());
+                }
+            }
+        }
+        let metadata = path.metadata()?;
+        debug!("metadata: {:?}", &metadata);
+        // if metadata was err then check if it was a not found error, if so then see if extension was there, if it was exit else add default extension and try again
+        // if metadata was ok then see whether dir or file and format appropriately
         let handler = files::get_file_handler(config.default_filetype);
         if metadata.is_dir() {
             for entry in WalkDir::new(&path) {
@@ -52,5 +69,118 @@ impl Format {
             )?;
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use crate::cli::Target;
+    use pretty_assertions::assert_eq;
+    use tempfile::tempdir;
+
+    #[test]
+    fn no_args_is_ok() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let format = Format {
+            dry_run: false,
+            target: Target { target: Vec::new() },
+        };
+        assert_eq!(format.exec(config), Ok(()));
+    }
+
+    #[test]
+    fn empty_args_is_ok() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let format = Format {
+            dry_run: false,
+            target: Target {
+                target: "".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(format.exec(config), Ok(()));
+    }
+
+    #[test]
+    fn cant_format_nonexisting_dir() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let format = Format {
+            dry_run: false,
+            target: Target {
+                target: "testdir".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(
+            format.exec(config),
+            Err(CommandError("Couldn't find target".into()))
+        );
+    }
+
+    #[test]
+    fn can_format_an_existing_dir() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        std::fs::create_dir(dir.path().join("testdir")).expect("Failed to create testdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let format = Format {
+            dry_run: false,
+            target: Target {
+                target: "testdir".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(format.exec(config), Ok(()));
+    }
+
+    #[test]
+    fn cant_format_nonexisting_file() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let format = Format {
+            dry_run: false,
+            target: Target {
+                target: "testfile.md".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(
+            format.exec(config),
+            Err(CommandError("Couldn't find target".into()))
+        );
+    }
+
+    #[test]
+    fn can_format_existing_file() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let format = Format {
+            dry_run: false,
+            target: Target {
+                target: "testfile".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(format.exec(config), Ok(()));
+    }
+
+    #[test]
+    fn can_format_existing_file_with_ext() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let format = Format {
+            dry_run: false,
+            target: Target {
+                target: "testfile.md".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(format.exec(config), Ok(()));
     }
 }
