@@ -13,6 +13,7 @@ use crate::util::file;
 
 impl Format {
     /// Format a nodo
+    /// Accepts an empty target or a dir or a file
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         debug!("target: {:?}", &self.target);
         trace!("Formatting a nodo");

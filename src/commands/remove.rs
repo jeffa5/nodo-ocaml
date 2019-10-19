@@ -9,6 +9,7 @@ use crate::util::file;
 
 impl Remove {
     /// Remove a nodo if it exists
+    /// Accepts a dir (with force) or a file
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         if self.target.is_empty() || self.target.last().unwrap() == "" {
             return Err(CommandError::NoTarget);

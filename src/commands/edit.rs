@@ -10,6 +10,7 @@ use crate::util::file;
 
 impl Edit {
     /// Edit a current nodo in the editor
+    /// Only accepts a file as the target
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         trace!("Editing a nodo");
         // get the file location

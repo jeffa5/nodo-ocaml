@@ -12,13 +12,25 @@ use crate::nodo::{Block, List, ListItem, NodoBuilder};
 use crate::util::file::build_path;
 
 impl Show {
+    /// Show a project or nodo
+    /// Accepts empty target, dir or file
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         debug!("target: {:?}", &self.target);
-        let path = build_path(&config, &self.target, false);
+        let mut path = build_path(&config, &self.target, false);
         debug!("path: {:?}", &path);
         if self.target.is_empty() || self.target.last().unwrap() == "" {
             show_dir(&path)?;
             return Ok(());
+        }
+        if let Err(err) = path.metadata() {
+            if std::io::ErrorKind::NotFound == err.kind() {
+                if path.extension().is_none() {
+                    path.set_extension(config.default_filetype);
+                    debug!("path: {:?}", &path);
+                }
+            } else {
+                return Err(err.into());
+            }
         }
         match path.metadata() {
             Err(err) => {
@@ -276,6 +288,22 @@ mod test {
 
     #[test]
     fn can_show_existing_file() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let show = Show {
+            filter_complete: None,
+            depth: None,
+            target: Target {
+                target: "testfile".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(show.exec(config), Ok(()));
+    }
+
+    #[test]
+    fn can_show_existing_file_ext() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
         let mut config = Config::new();
