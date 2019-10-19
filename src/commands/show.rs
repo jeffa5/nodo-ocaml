@@ -3,7 +3,7 @@ use std::fs;
 use std::io::ErrorKind;
 use std::path::PathBuf;
 
-use crate::cli::List;
+use crate::cli::Show;
 use crate::commands::CommandError;
 use crate::config::Config;
 use crate::files;
@@ -11,13 +11,13 @@ use crate::files::NodoFile;
 use crate::nodo::NodoBuilder;
 use crate::util::file::build_path;
 
-impl List {
+impl Show {
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         debug!("target: {:?}", &self.target);
         let path = build_path(&config, &self.target, false);
         debug!("path: {:?}", &path);
         if self.target.is_empty() || self.target.last().unwrap() == "" {
-            list_dir(&path)?;
+            show_dir(&path)?;
             return Ok(());
         }
         match path.metadata() {
@@ -30,13 +30,13 @@ impl List {
             Ok(metadata) => {
                 debug!("metadata: {:?}", &metadata);
                 if metadata.is_dir() {
-                    // list the contents of the directory
+                    // show the contents of the directory
                     trace!("Target was a directory");
-                    list_dir(&path)?;
+                    show_dir(&path)?;
                 } else if metadata.is_file() {
                     // show the content of the nodo
                     trace!("Target was a file");
-                    list_file(&config, &path)?;
+                    show_file(&config, &path)?;
                 }
             }
         }
@@ -44,7 +44,7 @@ impl List {
     }
 }
 
-fn list_dir<'a>(path: &std::path::Path) -> Result<(), CommandError<'a>> {
+fn show_dir<'a>(path: &std::path::Path) -> Result<(), CommandError<'a>> {
     let contents = fs::read_dir(path)?;
     for entry in contents {
         let entry = entry.expect("Failed to get direntry");
@@ -64,7 +64,7 @@ fn list_dir<'a>(path: &std::path::Path) -> Result<(), CommandError<'a>> {
     Ok(())
 }
 
-fn list_file<'a>(config: &Config, path: &std::path::Path) -> Result<(), CommandError<'a>> {
+fn show_file<'a>(config: &Config, path: &std::path::Path) -> Result<(), CommandError<'a>> {
     let file_handler = files::get_file_handler(config.default_filetype);
     let nodo = file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?, &config)?;
     debug!("{:#?}", nodo);
@@ -86,10 +86,10 @@ mod test {
         let dir = tempdir().expect("Couldn't make tempdir");
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
-        let list = List {
+        let show = Show {
             target: Target { target: Vec::new() },
         };
-        assert_eq!(list.exec(config), Ok(()));
+        assert_eq!(show.exec(config), Ok(()));
     }
 
     #[test]
@@ -97,26 +97,26 @@ mod test {
         let dir = tempdir().expect("Couldn't make tempdir");
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
-        let list = List {
+        let show = Show {
             target: Target {
                 target: "".split('/').map(String::from).collect(),
             },
         };
-        assert_eq!(list.exec(config), Ok(()));
+        assert_eq!(show.exec(config), Ok(()));
     }
 
     #[test]
-    fn cant_list_non_existent_dir() {
+    fn cant_show_non_existent_dir() {
         let dir = tempdir().expect("Couldn't make tempdir");
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
-        let list = List {
+        let show = Show {
             target: Target {
                 target: "testdir".split('/').map(String::from).collect(),
             },
         };
         assert_eq!(
-            list.exec(config),
+            show.exec(config),
             Err(CommandError::TargetMissing(&Target {
                 target: "testdir".split('/').map(String::from).collect(),
             }))
@@ -124,31 +124,31 @@ mod test {
     }
 
     #[test]
-    fn can_list_existing_dir() {
+    fn can_show_existing_dir() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::create_dir(dir.path().join("testdir")).expect("Failed to create testdir");
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
-        let list = List {
+        let show = Show {
             target: Target {
                 target: "testdir".split('/').map(String::from).collect(),
             },
         };
-        assert_eq!(list.exec(config), Ok(()));
+        assert_eq!(show.exec(config), Ok(()));
     }
 
     #[test]
-    fn cant_list_non_existent_file() {
+    fn cant_show_non_existent_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
-        let list = List {
+        let show = Show {
             target: Target {
                 target: "testfile.md".split('/').map(String::from).collect(),
             },
         };
         assert_eq!(
-            list.exec(config),
+            show.exec(config),
             Err(CommandError::TargetMissing(&Target {
                 target: "testfile.md".split('/').map(String::from).collect(),
             }))
@@ -156,16 +156,16 @@ mod test {
     }
 
     #[test]
-    fn can_list_existing_file() {
+    fn can_show_existing_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
-        let list = List {
+        let show = Show {
             target: Target {
                 target: "testfile.md".split('/').map(String::from).collect(),
             },
         };
-        assert_eq!(list.exec(config), Ok(()));
+        assert_eq!(show.exec(config), Ok(()));
     }
 }

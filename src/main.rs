@@ -43,8 +43,8 @@ fn main() {
                     println!("{}", err)
                 }
             }
-            SubCommand::List(list) => {
-                if let Err(err) = list.exec(config) {
+            SubCommand::Show(show) => {
+                if let Err(err) = show.exec(config) {
                     println!("{}", err)
                 }
             }

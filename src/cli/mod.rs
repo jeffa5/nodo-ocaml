@@ -18,8 +18,8 @@ pub enum SubCommand {
     /// Create a new nodo
     New(New),
 
-    /// List available projects and nodos
-    List(List),
+    /// Show available projects and nodos
+    Show(Show),
 
     /// Remove a nodo
     Remove(Remove),
@@ -69,7 +69,7 @@ pub struct New {
 }
 
 #[derive(Debug, StructOpt)]
-pub struct List {
+pub struct Show {
     #[structopt(flatten)]
     pub target: Target,
 }
