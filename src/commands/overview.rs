@@ -1,5 +1,4 @@
 use log::*;
-use std::fs;
 use std::io::ErrorKind;
 use std::path::Path;
 use walkdir::WalkDir;
@@ -9,6 +8,7 @@ use crate::commands::CommandError;
 use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
+use crate::nodo::Nodo;
 use crate::nodo::TextItem;
 use crate::nodo::{Block, List, ListItem, NodoBuilder};
 use crate::util::file::build_path;
@@ -45,7 +45,8 @@ impl Overview {
                     if metadata.is_dir() {
                         dir_overview(&config, &path)?;
                     } else if metadata.is_file() {
-                        file_overview(&config, &path)?;
+                        let overview = file_overview(&config, &path)?;
+                        println!("{}", overview);
                     }
                 }
             }
@@ -77,40 +78,21 @@ fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandErro
                     .to_string_lossy()
             );
         } else if entry.file_type().is_file() {
-            let (complete, total) = get_num_complete(config, entry.path())?;
-            let complete_string = if total > 0 {
-                format!(
-                    " completed {}/{} ({:.1}%)",
-                    complete,
-                    total,
-                    100. * f64::from(complete) / f64::from(total)
-                )
-            } else {
-                String::new()
-            };
-            println!(
-                "{}Nodo: {}{}",
-                "  ".repeat(depth + 1),
-                entry
-                    .path()
-                    .strip_prefix(&base_path)
-                    .unwrap()
-                    .to_string_lossy(),
-                complete_string,
-            );
+            let overview = file_overview(config, entry.path())?;
+            println!("{}Nodo: {}", "  ".repeat(depth + 1), overview);
         }
     }
     Ok(())
 }
 
-fn file_overview<'a>(config: &Config, path: &Path) -> Result<(), CommandError<'a>> {
+fn file_overview<'a>(config: &Config, path: &Path) -> Result<String, CommandError<'a>> {
     let handler = files::get_file_handler(config.default_filetype);
     let nodo = handler.read(
         NodoBuilder::default(),
         &mut std::fs::File::open(path)?,
         config,
     )?;
-    let (complete, total) = get_num_complete(config, path)?;
+    let (complete, total) = get_num_complete(&nodo)?;
     let complete_string = if total > 0 {
         format!(
             " completed {}/{} ({:.1}%)",
@@ -130,13 +112,10 @@ fn file_overview<'a>(config: &Config, path: &Path) -> Result<(), CommandError<'a
             TextItem::StyledText(s, _) => acc + s,
             TextItem::Link(s, _) => acc + s,
         });
-    println!("{}{}", title_text, complete_string,);
-    Ok(())
+    Ok(format!("{}{}", title_text, complete_string,))
 }
 
-fn get_num_complete<'a>(config: &Config, path: &Path) -> Result<(u32, u32), CommandError<'a>> {
-    let handler = files::get_file_handler(config.default_filetype);
-    let nodo = handler.read(NodoBuilder::default(), &mut fs::File::open(&path)?, config)?;
+fn get_num_complete<'a>(nodo: &Nodo) -> Result<(u32, u32), CommandError<'a>> {
     let mut total = 0;
     let mut complete = 0;
     for block in nodo.blocks() {
