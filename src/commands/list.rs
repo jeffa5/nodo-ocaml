@@ -12,14 +12,14 @@ use crate::util::file::build_path;
 
 impl List {
     pub fn exec(self, config: Config) -> Result<(), CommandError> {
-        dbg!(&self.target);
+        debug!("target: {:?}", &self.target);
         let path = build_path(&config, &self.target, false);
-        dbg!(&path);
+        debug!("path: {:?}", &path);
         if self.target.is_empty() || self.target.last().unwrap() == "" {
             list_dir(&path)?;
         }
         let metadata = fs::metadata(&path)?;
-        dbg!(&metadata);
+        debug!("metadata: {:?}", &metadata);
         if metadata.is_dir() {
             // list the contents of the directory
             trace!("Target was a directory");

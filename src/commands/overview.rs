@@ -13,9 +13,9 @@ use crate::util::file::build_path;
 
 impl Overview {
     pub fn exec(self, config: Config) -> Result<(), CommandError> {
-        dbg!(&self.target);
+        debug!("target: {:?}", &self.target);
         let path = build_path(&config, &self.target, false);
-        dbg!(&path);
+        debug!("path: {:?}", &path);
         if self.target.is_empty() {
             project_overview(&config, &path)?;
         } else {
