@@ -1,6 +1,6 @@
 use log::*;
 use std::env;
-use std::io;
+use std::io::ErrorKind;
 use std::process::Command as Cmd;
 
 use crate::cli::Edit;
@@ -19,26 +19,30 @@ impl Edit {
             return Err(CommandError::NoTarget);
         }
         let path = file::build_path(&config, &self.target, true);
-        // launch the editor with that location
-        let metadata = path.metadata();
-        if let Err(err) = &metadata {
-            if io::ErrorKind::NotFound == err.kind() {
-                return Err(CommandError::TargetMissing(&self.target));
+        match path.metadata() {
+            Err(err) => {
+                return Err(match err.kind() {
+                    ErrorKind::NotFound => CommandError::TargetMissing(&self.target),
+                    _ => err.into(),
+                })
+            }
+            Ok(metadata) => {
+                if metadata.is_dir() {
+                    return Err(CommandError::Str(format!(
+                        "Can't edit {} since it is a project",
+                        path.to_string_lossy()
+                    )));
+                }
+                let handler = files::get_file_handler(config.default_filetype);
+                let mut command = get_editor(handler.ext());
+                command.arg(path);
+                debug!("Editor command is: {:?}", command);
+                if !cfg!(test) {
+                    let status = command.status().expect("Failed to open editor");
+                    debug!("Editor finished with status: {}", status);
+                }
             }
         }
-        let metadata = metadata?;
-        if metadata.is_dir() {
-            return Err(CommandError::Str(format!(
-                "Can't edit {} since it is a project",
-                path.to_string_lossy()
-            )));
-        }
-        let handler = files::get_file_handler(config.default_filetype);
-        let mut command = get_editor(handler.ext());
-        command.arg(path);
-        debug!("Editor command is: {:?}", command);
-        let status = command.status().expect("Failed to open editor");
-        debug!("Editor finished with status: {}", status);
         Ok(())
     }
 }
@@ -123,5 +127,33 @@ mod test {
                 target: "testdir/testfile.md".split('/').map(String::from).collect(),
             }))
         );
+    }
+
+    #[test]
+    fn can_edit_existing_file() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let edit = Edit {
+            target: Target {
+                target: "testfile".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(edit.exec(config), Ok(()));
+    }
+
+    #[test]
+    fn can_edit_existing_file_ext() {
+        let dir = tempdir().expect("Couldn't make tempdir");
+        std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
+        let mut config = Config::new();
+        config.root_dir = std::path::PathBuf::from(dir.path());
+        let edit = Edit {
+            target: Target {
+                target: "testfile.md".split('/').map(String::from).collect(),
+            },
+        };
+        assert_eq!(edit.exec(config), Ok(()));
     }
 }
