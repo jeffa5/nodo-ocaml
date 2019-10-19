@@ -30,6 +30,12 @@ aims:
 - Be fast and efficient, somewhat secondary to a clean and efficient UI and UX
   is to have the actual program be fast and efficient, hence Rust.
 
+### Layout
+
+Projects can be nested as directories on the filesystem, each actual file
+should have an extension on the filesystem but this extension can be omitted
+during commands.
+
 ## Why another app?
 
 Lots of apps tend to have a large focus on todos and so have lots of emphasis
