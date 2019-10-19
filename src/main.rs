@@ -28,37 +28,53 @@ fn main() {
         .expect("Failed to initialise logging");
     debug!("{:#?}", opts);
     let config = Config::new();
-    let mut res = Ok(());
     match opts.sub_command {
         None => {
             let overview = cli::Overview {
                 target: cli::Target::default(),
             };
-            res = overview.exec(config)
+            if let Err(err) = overview.exec(config) {
+                println!("{}", err)
+            }
         }
         Some(sub_command) => match sub_command {
-            SubCommand::New(new) => res = new.exec(config),
-            SubCommand::List(list) => res = list.exec(config),
-            SubCommand::Remove(remove) => res = remove.exec(config),
-            SubCommand::Edit(edit) => res = edit.exec(config),
-            SubCommand::Format(format) => res = format.exec(config),
-            SubCommand::Overview(overview) => res = overview.exec(config),
-            SubCommand::Completions { shell } => {
-                Cli::clap().gen_completions_to(
-                    "nodo",
-                    shell
-                        .parse()
-                        .expect("Failed to parse shell as a shell candidate"),
-                    &mut std::io::stdout(),
-                );
+            SubCommand::New(new) => {
+                if let Err(err) = new.exec(config) {
+                    println!("{}", err)
+                }
             }
+            SubCommand::List(list) => {
+                if let Err(err) = list.exec(config) {
+                    println!("{}", err)
+                }
+            }
+            SubCommand::Remove(remove) => {
+                if let Err(err) = remove.exec(config) {
+                    println!("{}", err)
+                }
+            }
+            SubCommand::Edit(edit) => {
+                if let Err(err) = edit.exec(config) {
+                    println!("{}", err)
+                }
+            }
+            SubCommand::Format(format) => {
+                if let Err(err) = format.exec(config) {
+                    println!("{}", err)
+                }
+            }
+            SubCommand::Overview(overview) => {
+                if let Err(err) = overview.exec(config) {
+                    println!("{}", err)
+                }
+            }
+            SubCommand::Completions { shell } => Cli::clap().gen_completions_to(
+                "nodo",
+                shell
+                    .parse()
+                    .expect("Failed to parse shell as a shell candidate"),
+                &mut std::io::stdout(),
+            ),
         },
-    }
-    match res {
-        Ok(()) => (),
-        Err(err) => {
-            warn!("Reached top level error: {:?}", err);
-            println!("{}", err)
-        }
     }
 }

@@ -1,5 +1,6 @@
 use log::*;
 use std::fs;
+use std::io::ErrorKind;
 use std::path::PathBuf;
 
 use crate::cli::List;
@@ -11,35 +12,47 @@ use crate::nodo::NodoBuilder;
 use crate::util::file::build_path;
 
 impl List {
-    pub fn exec(self, config: Config) -> Result<(), CommandError> {
+    pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         debug!("target: {:?}", &self.target);
         let path = build_path(&config, &self.target, false);
         debug!("path: {:?}", &path);
         if self.target.is_empty() || self.target.last().unwrap() == "" {
             list_dir(&path)?;
         }
-        let metadata = fs::metadata(&path)?;
-        debug!("metadata: {:?}", &metadata);
-        if metadata.is_dir() {
-            // list the contents of the directory
-            trace!("Target was a directory");
-            list_dir(&path)?;
-        } else if metadata.is_file() {
-            // show the content of the nodo
-            trace!("Target was a file");
-            let file_handler = files::get_file_handler(config.default_filetype);
-            let nodo =
-                file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?, &config)?;
-            debug!("{:#?}", nodo);
-            if !cfg!(test) {
-                file_handler.write(&nodo, &mut std::io::stdout(), &config)?;
+        match path.metadata() {
+            Err(err) => {
+                return Err(match err.kind() {
+                    ErrorKind::NotFound => CommandError::TargetMissing(&self.target),
+                    _ => err.into(),
+                })
+            }
+            Ok(metadata) => {
+                debug!("metadata: {:?}", &metadata);
+                if metadata.is_dir() {
+                    // list the contents of the directory
+                    trace!("Target was a directory");
+                    list_dir(&path)?;
+                } else if metadata.is_file() {
+                    // show the content of the nodo
+                    trace!("Target was a file");
+                    let file_handler = files::get_file_handler(config.default_filetype);
+                    let nodo = file_handler.read(
+                        NodoBuilder::default(),
+                        &mut fs::File::open(path)?,
+                        &config,
+                    )?;
+                    debug!("{:#?}", nodo);
+                    if !cfg!(test) {
+                        file_handler.write(&nodo, &mut std::io::stdout(), &config)?;
+                    }
+                }
             }
         }
         Ok(())
     }
 }
 
-fn list_dir(path: &std::path::Path) -> Result<(), CommandError> {
+fn list_dir<'a>(path: &std::path::Path) -> Result<(), CommandError<'a>> {
     let contents = fs::read_dir(path)?;
     for entry in contents {
         let entry = entry.expect("Failed to get direntry");
@@ -102,7 +115,9 @@ mod test {
         };
         assert_eq!(
             list.exec(config),
-            Err(CommandError("Couldn't find target".into()))
+            Err(CommandError::TargetMissing(&Target {
+                target: "testdir".split('/').map(String::from).collect(),
+            }))
         );
     }
 
@@ -132,7 +147,9 @@ mod test {
         };
         assert_eq!(
             list.exec(config),
-            Err(CommandError("Couldn't find target".into()))
+            Err(CommandError::TargetMissing(&Target {
+                target: "testfile.md".split('/').map(String::from).collect(),
+            }))
         );
     }
 

@@ -12,23 +12,23 @@ use crate::util::file;
 
 impl Edit {
     /// Edit a current nodo in the editor
-    pub fn exec(self, config: Config) -> Result<(), CommandError> {
+    pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         trace!("Editing a nodo");
         // get the file location
         if self.target.is_empty() || self.target.last().unwrap() == "" {
-            return Err(CommandError("Please provide a nodo to edit".to_string()));
+            return Err(CommandError::NoTarget);
         }
         let path = file::build_path(&config, &self.target, true);
         // launch the editor with that location
         let metadata = path.metadata();
         if let Err(err) = &metadata {
-            if let io::ErrorKind::NotFound = err.kind() {
-                return Err(CommandError("Nodo must exist in order to edit".into()));
+            if io::ErrorKind::NotFound == err.kind() {
+                return Err(CommandError::TargetMissing(&self.target));
             }
         }
         let metadata = metadata?;
         if metadata.is_dir() {
-            return Err(CommandError(format!(
+            return Err(CommandError::Str(format!(
                 "Can't edit {} since it is a project",
                 path.to_string_lossy()
             )));
@@ -73,10 +73,7 @@ mod test {
         let edit = Edit {
             target: Target { target: Vec::new() },
         };
-        assert_eq!(
-            edit.exec(config),
-            Err(CommandError("Please provide a nodo to edit".into()))
-        );
+        assert_eq!(edit.exec(config), Err(CommandError::NoTarget));
     }
 
     #[test]
@@ -89,10 +86,7 @@ mod test {
                 target: "".split('/').map(String::from).collect(),
             },
         };
-        assert_eq!(
-            edit.exec(config),
-            Err(CommandError("Please provide a nodo to edit".into()))
-        );
+        assert_eq!(edit.exec(config), Err(CommandError::NoTarget));
     }
 
     #[test]
@@ -107,7 +101,9 @@ mod test {
         };
         assert_eq!(
             edit.exec(config),
-            Err(CommandError("Nodo must exist in order to edit".into()))
+            Err(CommandError::TargetMissing(&Target {
+                target: "testdir/testfile".split('/').map(String::from).collect(),
+            }))
         );
     }
 
@@ -123,7 +119,9 @@ mod test {
         };
         assert_eq!(
             edit.exec(config),
-            Err(CommandError("Nodo must exist in order to edit".into()))
+            Err(CommandError::TargetMissing(&Target {
+                target: "testdir/testfile.md".split('/').map(String::from).collect(),
+            }))
         );
     }
 }

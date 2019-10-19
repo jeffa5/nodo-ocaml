@@ -1,5 +1,6 @@
 use log::*;
 use std::fs;
+use std::io::ErrorKind;
 use walkdir::WalkDir;
 
 use crate::cli::Format;
@@ -21,30 +22,39 @@ impl Format {
         let metadata = path.metadata();
         debug!("metadata: {:?}", &metadata);
         if let Err(err) = metadata {
-            if let std::io::ErrorKind::NotFound = err.kind() {
+            if std::io::ErrorKind::NotFound == err.kind() {
                 if path.extension().is_none() {
                     path.set_extension(config.default_filetype);
                     debug!("path: {:?}", &path);
-                } else {
-                    return Err(err.into());
                 }
+            } else {
+                return Err(err.into());
             }
         }
-        let metadata = path.metadata()?;
-        debug!("metadata: {:?}", &metadata);
-        // if metadata was err then check if it was a not found error, if so then see if extension was there, if it was exit else add default extension and try again
-        // if metadata was ok then see whether dir or file and format appropriately
-        let handler = files::get_file_handler(config.default_filetype);
-        if metadata.is_dir() {
-            for entry in WalkDir::new(&path) {
-                let entry = entry?;
-                if entry.file_type().is_file() {
-                    debug!("Formatting {}", entry.path().to_string_lossy());
-                    self.format(&handler, &entry.path(), &config)?
+        match path.metadata() {
+            Err(err) => {
+                return Err(match err.kind() {
+                    ErrorKind::NotFound => CommandError::TargetMissing(&self.target),
+                    _ => err.into(),
+                })
+            }
+            Ok(metadata) => {
+                debug!("metadata: {:?}", &metadata);
+                // if metadata was err then check if it was a not found error, if so then see if extension was there, if it was exit else add default extension and try again
+                // if metadata was ok then see whether dir or file and format appropriately
+                let handler = files::get_file_handler(config.default_filetype);
+                if metadata.is_dir() {
+                    for entry in WalkDir::new(&path) {
+                        let entry = entry?;
+                        if entry.file_type().is_file() {
+                            debug!("Formatting {}", entry.path().to_string_lossy());
+                            self.format(&handler, &entry.path(), &config)?
+                        }
+                    }
+                } else if metadata.is_file() {
+                    self.format(&handler, &path, &config)?
                 }
             }
-        } else if metadata.is_file() {
-            self.format(&handler, &path, &config)?
         }
         Ok(())
     }
@@ -118,7 +128,9 @@ mod test {
         };
         assert_eq!(
             format.exec(config),
-            Err(CommandError("Couldn't find target".into()))
+            Err(CommandError::TargetMissing(&Target {
+                target: "testdir".split('/').map(String::from).collect(),
+            }))
         );
     }
 
@@ -150,7 +162,9 @@ mod test {
         };
         assert_eq!(
             format.exec(config),
-            Err(CommandError("Couldn't find target".into()))
+            Err(CommandError::TargetMissing(&Target {
+                target: "testfile.md".split('/').map(String::from).collect(),
+            }))
         );
     }
 

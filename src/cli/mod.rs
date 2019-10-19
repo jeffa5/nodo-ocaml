@@ -41,7 +41,7 @@ pub enum SubCommand {
     },
 }
 
-#[derive(Debug, Default, StructOpt)]
+#[derive(Debug, Default, StructOpt, PartialEq)]
 pub struct Target {
     /// A '/' separated value of the form project/subproject/.../nodo_name
     #[structopt(use_delimiter = true, value_delimiter = "/", require_delimiter = true)]

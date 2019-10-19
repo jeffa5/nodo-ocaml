@@ -1,5 +1,6 @@
 use log::*;
 use std::fs;
+use std::io::ErrorKind;
 
 use crate::cli::Remove;
 use crate::commands::CommandError;
@@ -8,51 +9,60 @@ use crate::util::file;
 
 impl Remove {
     /// Remove a nodo if it exists
-    pub fn exec(self, config: Config) -> Result<(), CommandError> {
+    pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         if self.target.is_empty() || self.target.last().unwrap() == "" {
-            return Err(CommandError("Must provide a target".into()));
+            return Err(CommandError::NoTarget);
         }
         let mut path = file::build_path(&config, &self.target, false);
         debug!("path: {:?}", &path);
         let metadata = path.metadata();
         debug!("metadata: {:?}", &metadata);
         if let Err(err) = metadata {
-            if let std::io::ErrorKind::NotFound = err.kind() {
+            if std::io::ErrorKind::NotFound == err.kind() {
                 if path.extension().is_none() {
                     path.set_extension(config.default_filetype);
                     debug!("path: {:?}", &path);
-                } else {
-                    return Err(err.into());
                 }
+            } else {
+                return Err(err.into());
             }
         }
-        let metadata = path.metadata()?;
-        debug!("metadata: {:?}", &metadata);
-        let res = if metadata.is_file() {
-            trace!("found a file");
-            fs::remove_file(&path)
-        } else if metadata.is_dir() {
-            trace!("found a dir");
-            if self.force {
-                fs::remove_dir_all(&path)
-            } else {
-                return Err(CommandError(format!(
-                    "'{}' is a directory, can't remove without '-f'",
-                    self.target
-                )));
+        match path.metadata() {
+            Err(err) => {
+                return Err(match err.kind() {
+                    ErrorKind::NotFound => CommandError::TargetMissing(&self.target),
+                    _ => err.into(),
+                })
             }
-        } else {
-            return Err("Not sure what type of file the target was".into());
-        };
-        match res {
-            Ok(()) => {
-                if metadata.is_dir() {
-                    println!("Removed project: {}", self.target);
-                } else if metadata.is_file() {
-                    println!("Removed nodo: {}", self.target);
+            Ok(metadata) => {
+                debug!("metadata: {:?}", &metadata);
+                let res = if metadata.is_file() {
+                    trace!("found a file");
+                    fs::remove_file(&path)
+                } else if metadata.is_dir() {
+                    trace!("found a dir");
+                    if self.force {
+                        fs::remove_dir_all(&path)
+                    } else {
+                        return Err(CommandError::Str(format!(
+                            "'{}' is a directory, can't remove without '-f'",
+                            self.target
+                        )));
+                    }
+                } else {
+                    return Err("Not sure what type of file the target was".into());
+                };
+                match res {
+                    Ok(()) => {
+                        if metadata.is_dir() {
+                            println!("Removed project: {}", self.target);
+                        } else if metadata.is_file() {
+                            println!("Removed nodo: {}", self.target);
+                        }
+                    }
+                    Err(_) => println!("No such nodo to remove: {}", self.target),
                 }
             }
-            Err(_) => println!("No such nodo to remove: {}", self.target),
         }
         Ok(())
     }
@@ -74,10 +84,7 @@ mod test {
             force: false,
             target: Target { target: Vec::new() },
         };
-        assert_eq!(
-            remove.exec(config),
-            Err(CommandError("Must provide a target".into()))
-        );
+        assert_eq!(remove.exec(config), Err(CommandError::NoTarget));
     }
 
     #[test]
@@ -91,10 +98,7 @@ mod test {
                 target: "".split('/').map(String::from).collect(),
             },
         };
-        assert_eq!(
-            remove.exec(config),
-            Err(CommandError("Must provide a target".into()))
-        );
+        assert_eq!(remove.exec(config), Err(CommandError::NoTarget));
     }
 
     #[test]
@@ -110,7 +114,9 @@ mod test {
         };
         assert_eq!(
             remove.exec(config),
-            Err(CommandError("Couldn't find target".into()))
+            Err(CommandError::TargetMissing(&Target {
+                target: vec!["testdir".to_string()]
+            }))
         );
     }
 
@@ -128,7 +134,7 @@ mod test {
         };
         assert_eq!(
             remove.exec(config),
-            Err(CommandError(
+            Err(CommandError::Str(
                 "'testdir' is a directory, can't remove without '-f'".into()
             ))
         );
@@ -162,7 +168,9 @@ mod test {
         };
         assert_eq!(
             remove.exec(config),
-            Err(CommandError("Couldn't find target".into()))
+            Err(CommandError::TargetMissing(&Target {
+                target: vec!["testfile.md".to_string()]
+            }))
         );
     }
 

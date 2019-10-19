@@ -10,9 +10,9 @@ use crate::util::{file, project};
 
 impl New {
     /// Create a new nodo with the given options
-    pub fn exec(self, config: Config) -> Result<(), CommandError> {
+    pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         if self.target.is_empty() || self.target.last().unwrap() == "" {
-            return Err(CommandError("Must have a target".into()));
+            return Err(CommandError::NoTarget);
         }
         // ensure the project exists
         project::make_dirs(&config, &self.target)?;
@@ -43,10 +43,7 @@ mod test {
         let new = New {
             target: Target { target: Vec::new() },
         };
-        assert_eq!(
-            new.exec(config),
-            Err(CommandError("Must have a target".into()))
-        );
+        assert_eq!(new.exec(config), Err(CommandError::NoTarget));
     }
 
     #[test]
@@ -59,10 +56,7 @@ mod test {
                 target: "".split('/').map(String::from).collect(),
             },
         };
-        assert_eq!(
-            new.exec(config),
-            Err(CommandError("Must have a target".into()))
-        );
+        assert_eq!(new.exec(config), Err(CommandError::NoTarget));
     }
 
     #[test]

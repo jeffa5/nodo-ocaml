@@ -1,5 +1,6 @@
 use log::*;
 use std::fs;
+use std::io::ErrorKind;
 use std::path::Path;
 use walkdir::WalkDir;
 
@@ -12,25 +13,34 @@ use crate::nodo::{Block, List, ListItem, NodoBuilder};
 use crate::util::file::build_path;
 
 impl Overview {
-    pub fn exec(self, config: Config) -> Result<(), CommandError> {
+    pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         debug!("target: {:?}", &self.target);
         let path = build_path(&config, &self.target, false);
         debug!("path: {:?}", &path);
         if self.target.is_empty() {
             project_overview(&config, &path)?;
         } else {
-            let metadata = fs::metadata(&path)?;
-            if metadata.is_dir() {
-                project_overview(&config, &path)?;
-            } else if metadata.is_file() {
-                unimplemented!()
+            match path.metadata() {
+                Err(err) => {
+                    return Err(match err.kind() {
+                        ErrorKind::NotFound => CommandError::TargetMissing(&self.target),
+                        _ => err.into(),
+                    })
+                }
+                Ok(metadata) => {
+                    if metadata.is_dir() {
+                        project_overview(&config, &path)?;
+                    } else if metadata.is_file() {
+                        unimplemented!()
+                    }
+                }
             }
         }
         Ok(())
     }
 }
 
-fn project_overview(config: &Config, base_path: &Path) -> Result<(), CommandError> {
+fn project_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandError<'a>> {
     let mut depth = 0;
     for entry in WalkDir::new(&base_path).min_depth(1) {
         let entry = entry?;
@@ -75,7 +85,7 @@ fn project_overview(config: &Config, base_path: &Path) -> Result<(), CommandErro
     Ok(())
 }
 
-fn get_num_complete(config: &Config, path: &Path) -> Result<(u32, u32), CommandError> {
+fn get_num_complete<'a>(config: &Config, path: &Path) -> Result<(u32, u32), CommandError<'a>> {
     let handler = files::get_file_handler(config.default_filetype);
     let nodo = handler.read(NodoBuilder::default(), &mut fs::File::open(&path)?, config)?;
     let mut total = 0;
@@ -140,7 +150,9 @@ mod test {
         };
         assert_eq!(
             overview.exec(config),
-            Err(CommandError("Couldn't find target".into()))
+            Err(CommandError::TargetMissing(&Target {
+                target: "testdir".split('/').map(String::from).collect(),
+            }))
         );
     }
 
@@ -170,7 +182,9 @@ mod test {
         };
         assert_eq!(
             overview.exec(config),
-            Err(CommandError("Couldn't find target".into()))
+            Err(CommandError::TargetMissing(&Target {
+                target: "testfile.md".split('/').map(String::from).collect(),
+            }))
         );
     }
 
