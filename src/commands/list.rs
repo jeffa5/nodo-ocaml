@@ -36,16 +36,7 @@ impl List {
                 } else if metadata.is_file() {
                     // show the content of the nodo
                     trace!("Target was a file");
-                    let file_handler = files::get_file_handler(config.default_filetype);
-                    let nodo = file_handler.read(
-                        NodoBuilder::default(),
-                        &mut fs::File::open(path)?,
-                        &config,
-                    )?;
-                    debug!("{:#?}", nodo);
-                    if !cfg!(test) {
-                        file_handler.write(&nodo, &mut std::io::stdout(), &config)?;
-                    }
+                    list_file(&config, &path)?;
                 }
             }
         }
@@ -69,6 +60,16 @@ fn list_dir<'a>(path: &std::path::Path) -> Result<(), CommandError<'a>> {
             prefix,
             PathBuf::from(entry.file_name()).to_string_lossy()
         )
+    }
+    Ok(())
+}
+
+fn list_file<'a>(config: &Config, path: &std::path::Path) -> Result<(), CommandError<'a>> {
+    let file_handler = files::get_file_handler(config.default_filetype);
+    let nodo = file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?, &config)?;
+    debug!("{:#?}", nodo);
+    if !cfg!(test) {
+        file_handler.write(&nodo, &mut std::io::stdout(), &config)?;
     }
     Ok(())
 }
