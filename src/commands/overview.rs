@@ -19,6 +19,7 @@ impl Overview {
         debug!("path: {:?}", &path);
         if self.target.is_empty() {
             project_overview(&config, &path)?;
+            return Ok(());
         } else {
             match path.metadata() {
                 Err(err) => {

@@ -18,6 +18,7 @@ impl List {
         debug!("path: {:?}", &path);
         if self.target.is_empty() || self.target.last().unwrap() == "" {
             list_dir(&path)?;
+            return Ok(());
         }
         match path.metadata() {
             Err(err) => {
