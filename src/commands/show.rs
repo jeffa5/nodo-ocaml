@@ -52,6 +52,14 @@ impl Show {
         let nodo =
             file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?, &config)?;
         let mut builder = NodoBuilder::default();
+        builder.tags(nodo.tags().to_vec());
+        if let Some(date) = nodo.start_date() {
+            builder.start_date(date);
+        }
+        if let Some(date) = nodo.due_date() {
+            builder.due_date(date);
+        }
+        builder.title(nodo.title().clone());
         for block in nodo.blocks() {
             match block {
                 Block::List(l) => {
