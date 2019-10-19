@@ -75,6 +75,9 @@ pub struct Show {
     /// The max depth to show for a list or the tree
     #[structopt(short, long)]
     pub depth: Option<u32>,
+    /// Filter task lists to show only complete tasks
+    #[structopt(short, long)]
+    pub filter_complete: Option<bool>,
 }
 
 #[derive(Debug, StructOpt)]

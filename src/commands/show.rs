@@ -51,17 +51,16 @@ impl Show {
         let file_handler = files::get_file_handler(config.default_filetype);
         let nodo =
             file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?, &config)?;
-        debug!("{:#?}", nodo);
         let mut builder = NodoBuilder::default();
         for block in nodo.blocks() {
             match block {
                 Block::List(l) => {
-                    if let Some(depth) = self.depth {
-                        builder.block(Block::List(trim_list(l, depth)));
-                    } else {
-                        builder.block(block.clone());
-                    }
+                    builder.block(Block::List(filter_list(
+                        &trim_list(&l, self.depth),
+                        self.filter_complete,
+                    )));
                 }
+
                 b => {
                     builder.block(b.clone());
                 }
@@ -94,43 +93,85 @@ fn show_dir<'a>(path: &std::path::Path) -> Result<(), CommandError<'a>> {
     Ok(())
 }
 
-fn trim_list(list: &List, depth: u32) -> List {
-    debug!("Trimming list with depth: {}", depth);
-    let mut root_items = Vec::new();
-    match list {
-        List::Plain(items) | List::Numbered(items, _) => {
-            for item in items {
-                match item {
-                    ListItem::Text(blocks, child) => root_items.push(if depth > 0 {
-                        match child {
-                            Some(sublist) => ListItem::Text(
-                                blocks.to_vec(),
-                                Some(trim_list(&sublist, depth - 1)),
-                            ),
-                            None => ListItem::Text(blocks.to_vec(), None),
-                        }
-                    } else {
-                        ListItem::Text(blocks.to_vec(), None)
-                    }),
-                    ListItem::Task(blocks, complete, child) => root_items.push(if depth > 0 {
-                        match child {
-                            Some(sublist) => ListItem::Task(
-                                blocks.to_vec(),
-                                *complete,
-                                Some(trim_list(&sublist, depth - 1)),
-                            ),
-                            None => ListItem::Task(blocks.to_vec(), *complete, None),
-                        }
-                    } else {
-                        ListItem::Task(blocks.to_vec(), *complete, None)
-                    }),
+fn trim_list(list: &List, depth: Option<u32>) -> List {
+    if let Some(depth) = depth {
+        debug!("Trimming list with depth: {}", depth);
+        let mut root_items = Vec::new();
+        match list {
+            List::Plain(items) | List::Numbered(items, _) => {
+                for item in items {
+                    match item {
+                        ListItem::Text(blocks, child) => root_items.push(if depth > 0 {
+                            match child {
+                                Some(sublist) => ListItem::Text(
+                                    blocks.to_vec(),
+                                    Some(trim_list(&sublist, Some(depth - 1))),
+                                ),
+                                None => ListItem::Text(blocks.to_vec(), None),
+                            }
+                        } else {
+                            ListItem::Text(blocks.to_vec(), None)
+                        }),
+                        ListItem::Task(blocks, complete, child) => root_items.push(if depth > 0 {
+                            match child {
+                                Some(sublist) => ListItem::Task(
+                                    blocks.to_vec(),
+                                    *complete,
+                                    Some(trim_list(&sublist, Some(depth - 1))),
+                                ),
+                                None => ListItem::Task(blocks.to_vec(), *complete, None),
+                            }
+                        } else {
+                            ListItem::Task(blocks.to_vec(), *complete, None)
+                        }),
+                    }
                 }
             }
         }
+        match list {
+            List::Plain(_) => List::Plain(root_items),
+            List::Numbered(_, index) => List::Numbered(root_items, *index),
+        }
+    } else {
+        list.clone()
     }
-    match list {
-        List::Plain(_) => List::Plain(root_items),
-        List::Numbered(_, index) => List::Numbered(root_items, *index),
+}
+
+fn filter_list(list: &List, filter_complete: Option<bool>) -> List {
+    if let Some(filter_complete) = filter_complete {
+        debug!("Filtering list with complete: {}", filter_complete);
+        let mut root_items = Vec::new();
+        match list {
+            List::Plain(items) | List::Numbered(items, _) => {
+                for item in items {
+                    match item {
+                        ListItem::Text(blocks, child) => root_items.push(ListItem::Text(
+                            blocks.to_vec(),
+                            child
+                                .as_ref()
+                                .map(|sublist| filter_list(&sublist, Some(filter_complete))),
+                        )),
+                        ListItem::Task(blocks, complete, child) => {
+                            if filter_complete == *complete {
+                                root_items.push(ListItem::Task(
+                                    blocks.to_vec(),
+                                    *complete,
+                                    child.as_ref().map(|sublist| {
+                                        filter_list(&sublist, Some(filter_complete))
+                                    }),
+                                ))
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        match list {
+            List::Plain(_) => List::Plain(root_items),
+            List::Numbered(_, index) => List::Numbered(root_items, *index),
+        }
+    } else {
+        list.clone()
     }
 }
 
@@ -147,6 +188,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
+            filter_complete: None,
             depth: None,
             target: Target { target: Vec::new() },
         };
@@ -159,6 +201,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
+            filter_complete: None,
             depth: None,
             target: Target {
                 target: "".split('/').map(String::from).collect(),
@@ -173,6 +216,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
+            filter_complete: None,
             depth: None,
             target: Target {
                 target: "testdir".split('/').map(String::from).collect(),
@@ -193,6 +237,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
+            filter_complete: None,
             depth: None,
             target: Target {
                 target: "testdir".split('/').map(String::from).collect(),
@@ -207,6 +252,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
+            filter_complete: None,
             depth: None,
             target: Target {
                 target: "testfile.md".split('/').map(String::from).collect(),
@@ -227,6 +273,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
+            filter_complete: None,
             depth: None,
             target: Target {
                 target: "testfile.md".split('/').map(String::from).collect(),
