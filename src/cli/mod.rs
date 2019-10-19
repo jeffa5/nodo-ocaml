@@ -56,6 +56,12 @@ impl ops::Deref for Target {
     }
 }
 
+impl std::fmt::Display for Target {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "{}", self.target.join("/"))
+    }
+}
+
 #[derive(Debug, StructOpt)]
 pub struct New {
     #[structopt(flatten)]
