@@ -66,12 +66,17 @@ fn project_overview<'a>(config: &Config, base_path: &Path) -> Result<(), Command
         } else if entry.file_type().is_file() {
             let (complete, total) = get_num_complete(config, entry.path())?;
             let complete_string = if total > 0 {
-                format!(" completed {}/{}", complete, total)
+                format!(
+                    " completed {}/{} ({:.1}%)",
+                    complete,
+                    total,
+                    100. * f64::from(complete) / f64::from(total)
+                )
             } else {
                 String::new()
             };
             println!(
-                "{}Nodo: {}{} ({:.1}%)",
+                "{}Nodo: {}{}",
                 "  ".repeat(depth + 1),
                 entry
                     .path()
@@ -79,7 +84,6 @@ fn project_overview<'a>(config: &Config, base_path: &Path) -> Result<(), Command
                     .unwrap()
                     .to_string_lossy(),
                 complete_string,
-                100. * f64::from(complete) / f64::from(total)
             );
         }
     }
