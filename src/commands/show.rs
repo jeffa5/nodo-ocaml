@@ -8,7 +8,7 @@ use crate::commands::CommandError;
 use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
-use crate::nodo::NodoBuilder;
+use crate::nodo::{Block, List, ListItem, NodoBuilder};
 use crate::util::file::build_path;
 
 impl Show {
@@ -36,9 +36,39 @@ impl Show {
                 } else if metadata.is_file() {
                     // show the content of the nodo
                     trace!("Target was a file");
-                    show_file(&config, &path)?;
+                    self.show_file(&config, &path)?;
                 }
             }
+        }
+        Ok(())
+    }
+
+    fn show_file<'a>(
+        &self,
+        config: &Config,
+        path: &std::path::Path,
+    ) -> Result<(), CommandError<'a>> {
+        let file_handler = files::get_file_handler(config.default_filetype);
+        let nodo =
+            file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?, &config)?;
+        debug!("{:#?}", nodo);
+        let mut builder = NodoBuilder::default();
+        for block in nodo.blocks() {
+            match block {
+                Block::List(l) => {
+                    if let Some(depth) = self.depth {
+                        builder.block(Block::List(trim_list(l, depth)));
+                    } else {
+                        builder.block(block.clone());
+                    }
+                }
+                b => {
+                    builder.block(b.clone());
+                }
+            }
+        }
+        if !cfg!(test) {
+            file_handler.write(&builder.build(), &mut std::io::stdout(), &config)?;
         }
         Ok(())
     }
@@ -64,14 +94,44 @@ fn show_dir<'a>(path: &std::path::Path) -> Result<(), CommandError<'a>> {
     Ok(())
 }
 
-fn show_file<'a>(config: &Config, path: &std::path::Path) -> Result<(), CommandError<'a>> {
-    let file_handler = files::get_file_handler(config.default_filetype);
-    let nodo = file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?, &config)?;
-    debug!("{:#?}", nodo);
-    if !cfg!(test) {
-        file_handler.write(&nodo, &mut std::io::stdout(), &config)?;
+fn trim_list(list: &List, depth: u32) -> List {
+    debug!("Trimming list with depth: {}", depth);
+    let mut root_items = Vec::new();
+    match list {
+        List::Plain(items) | List::Numbered(items, _) => {
+            for item in items {
+                match item {
+                    ListItem::Text(blocks, child) => root_items.push(if depth > 0 {
+                        match child {
+                            Some(sublist) => ListItem::Text(
+                                blocks.to_vec(),
+                                Some(trim_list(&sublist, depth - 1)),
+                            ),
+                            None => ListItem::Text(blocks.to_vec(), None),
+                        }
+                    } else {
+                        ListItem::Text(blocks.to_vec(), None)
+                    }),
+                    ListItem::Task(blocks, complete, child) => root_items.push(if depth > 0 {
+                        match child {
+                            Some(sublist) => ListItem::Task(
+                                blocks.to_vec(),
+                                *complete,
+                                Some(trim_list(&sublist, depth - 1)),
+                            ),
+                            None => ListItem::Task(blocks.to_vec(), *complete, None),
+                        }
+                    } else {
+                        ListItem::Task(blocks.to_vec(), *complete, None)
+                    }),
+                }
+            }
+        }
     }
-    Ok(())
+    match list {
+        List::Plain(_) => List::Plain(root_items),
+        List::Numbered(_, index) => List::Numbered(root_items, *index),
+    }
 }
 
 #[cfg(test)]
@@ -87,6 +147,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
+            depth: None,
             target: Target { target: Vec::new() },
         };
         assert_eq!(show.exec(config), Ok(()));
@@ -98,6 +159,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
+            depth: None,
             target: Target {
                 target: "".split('/').map(String::from).collect(),
             },
@@ -111,6 +173,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
+            depth: None,
             target: Target {
                 target: "testdir".split('/').map(String::from).collect(),
             },
@@ -130,6 +193,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
+            depth: None,
             target: Target {
                 target: "testdir".split('/').map(String::from).collect(),
             },
@@ -143,6 +207,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
+            depth: None,
             target: Target {
                 target: "testfile.md".split('/').map(String::from).collect(),
             },
@@ -162,6 +227,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
+            depth: None,
             target: Target {
                 target: "testfile.md".split('/').map(String::from).collect(),
             },

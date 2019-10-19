@@ -72,6 +72,9 @@ pub struct New {
 pub struct Show {
     #[structopt(flatten)]
     pub target: Target,
+    /// The max depth to show for a list or the tree
+    #[structopt(short, long)]
+    pub depth: Option<u32>,
 }
 
 #[derive(Debug, StructOpt)]

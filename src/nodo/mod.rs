@@ -7,7 +7,7 @@ use chrono::NaiveDate;
 ///
 /// They are rather simple constructs like lists and headings etc.
 /// They help to split up the document for other operations within Nodo.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Block {
     /// A heading text with a level
     Heading(Text, u32),
@@ -24,7 +24,7 @@ pub enum Block {
 }
 
 /// A single line of potentially decorated text
-#[derive(Debug, PartialEq, Default)]
+#[derive(Debug, PartialEq, Default, Clone)]
 pub struct Text {
     pub inner: Vec<TextItem>,
 }
@@ -81,14 +81,14 @@ pub enum TextStyle {
     Code,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum List {
     Plain(Vec<ListItem>),
     Numbered(Vec<ListItem>, u32),
 }
 
 /// A list item is a possible item in a list
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum ListItem {
     /// Texts have text and optionally a sublist associated with them
     Text(Vec<Block>, Option<List>),
