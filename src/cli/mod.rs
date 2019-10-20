@@ -103,6 +103,10 @@ pub struct Format {
     /// Don't apply the formatting, instead write the formatted file to stdout
     #[structopt(short, long)]
     pub dry_run: bool,
+
+    /// Show output of files being formatted
+    #[structopt(short, long)]
+    pub verbose: bool,
 }
 
 #[derive(Debug, StructOpt)]

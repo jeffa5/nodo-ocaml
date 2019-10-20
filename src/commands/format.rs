@@ -66,6 +66,12 @@ impl Format {
         path: &std::path::Path,
         config: &Config,
     ) -> Result<(), CommandError> {
+        if self.verbose {
+            println!(
+                "Formatting nodo: {}",
+                path.strip_prefix(&config.root_dir).unwrap().display()
+            )
+        }
         if self.dry_run {
             handler.write(
                 &handler.read(NodoBuilder::default(), &mut fs::File::open(&path)?, config)?,
@@ -96,6 +102,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
+            verbose: false,
             dry_run: false,
             target: Target { target: Vec::new() },
         };
@@ -108,6 +115,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
+            verbose: false,
             dry_run: false,
             target: Target {
                 target: "".split('/').map(String::from).collect(),
@@ -122,6 +130,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
+            verbose: false,
             dry_run: false,
             target: Target {
                 target: "testdir".split('/').map(String::from).collect(),
@@ -142,6 +151,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
+            verbose: false,
             dry_run: false,
             target: Target {
                 target: "testdir".split('/').map(String::from).collect(),
@@ -156,6 +166,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
+            verbose: false,
             dry_run: false,
             target: Target {
                 target: "testfile.md".split('/').map(String::from).collect(),
@@ -176,6 +187,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
+            verbose: false,
             dry_run: false,
             target: Target {
                 target: "testfile".split('/').map(String::from).collect(),
@@ -191,6 +203,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
+            verbose: false,
             dry_run: false,
             target: Target {
                 target: "testfile.md".split('/').map(String::from).collect(),
