@@ -66,10 +66,11 @@ fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandErro
             .ancestors()
             .count()
             - 2;
+        let indent = " ".repeat(depth);
         if entry.file_type().is_dir() {
             println!(
                 "{}P: {}",
-                "  ".repeat(depth),
+                indent,
                 entry
                     .path()
                     .strip_prefix(&base_path)
@@ -78,7 +79,7 @@ fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandErro
             );
         } else if entry.file_type().is_file() {
             let overview = file_overview(config, entry.path())?;
-            println!("{}N: {}", "  ".repeat(depth), overview);
+            println!("{}N: {}", indent, overview);
         }
     }
     Ok(())
