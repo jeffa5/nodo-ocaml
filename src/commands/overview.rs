@@ -56,18 +56,17 @@ impl Overview {
 }
 
 fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandError<'a>> {
-    let mut depth = 0;
     for entry in WalkDir::new(&base_path).min_depth(1) {
         let entry = entry?;
         debug!("Found {:?} while walking", entry);
+        let depth = entry
+            .path()
+            .strip_prefix(&base_path)
+            .unwrap()
+            .ancestors()
+            .count()
+            - 2;
         if entry.file_type().is_dir() {
-            depth = entry
-                .path()
-                .strip_prefix(&base_path)
-                .unwrap()
-                .ancestors()
-                .count()
-                - 2;
             println!(
                 "{}P: {}",
                 "  ".repeat(depth),
@@ -79,7 +78,7 @@ fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandErro
             );
         } else if entry.file_type().is_file() {
             let overview = file_overview(config, entry.path())?;
-            println!("{}N: {}", "  ".repeat(depth + 1), overview);
+            println!("{}N: {}", "  ".repeat(depth), overview);
         }
     }
     Ok(())
