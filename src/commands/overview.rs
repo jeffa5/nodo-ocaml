@@ -69,7 +69,7 @@ fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandErro
                 .count()
                 - 2;
             println!(
-                "{}Project: {}",
+                "{}P: {}",
                 "  ".repeat(depth),
                 entry
                     .path()
@@ -79,7 +79,7 @@ fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandErro
             );
         } else if entry.file_type().is_file() {
             let overview = file_overview(config, entry.path())?;
-            println!("{}Nodo: {}", "  ".repeat(depth + 1), overview);
+            println!("{}N: {}", "  ".repeat(depth + 1), overview);
         }
     }
     Ok(())
@@ -95,7 +95,7 @@ fn file_overview<'a>(config: &Config, path: &Path) -> Result<String, CommandErro
     let (complete, total) = get_num_complete(&nodo)?;
     let complete_string = if total > 0 {
         format!(
-            " completed {}/{} ({:.1}%)",
+            " [{}/{} ({:.1}%)]",
             complete,
             total,
             100. * f64::from(complete) / f64::from(total)
