@@ -1,4 +1,5 @@
 use std::ops;
+use std::path::PathBuf;
 use structopt::StructOpt;
 
 /// A task and notes tracker, combined
@@ -66,6 +67,10 @@ impl std::fmt::Display for Target {
 pub struct New {
     #[structopt(flatten)]
     pub target: Target,
+
+    /// Create the nodo from the given template file
+    #[structopt(short, long, parse(from_os_str))]
+    pub template: Option<PathBuf>,
 }
 
 #[derive(Debug, StructOpt)]

@@ -1,4 +1,5 @@
 use log::*;
+use std::fs;
 
 use crate::cli::New;
 use crate::commands::CommandError;
@@ -14,15 +15,41 @@ impl New {
         if self.target.is_empty() || self.target.last().unwrap() == "" {
             return Err(CommandError::NoTarget);
         }
+        if let Some(template) = &self.template {
+            debug!("Template given: {}", template.to_string_lossy());
+            let mut template_path = config.root_dir.join(template);
+            if template_path.extension().is_none() {
+                template_path.set_extension(config.default_filetype);
+            }
+            if !template_path.is_file() {
+                return Err(CommandError::Str(format!(
+                    "Template '{}' isn't a nodo in the root directory",
+                    template.to_string_lossy()
+                )));
+            }
+        }
         // ensure the project exists
         project::make_dirs(&config, &self.target)?;
         // write the nodo to the default location
         let pb = file::build_path(&config, &self.target, true);
         let mut file = file::create_file(&pb)?;
-        info!("Writing nodo to: {:?}", file);
-        let handler = files::get_file_handler(config.default_filetype);
-        let nodo = NodoBuilder::default().build();
-        handler.write(&nodo, &mut file, &config)?;
+        if let Some(template) = &self.template {
+            let mut template_path = config.root_dir.join(template);
+            if template_path.extension().is_none() {
+                template_path.set_extension(config.default_filetype);
+            }
+            debug!(
+                "Copying from template {} to {}",
+                template_path.to_string_lossy(),
+                pb.to_string_lossy()
+            );
+            fs::copy(template_path, pb)?;
+        } else {
+            info!("Writing nodo to: {:?}", file);
+            let handler = files::get_file_handler(config.default_filetype);
+            let nodo = NodoBuilder::default().build();
+            handler.write(&nodo, &mut file, &config)?;
+        }
         println!("Created a new nodo: {}", self.target);
         Ok(())
     }
@@ -41,6 +68,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
+            template: None,
             target: Target { target: Vec::new() },
         };
         assert_eq!(new.exec(config), Err(CommandError::NoTarget));
@@ -52,6 +80,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
+            template: None,
             target: Target {
                 target: "".split('/').map(String::from).collect(),
             },
@@ -65,6 +94,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
+            template: None,
             target: Target {
                 target: "testdir/testfile".split('/').map(String::from).collect(),
             },
@@ -91,6 +121,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
+            template: None,
             target: Target {
                 target: "testdir/testfile.md".split('/').map(String::from).collect(),
             },
