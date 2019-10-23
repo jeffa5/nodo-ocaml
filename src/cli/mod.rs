@@ -98,6 +98,9 @@ pub struct Remove {
 pub struct Edit {
     #[structopt(flatten)]
     pub target: Target,
+
+    #[structopt(short, long)]
+    pub temp: bool,
 }
 
 #[derive(Debug, StructOpt)]

@@ -1,5 +1,7 @@
+use chrono::offset::Local;
 use log::*;
 use std::env;
+use std::fs::File;
 use std::io::ErrorKind;
 use std::process::Command as Cmd;
 
@@ -14,10 +16,23 @@ impl Edit {
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         trace!("Editing a nodo");
         // get the file location
-        if self.target.is_empty() || self.target.last().unwrap() == "" {
+        let path = if self.temp {
+            if !self.target.is_empty() {
+                return Err(CommandError::Str(
+                    "Can't edit a temporary nodo with a target".to_string(),
+                ));
+            }
+            let s = Local::now().format("%F-%T").to_string();
+            debug!("temp file name: {}", s);
+            let filename = config.temp_dir.join(s);
+            File::create(&filename)?;
+            filename
+        } else if self.target.is_empty() || self.target.last().unwrap() == "" {
             return Err(CommandError::NoTarget);
-        }
-        let path = file::build_path(&config, &self.target, true);
+        } else {
+            file::build_path(&config, &self.target, true)
+        };
+        debug!("Using path: {:?}", path);
         match path.metadata() {
             Err(err) => {
                 return Err(match err.kind() {
@@ -60,14 +75,17 @@ mod test {
     use super::*;
     use crate::cli::Target;
     use pretty_assertions::assert_eq;
+    use std::fs;
+    use std::path::PathBuf;
     use tempfile::tempdir;
 
     #[test]
     fn no_args_is_error() {
         let dir = tempdir().expect("Couldn't make tempdir");
         let mut config = Config::new();
-        config.root_dir = std::path::PathBuf::from(dir.path());
+        config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            temp: false,
             target: Target { target: Vec::new() },
         };
         assert_eq!(edit.exec(config), Err(CommandError::NoTarget));
@@ -77,8 +95,9 @@ mod test {
     fn empty_args_is_error() {
         let dir = tempdir().expect("Couldn't make tempdir");
         let mut config = Config::new();
-        config.root_dir = std::path::PathBuf::from(dir.path());
+        config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            temp: false,
             target: Target {
                 target: "".split('/').map(String::from).collect(),
             },
@@ -90,8 +109,9 @@ mod test {
     fn cant_edit_nonexistent_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
         let mut config = Config::new();
-        config.root_dir = std::path::PathBuf::from(dir.path());
+        config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            temp: false,
             target: Target {
                 target: "testdir/testfile".split('/').map(String::from).collect(),
             },
@@ -108,8 +128,9 @@ mod test {
     fn cant_edit_nonexistent_file_ext() {
         let dir = tempdir().expect("Couldn't make tempdir");
         let mut config = Config::new();
-        config.root_dir = std::path::PathBuf::from(dir.path());
+        config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            temp: false,
             target: Target {
                 target: "testdir/testfile.md".split('/').map(String::from).collect(),
             },
@@ -125,10 +146,11 @@ mod test {
     #[test]
     fn can_edit_existing_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
+        fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
         let mut config = Config::new();
-        config.root_dir = std::path::PathBuf::from(dir.path());
+        config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            temp: false,
             target: Target {
                 target: "testfile".split('/').map(String::from).collect(),
             },
@@ -139,10 +161,11 @@ mod test {
     #[test]
     fn can_edit_existing_file_ext() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
+        fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
         let mut config = Config::new();
-        config.root_dir = std::path::PathBuf::from(dir.path());
+        config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            temp: false,
             target: Target {
                 target: "testfile.md".split('/').map(String::from).collect(),
             },

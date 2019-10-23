@@ -1,3 +1,4 @@
+use log::*;
 use std::path::{Path, PathBuf};
 
 pub struct Config {
@@ -10,7 +11,7 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Config {
-        let config = Config {
+        let mut config = Config {
             root_dir: PathBuf::from(".nodo"),
             temp_dir: PathBuf::from("temp"),
             projects_delimeter: "/",
@@ -18,13 +19,16 @@ impl Config {
             date_format: "%d/%m/%Y",
         };
         let home = dirs::home_dir().expect("Failed to get home dir");
-        setup_dir(&home.join(&config.root_dir));
-        setup_dir(&home.join(&config.temp_dir));
+        config.root_dir = home.join(config.root_dir);
+        config.temp_dir = config.root_dir.join(config.temp_dir);
+        setup_dir(&config.root_dir);
+        setup_dir(&config.temp_dir);
         config
     }
 }
 
 fn setup_dir(p: &Path) {
+    debug!("Config: creating dir {:?}", p);
     if !p.exists() {
         std::fs::create_dir_all(p).expect("Failed to create default dir")
     }
