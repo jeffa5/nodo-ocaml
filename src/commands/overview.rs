@@ -79,7 +79,7 @@ fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandErro
         } else if entry.file_type().is_file() {
             let overview = file_overview(config, entry.path())?;
             println!(
-                "{}N: {} {}",
+                "{}N: {}{}",
                 indent,
                 entry.path().file_name().unwrap().to_string_lossy(),
                 overview
