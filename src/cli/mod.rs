@@ -28,6 +28,9 @@ pub enum SubCommand {
     /// Edit a nodo in the editor
     Edit(Edit),
 
+    /// Clean up the temporary directory
+    Clean(Clean),
+
     /// Format nodos or a target
     Format(Format),
 
@@ -102,6 +105,9 @@ pub struct Edit {
     #[structopt(short, long)]
     pub temp: bool,
 }
+
+#[derive(Debug, StructOpt)]
+pub struct Clean {}
 
 #[derive(Debug, StructOpt)]
 pub struct Format {

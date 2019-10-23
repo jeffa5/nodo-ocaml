@@ -58,6 +58,11 @@ fn main() {
                     println!("{}", err)
                 }
             }
+            SubCommand::Clean(clean) => {
+                if let Err(err) = clean.exec(config) {
+                    println!("{}", err)
+                }
+            }
             SubCommand::Format(format) => {
                 if let Err(err) = format.exec(config) {
                     println!("{}", err)

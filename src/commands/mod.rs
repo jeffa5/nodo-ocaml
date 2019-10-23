@@ -1,3 +1,4 @@
+mod clean;
 mod edit;
 mod error;
 mod format;
