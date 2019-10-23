@@ -108,13 +108,13 @@ mod test {
         let remove = Remove {
             force: false,
             target: Target {
-                target: "testdir".to_string(),
+                inner: "testdir".to_string(),
             },
         };
         assert_eq!(
             remove.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testdir".to_string()
+                inner: "testdir".to_string()
             }))
         );
     }
@@ -128,7 +128,7 @@ mod test {
         let remove = Remove {
             force: false,
             target: Target {
-                target: "testdir".to_string(),
+                inner: "testdir".to_string(),
             },
         };
         assert_eq!(
@@ -148,7 +148,7 @@ mod test {
         let remove = Remove {
             force: true,
             target: Target {
-                target: "testdir".to_string(),
+                inner: "testdir".to_string(),
             },
         };
         assert_eq!(remove.exec(config), Ok(()));
@@ -162,13 +162,13 @@ mod test {
         let remove = Remove {
             force: false,
             target: Target {
-                target: "testfile.md".to_string(),
+                inner: "testfile.md".to_string(),
             },
         };
         assert_eq!(
             remove.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testfile.md".to_string()
+                inner: "testfile.md".to_string()
             }))
         );
     }
@@ -182,7 +182,7 @@ mod test {
         let remove = Remove {
             force: false,
             target: Target {
-                target: "testfile".to_string(),
+                inner: "testfile".to_string(),
             },
         };
         assert_eq!(remove.exec(config), Ok(()));
@@ -197,7 +197,7 @@ mod test {
         let remove = Remove {
             force: false,
             target: Target {
-                target: "testfile.md".to_string(),
+                inner: "testfile.md".to_string(),
             },
         };
         assert_eq!(remove.exec(config), Ok(()));

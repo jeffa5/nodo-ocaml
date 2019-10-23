@@ -232,7 +232,7 @@ mod test {
             filter_complete: None,
             depth: None,
             target: Target {
-                target: "".split('/').map(String::from).collect(),
+                inner: "".split('/').map(String::from).collect(),
             },
         };
         assert_eq!(show.exec(config), Ok(()));
@@ -247,13 +247,13 @@ mod test {
             filter_complete: None,
             depth: None,
             target: Target {
-                target: "testdir".split('/').map(String::from).collect(),
+                inner: "testdir".split('/').map(String::from).collect(),
             },
         };
         assert_eq!(
             show.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testdir".split('/').map(String::from).collect(),
+                inner: "testdir".split('/').map(String::from).collect(),
             }))
         );
     }
@@ -268,7 +268,7 @@ mod test {
             filter_complete: None,
             depth: None,
             target: Target {
-                target: "testdir".split('/').map(String::from).collect(),
+                inner: "testdir".split('/').map(String::from).collect(),
             },
         };
         assert_eq!(show.exec(config), Ok(()));
@@ -283,13 +283,13 @@ mod test {
             filter_complete: None,
             depth: None,
             target: Target {
-                target: "testfile.md".split('/').map(String::from).collect(),
+                inner: "testfile.md".split('/').map(String::from).collect(),
             },
         };
         assert_eq!(
             show.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testfile.md".split('/').map(String::from).collect(),
+                inner: "testfile.md".split('/').map(String::from).collect(),
             }))
         );
     }
@@ -304,7 +304,7 @@ mod test {
             filter_complete: None,
             depth: None,
             target: Target {
-                target: "testfile".split('/').map(String::from).collect(),
+                inner: "testfile".split('/').map(String::from).collect(),
             },
         };
         assert_eq!(show.exec(config), Ok(()));
@@ -320,7 +320,7 @@ mod test {
             filter_complete: None,
             depth: None,
             target: Target {
-                target: "testfile.md".split('/').map(String::from).collect(),
+                inner: "testfile.md".split('/').map(String::from).collect(),
             },
         };
         assert_eq!(show.exec(config), Ok(()));

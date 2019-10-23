@@ -165,13 +165,13 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
-                target: "testdir".to_string(),
+                inner: "testdir".to_string(),
             },
         };
         assert_eq!(
             overview.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testdir".to_string(),
+                inner: "testdir".to_string(),
             }))
         );
     }
@@ -184,7 +184,7 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
-                target: "testdir".to_string(),
+                inner: "testdir".to_string(),
             },
         };
         assert_eq!(overview.exec(config), Ok(()));
@@ -197,13 +197,13 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
-                target: "testfile".to_string(),
+                inner: "testfile".to_string(),
             },
         };
         assert_eq!(
             overview.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testfile".to_string(),
+                inner: "testfile".to_string(),
             }))
         );
     }
@@ -216,7 +216,7 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
-                target: "testfile".to_string(),
+                inner: "testfile".to_string(),
             },
         };
         assert_eq!(overview.exec(config), Ok(()));
@@ -230,7 +230,7 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
-                target: "testfile.md".to_string(),
+                inner: "testfile.md".to_string(),
             },
         };
         assert_eq!(overview.exec(config), Ok(()));

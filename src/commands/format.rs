@@ -135,13 +135,13 @@ mod test {
             verbose: false,
             dry_run: false,
             target: Target {
-                target: "testdir".to_string(),
+                inner: "testdir".to_string(),
             },
         };
         assert_eq!(
             format.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testdir".to_string()
+                inner: "testdir".to_string()
             }))
         );
     }
@@ -156,7 +156,7 @@ mod test {
             verbose: false,
             dry_run: false,
             target: Target {
-                target: "testdir".to_string(),
+                inner: "testdir".to_string(),
             },
         };
         assert_eq!(format.exec(config), Ok(()));
@@ -171,13 +171,13 @@ mod test {
             verbose: false,
             dry_run: false,
             target: Target {
-                target: "testfile.md".to_string(),
+                inner: "testfile.md".to_string(),
             },
         };
         assert_eq!(
             format.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testfile.md".to_string()
+                inner: "testfile.md".to_string()
             }))
         );
     }
@@ -192,7 +192,7 @@ mod test {
             verbose: false,
             dry_run: false,
             target: Target {
-                target: "testfile".to_string(),
+                inner: "testfile".to_string(),
             },
         };
         assert_eq!(format.exec(config), Ok(()));
@@ -208,7 +208,7 @@ mod test {
             verbose: false,
             dry_run: false,
             target: Target {
-                target: "testfile.md".to_string(),
+                inner: "testfile.md".to_string(),
             },
         };
         assert_eq!(format.exec(config), Ok(()));

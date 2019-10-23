@@ -111,13 +111,13 @@ mod test {
         let edit = Edit {
             temp: false,
             target: Target {
-                target: "testdir/testfile".to_string(),
+                inner: "testdir/testfile".to_string(),
             },
         };
         assert_eq!(
             edit.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testdir/testfile".to_string(),
+                inner: "testdir/testfile".to_string(),
             }))
         );
     }
@@ -130,13 +130,13 @@ mod test {
         let edit = Edit {
             temp: false,
             target: Target {
-                target: "testdir/testfile.md".to_string(),
+                inner: "testdir/testfile.md".to_string(),
             },
         };
         assert_eq!(
             edit.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testdir/testfile.md".to_string(),
+                inner: "testdir/testfile.md".to_string(),
             }))
         );
     }
@@ -150,7 +150,7 @@ mod test {
         let edit = Edit {
             temp: false,
             target: Target {
-                target: "testfile".to_string(),
+                inner: "testfile".to_string(),
             },
         };
         assert_eq!(edit.exec(config), Ok(()));
@@ -165,7 +165,7 @@ mod test {
         let edit = Edit {
             temp: false,
             target: Target {
-                target: "testfile.md".to_string(),
+                inner: "testfile.md".to_string(),
             },
         };
         assert_eq!(edit.exec(config), Ok(()));

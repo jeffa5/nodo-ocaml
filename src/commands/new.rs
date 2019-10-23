@@ -82,7 +82,7 @@ mod test {
         let new = New {
             template: None,
             target: Target {
-                target: "".to_string(),
+                inner: "".to_string(),
             },
         };
         assert_eq!(new.exec(config), Err(CommandError::NoTarget));
@@ -96,7 +96,7 @@ mod test {
         let new = New {
             template: None,
             target: Target {
-                target: "testdir/testfile".to_string(),
+                inner: "testdir/testfile".to_string(),
             },
         };
         new.exec(config).expect("Exec failed");
@@ -123,7 +123,7 @@ mod test {
         let new = New {
             template: None,
             target: Target {
-                target: "testdir/testfile.md".to_string(),
+                inner: "testdir/testfile.md".to_string(),
             },
         };
         new.exec(config).expect("Exec failed");

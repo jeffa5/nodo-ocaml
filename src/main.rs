@@ -77,6 +77,11 @@ fn main() {
                     println!("{}", err)
                 }
             }
+            SubCommand::Archive(archive) => {
+                if let Err(err) = archive.exec(config) {
+                    println!("{}", err)
+                }
+            }
             SubCommand::Completions { shell } => Cli::clap().gen_completions_to(
                 "nodo",
                 shell

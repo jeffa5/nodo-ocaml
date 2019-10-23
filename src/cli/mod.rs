@@ -39,6 +39,9 @@ pub enum SubCommand {
     /// Provide an overview of the target
     Overview(Overview),
 
+    /// Archive a nodo or project tree
+    Archive(Archive),
+
     /// Generates completion scripts for your shell
     Completions {
         /// The shell to generate the script for
@@ -51,20 +54,20 @@ pub enum SubCommand {
 pub struct Target {
     /// A '/' separated value of the form project/subproject/.../nodo_name
     #[structopt(default_value = "")]
-    pub target: String,
+    pub inner: String,
 }
 
 impl ops::Deref for Target {
     type Target = String;
 
     fn deref(&self) -> &Self::Target {
-        &self.target
+        &self.inner
     }
 }
 
 impl std::fmt::Display for Target {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.target)
+        write!(f, "{}", self.inner)
     }
 }
 
@@ -127,6 +130,12 @@ pub struct Format {
 
 #[derive(Debug, StructOpt)]
 pub struct Overview {
+    #[structopt(flatten)]
+    pub target: Target,
+}
+
+#[derive(Debug, StructOpt)]
+pub struct Archive {
     #[structopt(flatten)]
     pub target: Target,
 }
