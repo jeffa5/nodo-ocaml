@@ -47,6 +47,10 @@ impl Format {
                 if metadata.is_dir() {
                     for entry in WalkDir::new(&path) {
                         let entry = entry?;
+                        if entry.path().starts_with(&config.temp_dir) {
+                            debug!("Ignoring: {:?}", entry);
+                            continue;
+                        }
                         if entry.file_type().is_file() {
                             debug!("Formatting {}", entry.path().to_string_lossy());
                             self.format(&handler, &entry.path(), &config)?

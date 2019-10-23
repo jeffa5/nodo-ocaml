@@ -57,6 +57,10 @@ impl Overview {
 fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandError<'a>> {
     for entry in WalkDir::new(&base_path).min_depth(1) {
         let entry = entry?;
+        if entry.path().starts_with(&config.temp_dir) {
+            debug!("Ignoring: {:?}", entry);
+            continue;
+        }
         debug!("Found {:?} while walking", entry);
         let depth = entry
             .path()

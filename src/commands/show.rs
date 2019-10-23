@@ -19,7 +19,7 @@ impl Show {
         let mut path = build_path(&config, &self.target, false);
         debug!("path: {:?}", &path);
         if self.target.is_empty() || self.target.last().unwrap() == "" {
-            show_dir(&path)?;
+            show_dir(&config, &path)?;
             return Ok(());
         }
         if let Err(err) = path.metadata() {
@@ -44,7 +44,7 @@ impl Show {
                 if metadata.is_dir() {
                     // show the contents of the directory
                     trace!("Target was a directory");
-                    show_dir(&path)?;
+                    show_dir(&config, &path)?;
                 } else if metadata.is_file() {
                     // show the content of the nodo
                     trace!("Target was a file");
@@ -93,17 +93,25 @@ impl Show {
     }
 }
 
-fn show_dir<'a>(path: &std::path::Path) -> Result<(), CommandError<'a>> {
+fn show_dir<'a>(config: &Config, path: &std::path::Path) -> Result<(), CommandError<'a>> {
     let contents = fs::read_dir(path)?;
     for entry in contents {
         let entry = entry.expect("Failed to get direntry");
-        let filetype = entry.file_type()?;
-        let mut prefix = "";
-        if filetype.is_dir() {
-            prefix = "P"
-        } else if filetype.is_file() {
-            prefix = "N"
+        if entry.path().starts_with(&config.temp_dir) {
+            debug!("Ignoring: {:?}", entry);
+            continue;
         }
+        let filetype = entry.file_type()?;
+        let prefix = if filetype.is_dir() {
+            "P"
+        } else if filetype.is_file() {
+            "N"
+        } else {
+            return Err(CommandError::Str(format!(
+                "Failed to determine filetype of {:?}",
+                entry
+            )));
+        };
         println!(
             "{} {}",
             prefix,
