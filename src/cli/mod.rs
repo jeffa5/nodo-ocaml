@@ -8,6 +8,8 @@ use structopt::StructOpt;
 pub struct Cli {
     #[structopt(subcommand)]
     pub sub_command: Option<SubCommand>,
+    #[structopt(flatten)]
+    pub target: Target,
     #[structopt(short = "q", long = "quiet")]
     pub quiet: bool,
     #[structopt(short = "v", long = "verbose", parse(from_occurrences))]

@@ -28,10 +28,14 @@ fn main() {
         .expect("Failed to initialise logging");
     debug!("{:#?}", opts);
     let config = Config::new();
+    if opts.sub_command.is_some() && !opts.target.is_empty() {
+        println!("Can't specify a target here and a subcommand");
+        return;
+    }
     match opts.sub_command {
         None => {
             let overview = cli::Overview {
-                target: cli::Target::default(),
+                target: opts.target,
             };
             if let Err(err) = overview.exec(config) {
                 println!("{}", err)
