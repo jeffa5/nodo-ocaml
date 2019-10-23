@@ -117,11 +117,14 @@ fn get_num_complete<'a>(nodo: &Nodo) -> Result<(u32, u32), CommandError<'a>> {
         match block {
             Block::List(List::Plain(items)) | Block::List(List::Numbered(items, _)) => {
                 for item in items {
+                    debug!("Counting item: {:?}", item);
                     // not recursive so doesn't count sub-tasks
-                    if let ListItem::Task(_, true, _) = item {
-                        complete += 1;
+                    if let ListItem::Task(_, is_complete, _) = item {
+                        if *is_complete {
+                            complete += 1;
+                        }
+                        total += 1;
                     }
-                    total += 1;
                 }
             }
             _ => (),

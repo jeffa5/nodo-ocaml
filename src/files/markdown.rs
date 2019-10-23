@@ -678,6 +678,19 @@ mod test {
                         ])],
                         None,
                     ),
+                    ListItem::Task(
+                        vec![Block::Paragraph(vec![vec![TextItem::plain("task")].into()])],
+                        false,
+                        None,
+                    ),
+                    ListItem::Task(
+                        vec![Block::Paragraph(vec![vec![TextItem::plain(
+                            "completed task",
+                        )]
+                        .into()])],
+                        true,
+                        None,
+                    ),
                 ],
                 1,
             )))
@@ -782,6 +795,8 @@ due_date: 16/04/2015
 
 1. list item 1
 2. list item 2
+3. [ ] task
+4. [x] completed task
 
 ## nodo header with level 2
 
@@ -806,6 +821,8 @@ due_date: 16/04/2015
 
 1. list item 1
 2. list item 2
+3. [ ] task
+4. [x] completed task
 
 ## nodo header with level 2
 
