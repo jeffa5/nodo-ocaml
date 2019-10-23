@@ -48,12 +48,12 @@ pub enum SubCommand {
 #[derive(Debug, Default, StructOpt, PartialEq)]
 pub struct Target {
     /// A '/' separated value of the form project/subproject/.../nodo_name
-    #[structopt(use_delimiter = true, value_delimiter = "/", require_delimiter = true)]
-    pub target: Vec<String>,
+    #[structopt(default_value = "")]
+    pub target: String,
 }
 
 impl ops::Deref for Target {
-    type Target = Vec<String>;
+    type Target = String;
 
     fn deref(&self) -> &Self::Target {
         &self.target
@@ -62,7 +62,7 @@ impl ops::Deref for Target {
 
 impl std::fmt::Display for Target {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "{}", self.target.join("/"))
+        write!(f, "{}", self.target)
     }
 }
 

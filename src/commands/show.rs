@@ -18,7 +18,7 @@ impl Show {
         debug!("target: {:?}", &self.target);
         let mut path = build_path(&config, &self.target, false);
         debug!("path: {:?}", &path);
-        if self.target.is_empty() || self.target.last().unwrap() == "" {
+        if self.target.is_empty() {
             show_dir(&config, &path)?;
             return Ok(());
         }
@@ -218,7 +218,7 @@ mod test {
         let show = Show {
             filter_complete: None,
             depth: None,
-            target: Target { target: Vec::new() },
+            target: Target::default(),
         };
         assert_eq!(show.exec(config), Ok(()));
     }

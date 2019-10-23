@@ -11,7 +11,7 @@ impl Remove {
     /// Remove a nodo if it exists
     /// Accepts a dir (with force) or a file
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
-        if self.target.is_empty() || self.target.last().unwrap() == "" {
+        if self.target.is_empty() {
             return Err(CommandError::NoTarget);
         }
         let mut path = file::build_path(&config, &self.target, false);
@@ -83,7 +83,7 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
             force: false,
-            target: Target { target: Vec::new() },
+            target: Target::default(),
         };
         assert_eq!(remove.exec(config), Err(CommandError::NoTarget));
     }
@@ -95,9 +95,7 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
             force: false,
-            target: Target {
-                target: "".split('/').map(String::from).collect(),
-            },
+            target: Target::default(),
         };
         assert_eq!(remove.exec(config), Err(CommandError::NoTarget));
     }
@@ -110,13 +108,13 @@ mod test {
         let remove = Remove {
             force: false,
             target: Target {
-                target: "testdir".split('/').map(String::from).collect(),
+                target: "testdir".to_string(),
             },
         };
         assert_eq!(
             remove.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: vec!["testdir".to_string()]
+                target: "testdir".to_string()
             }))
         );
     }
@@ -130,7 +128,7 @@ mod test {
         let remove = Remove {
             force: false,
             target: Target {
-                target: "testdir".split('/').map(String::from).collect(),
+                target: "testdir".to_string(),
             },
         };
         assert_eq!(
@@ -150,7 +148,7 @@ mod test {
         let remove = Remove {
             force: true,
             target: Target {
-                target: "testdir".split('/').map(String::from).collect(),
+                target: "testdir".to_string(),
             },
         };
         assert_eq!(remove.exec(config), Ok(()));
@@ -164,13 +162,13 @@ mod test {
         let remove = Remove {
             force: false,
             target: Target {
-                target: "testfile.md".split('/').map(String::from).collect(),
+                target: "testfile.md".to_string(),
             },
         };
         assert_eq!(
             remove.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: vec!["testfile.md".to_string()]
+                target: "testfile.md".to_string()
             }))
         );
     }
@@ -184,7 +182,7 @@ mod test {
         let remove = Remove {
             force: false,
             target: Target {
-                target: "testfile".split('/').map(String::from).collect(),
+                target: "testfile".to_string(),
             },
         };
         assert_eq!(remove.exec(config), Ok(()));
@@ -199,7 +197,7 @@ mod test {
         let remove = Remove {
             force: false,
             target: Target {
-                target: "testfile.md".split('/').map(String::from).collect(),
+                target: "testfile.md".to_string(),
             },
         };
         assert_eq!(remove.exec(config), Ok(()));

@@ -108,7 +108,7 @@ mod test {
         let format = Format {
             verbose: false,
             dry_run: false,
-            target: Target { target: Vec::new() },
+            target: Target::default(),
         };
         assert_eq!(format.exec(config), Ok(()));
     }
@@ -121,9 +121,7 @@ mod test {
         let format = Format {
             verbose: false,
             dry_run: false,
-            target: Target {
-                target: "".split('/').map(String::from).collect(),
-            },
+            target: Target::default(),
         };
         assert_eq!(format.exec(config), Ok(()));
     }
@@ -137,13 +135,13 @@ mod test {
             verbose: false,
             dry_run: false,
             target: Target {
-                target: "testdir".split('/').map(String::from).collect(),
+                target: "testdir".to_string(),
             },
         };
         assert_eq!(
             format.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testdir".split('/').map(String::from).collect(),
+                target: "testdir".to_string()
             }))
         );
     }
@@ -158,7 +156,7 @@ mod test {
             verbose: false,
             dry_run: false,
             target: Target {
-                target: "testdir".split('/').map(String::from).collect(),
+                target: "testdir".to_string(),
             },
         };
         assert_eq!(format.exec(config), Ok(()));
@@ -173,13 +171,13 @@ mod test {
             verbose: false,
             dry_run: false,
             target: Target {
-                target: "testfile.md".split('/').map(String::from).collect(),
+                target: "testfile.md".to_string(),
             },
         };
         assert_eq!(
             format.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testfile.md".split('/').map(String::from).collect(),
+                target: "testfile.md".to_string()
             }))
         );
     }
@@ -194,7 +192,7 @@ mod test {
             verbose: false,
             dry_run: false,
             target: Target {
-                target: "testfile".split('/').map(String::from).collect(),
+                target: "testfile".to_string(),
             },
         };
         assert_eq!(format.exec(config), Ok(()));
@@ -210,7 +208,7 @@ mod test {
             verbose: false,
             dry_run: false,
             target: Target {
-                target: "testfile.md".split('/').map(String::from).collect(),
+                target: "testfile.md".to_string(),
             },
         };
         assert_eq!(format.exec(config), Ok(()));

@@ -143,7 +143,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
-            target: Target { target: Vec::new() },
+            target: Target::default(),
         };
         assert_eq!(overview.exec(config), Ok(()));
     }
@@ -154,9 +154,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
-            target: Target {
-                target: "".split('/').map(String::from).collect(),
-            },
+            target: Target::default(),
         };
         assert_eq!(overview.exec(config), Ok(()));
     }
@@ -168,13 +166,13 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
-                target: "testdir".split('/').map(String::from).collect(),
+                target: "testdir".to_string(),
             },
         };
         assert_eq!(
             overview.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testdir".split('/').map(String::from).collect(),
+                target: "testdir".to_string(),
             }))
         );
     }
@@ -187,7 +185,7 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
-                target: "testdir".split('/').map(String::from).collect(),
+                target: "testdir".to_string(),
             },
         };
         assert_eq!(overview.exec(config), Ok(()));
@@ -200,13 +198,13 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
-                target: "testfile".split('/').map(String::from).collect(),
+                target: "testfile".to_string(),
             },
         };
         assert_eq!(
             overview.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testfile".split('/').map(String::from).collect(),
+                target: "testfile".to_string(),
             }))
         );
     }
@@ -219,7 +217,7 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
-                target: "testfile".split('/').map(String::from).collect(),
+                target: "testfile".to_string(),
             },
         };
         assert_eq!(overview.exec(config), Ok(()));
@@ -233,7 +231,7 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
-                target: "testfile.md".split('/').map(String::from).collect(),
+                target: "testfile.md".to_string(),
             },
         };
         assert_eq!(overview.exec(config), Ok(()));

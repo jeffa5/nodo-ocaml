@@ -12,7 +12,7 @@ use crate::util::{file, project};
 impl New {
     /// Create a new nodo with the given options
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
-        if self.target.is_empty() || self.target.last().unwrap() == "" {
+        if self.target.is_empty() {
             return Err(CommandError::NoTarget);
         }
         if let Some(template) = &self.template {
@@ -69,7 +69,7 @@ mod test {
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
             template: None,
-            target: Target { target: Vec::new() },
+            target: Target::default(),
         };
         assert_eq!(new.exec(config), Err(CommandError::NoTarget));
     }
@@ -82,7 +82,7 @@ mod test {
         let new = New {
             template: None,
             target: Target {
-                target: "".split('/').map(String::from).collect(),
+                target: "".to_string(),
             },
         };
         assert_eq!(new.exec(config), Err(CommandError::NoTarget));
@@ -96,7 +96,7 @@ mod test {
         let new = New {
             template: None,
             target: Target {
-                target: "testdir/testfile".split('/').map(String::from).collect(),
+                target: "testdir/testfile".to_string(),
             },
         };
         new.exec(config).expect("Exec failed");
@@ -123,7 +123,7 @@ mod test {
         let new = New {
             template: None,
             target: Target {
-                target: "testdir/testfile.md".split('/').map(String::from).collect(),
+                target: "testdir/testfile.md".to_string(),
             },
         };
         new.exec(config).expect("Exec failed");

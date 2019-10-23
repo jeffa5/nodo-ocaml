@@ -27,7 +27,7 @@ impl Edit {
             let filename = config.temp_dir.join(s);
             File::create(&filename)?;
             filename
-        } else if self.target.is_empty() || self.target.last().unwrap() == "" {
+        } else if self.target.is_empty() {
             return Err(CommandError::NoTarget);
         } else {
             file::build_path(&config, &self.target, true)
@@ -86,7 +86,7 @@ mod test {
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
             temp: false,
-            target: Target { target: Vec::new() },
+            target: Target::default(),
         };
         assert_eq!(edit.exec(config), Err(CommandError::NoTarget));
     }
@@ -98,9 +98,7 @@ mod test {
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
             temp: false,
-            target: Target {
-                target: "".split('/').map(String::from).collect(),
-            },
+            target: Target::default(),
         };
         assert_eq!(edit.exec(config), Err(CommandError::NoTarget));
     }
@@ -113,13 +111,13 @@ mod test {
         let edit = Edit {
             temp: false,
             target: Target {
-                target: "testdir/testfile".split('/').map(String::from).collect(),
+                target: "testdir/testfile".to_string(),
             },
         };
         assert_eq!(
             edit.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testdir/testfile".split('/').map(String::from).collect(),
+                target: "testdir/testfile".to_string(),
             }))
         );
     }
@@ -132,13 +130,13 @@ mod test {
         let edit = Edit {
             temp: false,
             target: Target {
-                target: "testdir/testfile.md".split('/').map(String::from).collect(),
+                target: "testdir/testfile.md".to_string(),
             },
         };
         assert_eq!(
             edit.exec(config),
             Err(CommandError::TargetMissing(&Target {
-                target: "testdir/testfile.md".split('/').map(String::from).collect(),
+                target: "testdir/testfile.md".to_string(),
             }))
         );
     }
@@ -152,7 +150,7 @@ mod test {
         let edit = Edit {
             temp: false,
             target: Target {
-                target: "testfile".split('/').map(String::from).collect(),
+                target: "testfile".to_string(),
             },
         };
         assert_eq!(edit.exec(config), Ok(()));
@@ -167,7 +165,7 @@ mod test {
         let edit = Edit {
             temp: false,
             target: Target {
-                target: "testfile.md".split('/').map(String::from).collect(),
+                target: "testfile.md".to_string(),
             },
         };
         assert_eq!(edit.exec(config), Ok(()));
