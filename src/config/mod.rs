@@ -1,5 +1,8 @@
+use std::path::{Path, PathBuf};
+
 pub struct Config {
-    pub root_dir: std::path::PathBuf,
+    pub root_dir: PathBuf,
+    pub temp_dir: PathBuf,
     pub projects_delimeter: &'static str,
     pub default_filetype: &'static str,
     pub date_format: &'static str,
@@ -7,20 +10,22 @@ pub struct Config {
 
 impl Config {
     pub fn new() -> Config {
-        Config {
-            root_dir: get_root_dir(),
+        let config = Config {
+            root_dir: PathBuf::from(".nodo"),
+            temp_dir: PathBuf::from("temp"),
             projects_delimeter: "/",
             default_filetype: "md",
             date_format: "%d/%m/%Y",
-        }
+        };
+        let home = dirs::home_dir().expect("Failed to get home dir");
+        setup_dir(&home.join(&config.root_dir));
+        setup_dir(&home.join(&config.temp_dir));
+        config
     }
 }
 
-fn get_root_dir() -> std::path::PathBuf {
-    let mut root_dir = dirs::home_dir().expect("Failed to get home dir");
-    root_dir.push(".nodo");
-    if !root_dir.exists() {
-        std::fs::create_dir_all(&root_dir).expect("Failed to create default dir")
+fn setup_dir(p: &Path) {
+    if !p.exists() {
+        std::fs::create_dir_all(p).expect("Failed to create default dir")
     }
-    root_dir
 }
