@@ -19,5 +19,8 @@ impl Config {
 fn get_root_dir() -> std::path::PathBuf {
     let mut root_dir = dirs::home_dir().expect("Failed to get home dir");
     root_dir.push(".nodo");
+    if !root_dir.exists() {
+        std::fs::create_dir_all(&root_dir).expect("Failed to create default dir")
+    }
     root_dir
 }
