@@ -54,17 +54,20 @@ impl Overview {
     }
 }
 
-fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandError<'a>> {
-    for entry in WalkDir::new(&base_path).min_depth(1) {
+fn dir_overview<'a>(config: &Config, path: &Path) -> Result<(), CommandError<'a>> {
+    for entry in WalkDir::new(&path).min_depth(1) {
         let entry = entry?;
-        if entry.path().starts_with(&config.temp_dir) {
+        if (entry.path().starts_with(&config.temp_dir) && !path.starts_with(&config.temp_dir))
+            || (entry.path().starts_with(&config.archive_dir)
+                && !path.starts_with(&config.archive_dir))
+        {
             debug!("Ignoring: {:?}", entry);
             continue;
         }
         debug!("Found {:?} while walking", entry);
         let depth = entry
             .path()
-            .strip_prefix(&base_path)
+            .strip_prefix(&path)
             .unwrap()
             .ancestors()
             .count()

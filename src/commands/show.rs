@@ -97,7 +97,10 @@ fn show_dir<'a>(config: &Config, path: &std::path::Path) -> Result<(), CommandEr
     let contents = fs::read_dir(path)?;
     for entry in contents {
         let entry = entry.expect("Failed to get direntry");
-        if entry.path().starts_with(&config.temp_dir) {
+        if (entry.path().starts_with(&config.temp_dir) && !path.starts_with(&config.temp_dir))
+            || (entry.path().starts_with(&config.archive_dir)
+                && !path.starts_with(&config.archive_dir))
+        {
             debug!("Ignoring: {:?}", entry);
             continue;
         }
