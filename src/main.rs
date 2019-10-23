@@ -34,6 +34,10 @@ fn main() {
     }
     match opts.sub_command {
         None => {
+            if !config.root_dir.join(&opts.target.inner).exists() {
+                Cli::clap().print_help().unwrap();
+                return;
+            }
             let overview = cli::Overview {
                 target: opts.target,
             };
