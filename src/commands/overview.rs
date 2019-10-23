@@ -9,7 +9,6 @@ use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
 use crate::nodo::Nodo;
-use crate::nodo::TextItem;
 use crate::nodo::{Block, List, ListItem, NodoBuilder};
 use crate::util::file::build_path;
 
@@ -71,15 +70,16 @@ fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandErro
             println!(
                 "{}P: {}",
                 indent,
-                entry
-                    .path()
-                    .strip_prefix(&base_path)
-                    .unwrap()
-                    .to_string_lossy()
+                entry.path().file_name().unwrap().to_string_lossy()
             );
         } else if entry.file_type().is_file() {
             let overview = file_overview(config, entry.path())?;
-            println!("{}N: {}", indent, overview);
+            println!(
+                "{}N: {} {}",
+                indent,
+                entry.path().file_name().unwrap().to_string_lossy(),
+                overview
+            );
         }
     }
     Ok(())
@@ -103,16 +103,7 @@ fn file_overview<'a>(config: &Config, path: &Path) -> Result<String, CommandErro
     } else {
         String::new()
     };
-    let title_text = nodo
-        .title()
-        .inner
-        .iter()
-        .fold(String::new(), |acc, ti| match ti {
-            TextItem::PlainText(s) => acc + s,
-            TextItem::StyledText(s, _) => acc + s,
-            TextItem::Link(s, _) => acc + s,
-        });
-    Ok(format!("{}{}", title_text, complete_string,))
+    Ok(format!("{}", complete_string,))
 }
 
 fn get_num_complete<'a>(nodo: &Nodo) -> Result<(u32, u32), CommandError<'a>> {
