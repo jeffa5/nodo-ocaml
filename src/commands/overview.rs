@@ -78,12 +78,7 @@ fn dir_overview<'a>(config: &Config, base_path: &Path) -> Result<(), CommandErro
             );
         } else if entry.file_type().is_file() {
             let overview = file_overview(config, entry.path())?;
-            println!(
-                "{}N: {}{}",
-                indent,
-                entry.path().file_name().unwrap().to_string_lossy(),
-                overview
-            );
+            println!("{}N: {}", indent, overview);
         }
     }
     Ok(())
@@ -99,7 +94,8 @@ fn file_overview<'a>(config: &Config, path: &Path) -> Result<String, CommandErro
     let (complete, total) = get_num_complete(&nodo)?;
     let complete_string = if total > 0 {
         format!(
-            " [{}/{} ({:.1}%)]",
+            "{} [{}/{} ({:.1}%)]",
+            path.file_name().unwrap().to_string_lossy(),
             complete,
             total,
             100. * f64::from(complete) / f64::from(total)
