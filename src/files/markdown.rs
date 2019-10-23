@@ -403,49 +403,6 @@ fn read_list_item(mut events_iter: &mut EventsIter) -> ListItem {
                             }
                         }
                     }
-
-                    // if let Some(TextItem::PlainText(t)) = text_iter.next() {
-                    //     if t.trim() == "[" {
-                    //         // \s then ]
-                    //         if let Some(TextItem::PlainText(t)) = text_iter.next() {
-                    //             if ["x", "X", ""].iter().any(|x| x == &t.trim()) {
-                    //                 let complete = t.trim() != "";
-                    //                 // ]
-                    //                 if let Some(TextItem::PlainText(t)) = text_iter.next() {
-                    //                     if t.trim() == "]" {
-                    //                         // yay we have a task
-                    //                         if let Some(textitem) = text_iter.next() {
-                    //                             match textitem {
-                    //                                 TextItem::PlainText(t)
-                    //                                 | TextItem::StyledText(t, _) => {
-                    //                                     *t = t.trim_start().to_string()
-                    //                                 }
-                    //                                 _ => unimplemented!(),
-                    //                             }
-                    //                         }
-                    //                         lines.first_mut().unwrap().inner =
-                    //                             lines.first().unwrap().inner[3..].to_vec();
-                    //                         blocks.push(Block::Paragraph(lines));
-                    //                         return ListItem::Task(blocks, complete, nested_list);
-                    //                     }
-                    //                 }
-                    //             } else if t.trim() == "]" {
-                    //                 if let Some(textitem) = text_iter.next() {
-                    //                     match textitem {
-                    //                         TextItem::PlainText(t) | TextItem::StyledText(t, _) => {
-                    //                             *t = t.trim_start().to_string()
-                    //                         }
-                    //                         _ => unimplemented!(),
-                    //                     }
-                    //                 }
-                    //                 lines.first_mut().unwrap().inner =
-                    //                     lines.first().unwrap().inner[2..].to_vec();
-                    //                 blocks.push(Block::Paragraph(lines));
-                    //                 return ListItem::Task(blocks, false, nested_list);
-                    //             }
-                    //         }
-                    //     }
-                    // }
                     return ListItem::Text(blocks, nested_list);
                 }
             }
