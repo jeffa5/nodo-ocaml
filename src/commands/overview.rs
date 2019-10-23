@@ -103,7 +103,7 @@ fn file_overview<'a>(config: &Config, path: &Path) -> Result<String, CommandErro
     } else {
         String::new()
     };
-    Ok(format!("{}", complete_string,))
+    Ok(complete_string)
 }
 
 fn get_num_complete<'a>(nodo: &Nodo) -> Result<(u32, u32), CommandError<'a>> {
