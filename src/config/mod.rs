@@ -18,6 +18,6 @@ impl Config {
 
 fn get_root_dir() -> std::path::PathBuf {
     let mut root_dir = dirs::home_dir().expect("Failed to get home dir");
-    root_dir.push("nodo");
+    root_dir.push(".nodo");
     root_dir
 }
