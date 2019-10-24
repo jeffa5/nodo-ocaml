@@ -32,6 +32,9 @@ impl Edit {
         } else {
             file::build_path(&config, &self.target, true)
         };
+        if self.create && !path.exists() {
+            File::create(&path)?;
+        }
         debug!("Using path: {:?}", path);
         match path.metadata() {
             Err(err) => {
@@ -85,6 +88,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            create: false,
             temp: false,
             target: Target::default(),
         };
@@ -97,6 +101,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            create: false,
             temp: false,
             target: Target::default(),
         };
@@ -109,6 +114,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            create: false,
             temp: false,
             target: Target {
                 inner: "testdir/testfile".to_string(),
@@ -128,6 +134,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            create: false,
             temp: false,
             target: Target {
                 inner: "testdir/testfile.md".to_string(),
@@ -148,6 +155,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            create: false,
             temp: false,
             target: Target {
                 inner: "testfile".to_string(),
@@ -163,6 +171,7 @@ mod test {
         let mut config = Config::new();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            create: false,
             temp: false,
             target: Target {
                 inner: "testfile.md".to_string(),

@@ -109,6 +109,9 @@ pub struct Edit {
 
     #[structopt(short, long)]
     pub temp: bool,
+
+    #[structopt(short, long)]
+    pub create: bool,
 }
 
 #[derive(Debug, StructOpt)]
