@@ -97,8 +97,7 @@ fn file_overview<'a>(config: &Config, path: &Path) -> Result<String, CommandErro
     let (complete, total) = get_num_complete(&nodo)?;
     let complete_string = if total > 0 {
         format!(
-            "{} [{}/{} ({:.1}%)]",
-            path.file_name().unwrap().to_string_lossy(),
+            " [{}/{} ({:.1}%)]",
             complete,
             total,
             100. * f64::from(complete) / f64::from(total)
@@ -106,7 +105,11 @@ fn file_overview<'a>(config: &Config, path: &Path) -> Result<String, CommandErro
     } else {
         String::new()
     };
-    Ok(complete_string)
+    Ok(format!(
+        "{}{}",
+        path.file_name().unwrap().to_string_lossy(),
+        complete_string
+    ))
 }
 
 fn get_num_complete<'a>(nodo: &Nodo) -> Result<(u32, u32), CommandError<'a>> {
