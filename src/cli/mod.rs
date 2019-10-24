@@ -107,9 +107,11 @@ pub struct Edit {
     #[structopt(flatten)]
     pub target: Target,
 
+    /// Use a temporary file, use `nodo clean` to tidy up
     #[structopt(short, long)]
     pub temp: bool,
 
+    /// Create the file if it doesn't already exist
     #[structopt(short, long)]
     pub create: bool,
 }
