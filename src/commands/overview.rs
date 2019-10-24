@@ -9,6 +9,7 @@ use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
 use crate::nodo::Nodo;
+use crate::nodo::TextItem;
 use crate::nodo::{Block, List, ListItem, NodoBuilder};
 use crate::util::file::build_path;
 
@@ -105,9 +106,21 @@ fn file_overview<'a>(config: &Config, path: &Path) -> Result<String, CommandErro
     } else {
         String::new()
     };
+    let title = nodo
+        .title()
+        .inner
+        .iter()
+        .map(|item| match item {
+            TextItem::PlainText(s) => s.to_string(),
+            TextItem::StyledText(s, _) => s.to_string(),
+            TextItem::Link(s, _) => s.to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
     Ok(format!(
-        "{}{}",
+        "({}) {}{}",
         path.file_name().unwrap().to_string_lossy(),
+        title,
         complete_string
     ))
 }
