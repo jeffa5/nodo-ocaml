@@ -68,25 +68,7 @@ impl NodoFile for Markdown {
         writer: &mut W,
         config: &Config,
     ) -> Result<(), WriteError> {
-        writeln!(writer, "---")?;
-        writeln!(writer, "tags: {}", nodo.tags().join(", "))?;
-        if let Some(start_date) = nodo.start_date() {
-            writeln!(
-                writer,
-                "start_date: {}",
-                start_date.format(config.date_format)
-            )?
-        } else {
-            writeln!(writer, "start_date:")?
-        }
-        if let Some(due_date) = nodo.due_date() {
-            writeln!(writer, "due_date: {}", due_date.format(config.date_format))?
-        } else {
-            writeln!(writer, "due_date:")?
-        }
-        writeln!(writer, "---")?;
-        writeln!(writer)?;
-
+        write_frontmatter(nodo, writer, config)?;
         // write title as header with level 1
         write_heading(writer, "", false, nodo.title(), 1)?;
         writeln!(writer)?;
@@ -100,6 +82,36 @@ impl NodoFile for Markdown {
         }
         Ok(())
     }
+}
+
+fn write_frontmatter<W: Write>(
+    nodo: &Nodo,
+    writer: &mut W,
+    config: &Config,
+) -> Result<(), WriteError> {
+    let mut lines = Vec::new();
+    debug!("{:?}", nodo.tags());
+    if !nodo.tags().is_empty() {
+        lines.push(format!("tags: {}", nodo.tags().join(", ")))
+    }
+    if let Some(start_date) = nodo.start_date() {
+        lines.push(format!(
+            "start_date: {}",
+            start_date.format(config.date_format)
+        ))
+    }
+    if let Some(due_date) = nodo.due_date() {
+        lines.push(format!("due_date: {}", due_date.format(config.date_format)))
+    }
+    if !lines.is_empty() {
+        writeln!(writer, "---")?;
+        for line in lines {
+            writeln!(writer, "{}", line)?
+        }
+        writeln!(writer, "---")?;
+        writeln!(writer)?;
+    }
+    Ok(())
 }
 
 fn write_block<W: Write>(
@@ -139,12 +151,14 @@ fn read_frontmatter(
                 Event::Text(text) => {
                     let text = text.trim();
                     if text.starts_with("tags:") {
-                        nodo.tags(
-                            text.trim_start_matches("tags:")
-                                .split(',')
-                                .map(|t| t.trim().to_string())
-                                .collect::<Vec<_>>(),
-                        );
+                        let tags = text
+                            .trim_start_matches("tags:")
+                            .split(',')
+                            .map(|t| t.trim().to_string())
+                            .collect::<Vec<_>>();
+                        if !tags.is_empty() && tags.first().unwrap() != "" {
+                            nodo.tags(tags);
+                        }
                     } else if text.starts_with("start_date:") {
                         let date = NaiveDate::parse_from_str(
                             text.trim_start_matches("start_date:"),
