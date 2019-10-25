@@ -1,7 +1,7 @@
 use log::*;
 use std::io::ErrorKind;
 use std::path::Path;
-use walkdir::WalkDir;
+use std::path::PathBuf;
 
 use crate::cli::Overview;
 use crate::commands::CommandError;
@@ -20,9 +20,8 @@ impl Overview {
         debug!("target: {:?}", &self.target);
         let mut path = build_path(&config, &self.target, false);
         debug!("path: {:?}", &path);
-        if self.target.is_empty() {
-            dir_overview(&config, &path)?;
-            return Ok(());
+        let dirtrees = if self.target.is_empty() {
+            dir_overview(&config, &path, 0)?
         } else {
             if let Err(err) = path.metadata() {
                 if std::io::ErrorKind::NotFound == err.kind() {
@@ -43,20 +42,92 @@ impl Overview {
                 }
                 Ok(metadata) => {
                     if metadata.is_dir() {
-                        dir_overview(&config, &path)?;
+                        dir_overview(&config, &path, 0)?
                     } else if metadata.is_file() {
-                        let overview = file_overview(&config, &path)?;
-                        println!("{}", overview);
+                        let mut dirtree = DirTree::default();
+                        file_overview(&config, &path, &mut dirtree)?;
+                        vec![dirtree]
+                    } else {
+                        Vec::new()
                     }
                 }
             }
+        };
+        for dirtree in dirtrees {
+            println!("{}", dirtree);
         }
         Ok(())
     }
 }
 
-fn dir_overview<'a>(config: &Config, path: &Path) -> Result<(), CommandError<'a>> {
-    for entry in WalkDir::new(&path).min_depth(1) {
+#[derive(Default, Debug)]
+struct DirTree {
+    depth: usize,
+    complete: u32,
+    total: u32,
+    title: String,
+    path: PathBuf,
+    children: Vec<DirTree>,
+}
+
+impl std::fmt::Display for DirTree {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        self.write_tree(f, "")
+    }
+}
+
+impl DirTree {
+    fn write_tree(&self, f: &mut std::fmt::Formatter, prefix: &str) -> Result<(), std::fmt::Error> {
+        let complete_string = if self.total > 0 {
+            format!(
+                " [{}/{} ({:.1}%)]",
+                self.complete,
+                self.total,
+                100. * f64::from(self.complete) / f64::from(self.total)
+            )
+        } else {
+            String::new()
+        };
+        if self.path.is_dir() {
+            write!(
+                f,
+                "P: {}{}",
+                self.path.file_name().unwrap().to_string_lossy(),
+                complete_string
+            )?;
+        } else if self.path.is_file() {
+            write!(
+                f,
+                "N: ({}) {}{}",
+                self.path.file_name().unwrap().to_string_lossy(),
+                self.title,
+                complete_string
+            )?;
+        }
+        for (i, child) in self.children.iter().enumerate() {
+            writeln!(f)?;
+            let mut prefix = prefix.to_string();
+            if i == self.children.len() - 1 {
+                write!(f, "{}└─ ", prefix)?;
+                prefix.push_str("   ");
+            } else {
+                write!(f, "{}├─ ", prefix)?;
+                prefix.push_str("│  ");
+            };
+            child.write_tree(f, &prefix)?;
+        }
+        Ok(())
+    }
+}
+
+fn dir_overview<'a>(
+    config: &Config,
+    path: &Path,
+    depth: usize,
+) -> Result<Vec<DirTree>, CommandError<'a>> {
+    let mut dirtrees = Vec::new();
+    for entry in std::fs::read_dir(&path)? {
+        // for entry in WalkDir::new(&path).min_depth(1).max_depth(1) {
         let entry = entry?;
         if (entry.path().starts_with(&config.temp_dir) && !path.starts_with(&config.temp_dir))
             || (entry.path().starts_with(&config.archive_dir)
@@ -66,29 +137,27 @@ fn dir_overview<'a>(config: &Config, path: &Path) -> Result<(), CommandError<'a>
             continue;
         }
         debug!("Found {:?} while walking", entry);
-        let depth = entry
-            .path()
-            .strip_prefix(&path)
-            .unwrap()
-            .ancestors()
-            .count()
-            - 2;
-        let indent = " ".repeat(depth);
-        if entry.file_type().is_dir() {
-            println!(
-                "{}P: {}",
-                indent,
-                entry.path().file_name().unwrap().to_string_lossy()
-            );
-        } else if entry.file_type().is_file() {
-            let overview = file_overview(config, entry.path())?;
-            println!("{}N: {}", indent, overview);
+        let mut dirtree = DirTree::default();
+        dirtree.depth = depth;
+        dirtree.path = entry.path().to_path_buf();
+
+        if entry.file_type().unwrap().is_dir() {
+            dirtree.children = dir_overview(config, &entry.path(), depth + 1)?;
+            dirtree.total = dirtree.children.iter().map(|c| c.total).sum();
+            dirtree.complete = dirtree.children.iter().map(|c| c.complete).sum();
+        } else if entry.file_type().unwrap().is_file() {
+            file_overview(config, &entry.path(), &mut dirtree)?
         }
+        dirtrees.push(dirtree)
     }
-    Ok(())
+    Ok(dirtrees)
 }
 
-fn file_overview<'a>(config: &Config, path: &Path) -> Result<String, CommandError<'a>> {
+fn file_overview<'a>(
+    config: &Config,
+    path: &Path,
+    dirtree: &mut DirTree,
+) -> Result<(), CommandError<'a>> {
     let handler = files::get_file_handler(config.default_filetype);
     let nodo = handler.read(
         NodoBuilder::default(),
@@ -96,16 +165,8 @@ fn file_overview<'a>(config: &Config, path: &Path) -> Result<String, CommandErro
         config,
     )?;
     let (complete, total) = get_num_complete(&nodo)?;
-    let complete_string = if total > 0 {
-        format!(
-            " [{}/{} ({:.1}%)]",
-            complete,
-            total,
-            100. * f64::from(complete) / f64::from(total)
-        )
-    } else {
-        String::new()
-    };
+    dirtree.complete = complete;
+    dirtree.total = total;
     let title = nodo
         .title()
         .inner
@@ -117,12 +178,8 @@ fn file_overview<'a>(config: &Config, path: &Path) -> Result<String, CommandErro
         })
         .collect::<Vec<_>>()
         .join(" ");
-    Ok(format!(
-        "({}) {}{}",
-        path.file_name().unwrap().to_string_lossy(),
-        title,
-        complete_string
-    ))
+    dirtree.title = title;
+    Ok(())
 }
 
 fn get_num_complete<'a>(nodo: &Nodo) -> Result<(u32, u32), CommandError<'a>> {
