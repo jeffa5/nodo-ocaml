@@ -1,6 +1,8 @@
 use log::*;
+use serde::{Deserialize, Serialize};
 use std::path::{Path, PathBuf};
 
+#[derive(Serialize, Deserialize)]
 pub struct Config {
     pub root_dir: PathBuf,
     pub temp_dir: PathBuf,

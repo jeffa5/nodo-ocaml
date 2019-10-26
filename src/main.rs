@@ -1,9 +1,3 @@
-extern crate dirs;
-extern crate log;
-extern crate pulldown_cmark;
-extern crate stderrlog;
-extern crate structopt;
-
 mod cli;
 mod commands;
 mod config;
