@@ -10,9 +10,9 @@ pub struct Cli {
     pub sub_command: Option<SubCommand>,
     #[structopt(flatten)]
     pub target: Target,
-    #[structopt(short, long)]
+    #[structopt(short, long, global = true)]
     pub quiet: bool,
-    #[structopt(short, long, parse(from_occurrences))]
+    #[structopt(short, long, parse(from_occurrences), global = true)]
     pub verbose: usize,
 }
 
