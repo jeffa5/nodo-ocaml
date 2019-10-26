@@ -34,7 +34,8 @@ fn main() {
     }
     match opts.sub_command {
         None => {
-            if !config.root_dir.join(&opts.target.inner).exists() {
+            let path = util::file::build_path(&config, &opts.target, true);
+            if !path.exists() {
                 Cli::clap().print_help().unwrap();
                 return;
             }
