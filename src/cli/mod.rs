@@ -10,10 +10,12 @@ pub struct Cli {
     pub sub_command: Option<SubCommand>,
     #[structopt(flatten)]
     pub target: Target,
+    /// Suppress logging completely, overrides '-l'
     #[structopt(short, long, global = true)]
     pub quiet: bool,
+    /// Log with the given verbosity, more 'l' is more verbose
     #[structopt(short, long, parse(from_occurrences), global = true)]
-    pub verbose: usize,
+    pub log_level: usize,
 }
 
 #[derive(StructOpt, Debug)]

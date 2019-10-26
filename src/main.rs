@@ -23,7 +23,7 @@ fn main() {
         .module(module_path!())
         .timestamp(stderrlog::Timestamp::Millisecond)
         .quiet(opts.quiet)
-        .verbosity(opts.verbose)
+        .verbosity(opts.log_level)
         .init()
         .expect("Failed to initialise logging");
     debug!("{:#?}", opts);
