@@ -85,7 +85,7 @@ mod test {
     #[test]
     fn no_args_is_error() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
             create: false,
@@ -98,7 +98,7 @@ mod test {
     #[test]
     fn empty_args_is_error() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
             create: false,
@@ -111,7 +111,7 @@ mod test {
     #[test]
     fn cant_edit_nonexistent_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
             create: false,
@@ -131,7 +131,7 @@ mod test {
     #[test]
     fn cant_edit_nonexistent_file_ext() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
             create: false,
@@ -152,7 +152,7 @@ mod test {
     fn can_edit_existing_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
         fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
             create: false,
@@ -168,7 +168,7 @@ mod test {
     fn can_edit_existing_file_ext() {
         let dir = tempdir().expect("Couldn't make tempdir");
         fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
             create: false,

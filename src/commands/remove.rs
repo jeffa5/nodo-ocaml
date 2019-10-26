@@ -79,7 +79,7 @@ mod test {
     #[test]
     fn no_args_is_error() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
             force: false,
@@ -91,7 +91,7 @@ mod test {
     #[test]
     fn empty_args_is_an_error() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
             force: false,
@@ -103,7 +103,7 @@ mod test {
     #[test]
     fn cant_remove_non_existing_dir() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
             force: false,
@@ -123,7 +123,7 @@ mod test {
     fn cant_remove_an_existing_dir_without_force() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::create_dir(dir.path().join("testdir")).expect("Failed to create testdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
             force: false,
@@ -143,7 +143,7 @@ mod test {
     fn can_remove_an_existing_dir_with_force() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::create_dir(dir.path().join("testdir")).expect("Failed to create testdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
             force: true,
@@ -157,7 +157,7 @@ mod test {
     #[test]
     fn cant_remove_non_existing_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
             force: false,
@@ -177,7 +177,7 @@ mod test {
     fn can_remove_existing_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
             force: false,
@@ -192,7 +192,7 @@ mod test {
     fn can_remove_existing_file_with_extension() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let remove = Remove {
             force: false,

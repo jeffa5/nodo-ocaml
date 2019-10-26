@@ -19,7 +19,7 @@ impl New {
             debug!("Template given: {}", template.to_string_lossy());
             let mut template_path = config.root_dir.join(template);
             if template_path.extension().is_none() {
-                template_path.set_extension(config.default_filetype);
+                template_path.set_extension(&config.default_filetype);
             }
             if !template_path.is_file() {
                 return Err(CommandError::Str(format!(
@@ -36,7 +36,7 @@ impl New {
         if let Some(template) = &self.template {
             let mut template_path = config.root_dir.join(template);
             if template_path.extension().is_none() {
-                template_path.set_extension(config.default_filetype);
+                template_path.set_extension(&config.default_filetype);
             }
             debug!(
                 "Copying from template {} to {}",
@@ -46,7 +46,7 @@ impl New {
             fs::copy(template_path, pb)?;
         } else {
             info!("Writing nodo to: {:?}", file);
-            let handler = files::get_file_handler(config.default_filetype);
+            let handler = files::get_file_handler(&config.default_filetype);
             let nodo = NodoBuilder::default().build();
             handler.write(&nodo, &mut file, &config)?;
         }
@@ -65,7 +65,7 @@ mod test {
     #[test]
     fn no_args_is_error() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
             template: None,
@@ -77,7 +77,7 @@ mod test {
     #[test]
     fn empty_args_is_error() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
             template: None,
@@ -91,7 +91,7 @@ mod test {
     #[test]
     fn creates_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
             template: None,
@@ -118,7 +118,7 @@ mod test {
     #[test]
     fn creates_file_ext() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
             template: None,

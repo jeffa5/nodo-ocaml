@@ -97,11 +97,14 @@ fn write_frontmatter<W: Write>(
     if let Some(start_date) = nodo.start_date() {
         lines.push(format!(
             "start_date: {}",
-            start_date.format(config.date_format)
+            start_date.format(&config.date_format)
         ))
     }
     if let Some(due_date) = nodo.due_date() {
-        lines.push(format!("due_date: {}", due_date.format(config.date_format)))
+        lines.push(format!(
+            "due_date: {}",
+            due_date.format(&config.date_format)
+        ))
     }
     if !lines.is_empty() {
         writeln!(writer, "---")?;
@@ -162,7 +165,7 @@ fn read_frontmatter(
                     } else if text.starts_with("start_date:") {
                         let date = NaiveDate::parse_from_str(
                             text.trim_start_matches("start_date:"),
-                            config.date_format,
+                            &config.date_format,
                         );
                         if let Ok(date) = date {
                             nodo.start_date(date);
@@ -170,7 +173,7 @@ fn read_frontmatter(
                     } else if text.starts_with("due_date:") {
                         let date = NaiveDate::parse_from_str(
                             text.trim_start_matches("due_date:"),
-                            config.date_format,
+                            &config.date_format,
                         );
                         if let Ok(date) = date {
                             nodo.due_date(date);
@@ -801,8 +804,8 @@ mod test {
 
     static TEST_NODO_UNFORMATTED: &str = "---
 tags: nodo, more tags, hey another tag
-start_date: 14/03/2015
-due_date: 16/04/2015
+start_date: 14-03-2015
+due_date: 16-04-2015
 ---
 
 # nodo header level 1, is the title
@@ -827,8 +830,8 @@ due_date: 16/04/2015
 
     static TEST_NODO_FORMATTED: &str = "---
 tags: nodo, more tags, hey another tag
-start_date: 14/03/2015
-due_date: 16/04/2015
+start_date: 14-03-2015
+due_date: 16-04-2015
 ---
 
 # nodo header level 1, is the title
@@ -858,14 +861,14 @@ due_date: 16/04/2015
                 .read(
                     NodoBuilder::default(),
                     &mut TEST_NODO_UNFORMATTED.as_bytes(),
-                    &Config::new()
+                    &Config::default()
                 )
                 .unwrap(),
             Markdown
                 .read(
                     NodoBuilder::default(),
                     &mut TEST_NODO_FORMATTED.as_bytes(),
-                    &Config::new()
+                    &Config::default()
                 )
                 .unwrap()
         )
@@ -878,7 +881,7 @@ due_date: 16/04/2015
                 .read(
                     NodoBuilder::default(),
                     &mut TEST_NODO_FORMATTED.as_bytes(),
-                    &Config::new()
+                    &Config::default()
                 )
                 .unwrap(),
             get_test_nodo(),
@@ -888,7 +891,7 @@ due_date: 16/04/2015
                 .read(
                     NodoBuilder::default(),
                     &mut TEST_NODO_UNFORMATTED.as_bytes(),
-                    &Config::new()
+                    &Config::default()
                 )
                 .unwrap(),
             get_test_nodo(),
@@ -899,7 +902,7 @@ due_date: 16/04/2015
     fn test_write() {
         let mut writer: Vec<u8> = Vec::new();
         Markdown
-            .write(&get_test_nodo(), &mut writer, &Config::new())
+            .write(&get_test_nodo(), &mut writer, &Config::default())
             .unwrap();
         assert_eq_str!(&String::from_utf8(writer).unwrap(), TEST_NODO_FORMATTED);
     }
@@ -908,11 +911,11 @@ due_date: 16/04/2015
     fn test_write_read_gives_same_nodo() {
         let mut s = Vec::new();
         Markdown
-            .write(&get_test_nodo(), &mut s, &Config::new())
+            .write(&get_test_nodo(), &mut s, &Config::default())
             .unwrap();
         assert_eq!(
             Markdown
-                .read(NodoBuilder::default(), &mut &s[..], &Config::new())
+                .read(NodoBuilder::default(), &mut &s[..], &Config::default())
                 .unwrap(),
             get_test_nodo()
         );
@@ -924,12 +927,12 @@ due_date: 16/04/2015
             .read(
                 NodoBuilder::default(),
                 &mut TEST_NODO_FORMATTED.as_bytes(),
-                &Config::new(),
+                &Config::default(),
             )
             .unwrap();
         let mut s = Vec::new();
 
-        Markdown.write(&nodo, &mut s, &Config::new()).unwrap();
+        Markdown.write(&nodo, &mut s, &Config::default()).unwrap();
         assert_eq_str!(&String::from_utf8(s).unwrap(), TEST_NODO_FORMATTED);
     }
 
@@ -940,7 +943,11 @@ due_date: 16/04/2015
         builder.title(vec![TextItem::plain("title")].into());
         assert_eq!(
             Markdown
-                .read(NodoBuilder::default(), &mut s.as_bytes(), &Config::new())
+                .read(
+                    NodoBuilder::default(),
+                    &mut s.as_bytes(),
+                    &Config::default()
+                )
                 .unwrap(),
             builder.build()
         )
@@ -948,8 +955,8 @@ due_date: 16/04/2015
 
     const LARGE_MD_STRING:&str = r#"---
 tags: nodo, more tags, hey another tag
-start_date: 14/03/2015
-due_date: 16/04/2015
+start_date: 14-03-2015
+due_date: 16-04-2015
 ---
 
 # Markdown: Syntax
@@ -1274,12 +1281,12 @@ Use the `printf()` function.
             .read(
                 NodoBuilder::default(),
                 &mut LARGE_MD_STRING.as_bytes(),
-                &Config::new(),
+                &Config::default(),
             )
             .unwrap();
         let mut s = Vec::new();
 
-        Markdown.write(&nodo, &mut s, &Config::new()).unwrap();
+        Markdown.write(&nodo, &mut s, &Config::default()).unwrap();
         let comp_string = String::from_utf8(s).unwrap();
         assert_eq_str!(&comp_string, LARGE_MD_STRING);
     }
@@ -1290,14 +1297,14 @@ Use the `printf()` function.
             .read(
                 NodoBuilder::default(),
                 &mut LARGE_MD_STRING.as_bytes(),
-                &Config::new(),
+                &Config::default(),
             )
             .unwrap();
         let mut s = Vec::new();
-        Markdown.write(&nodo1, &mut s, &Config::new()).unwrap();
+        Markdown.write(&nodo1, &mut s, &Config::default()).unwrap();
 
         let nodo2 = Markdown
-            .read(NodoBuilder::default(), &mut &s[..], &Config::new())
+            .read(NodoBuilder::default(), &mut &s[..], &Config::default())
             .unwrap();
         assert_eq!(nodo1, nodo2)
     }

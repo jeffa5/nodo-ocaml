@@ -26,7 +26,7 @@ impl Overview {
             if let Err(err) = path.metadata() {
                 if std::io::ErrorKind::NotFound == err.kind() {
                     if path.extension().is_none() {
-                        path.set_extension(config.default_filetype);
+                        path.set_extension(&config.default_filetype);
                         debug!("path: {:?}", &path);
                     }
                 } else {
@@ -151,7 +151,7 @@ fn dir_overview(config: &Config, path: &Path, depth: usize) -> Result<Vec<DirTre
 }
 
 fn file_overview(config: &Config, path: &Path, dirtree: &mut DirTree) -> Result<(), CommandError> {
-    let handler = files::get_file_handler(config.default_filetype);
+    let handler = files::get_file_handler(&config.default_filetype);
     let nodo = handler.read(
         NodoBuilder::default(),
         &mut std::fs::File::open(path)?,
@@ -208,7 +208,7 @@ mod test {
     #[test]
     fn no_args_is_not_error() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target::default(),
@@ -219,7 +219,7 @@ mod test {
     #[test]
     fn empty_args_is_not_an_error() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target::default(),
@@ -230,7 +230,7 @@ mod test {
     #[test]
     fn cant_overview_non_existent_dir() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
@@ -249,7 +249,7 @@ mod test {
     fn can_overview_existing_dir() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::create_dir(dir.path().join("testdir")).expect("Failed to create testdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
@@ -262,7 +262,7 @@ mod test {
     #[test]
     fn cant_overview_non_existent_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
@@ -281,7 +281,7 @@ mod test {
     fn can_overview_existing_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {
@@ -295,7 +295,7 @@ mod test {
     fn can_overview_existing_file_ext() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let overview = Overview {
             target: Target {

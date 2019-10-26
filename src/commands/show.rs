@@ -25,7 +25,7 @@ impl Show {
         if let Err(err) = path.metadata() {
             if std::io::ErrorKind::NotFound == err.kind() {
                 if path.extension().is_none() {
-                    path.set_extension(config.default_filetype);
+                    path.set_extension(&config.default_filetype);
                     debug!("path: {:?}", &path);
                 }
             } else {
@@ -56,7 +56,7 @@ impl Show {
     }
 
     fn show_file(&self, config: &Config, path: &std::path::Path) -> Result<(), CommandError> {
-        let file_handler = files::get_file_handler(config.default_filetype);
+        let file_handler = files::get_file_handler(&config.default_filetype);
         let nodo =
             file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?, &config)?;
         let mut builder = NodoBuilder::default();
@@ -212,7 +212,7 @@ mod test {
     #[test]
     fn no_args_is_not_error() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
             filter_complete: None,
@@ -225,7 +225,7 @@ mod test {
     #[test]
     fn empty_args_is_not_an_error() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
             filter_complete: None,
@@ -240,7 +240,7 @@ mod test {
     #[test]
     fn cant_show_non_existent_dir() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
             filter_complete: None,
@@ -261,7 +261,7 @@ mod test {
     fn can_show_existing_dir() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::create_dir(dir.path().join("testdir")).expect("Failed to create testdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
             filter_complete: None,
@@ -276,7 +276,7 @@ mod test {
     #[test]
     fn cant_show_non_existent_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
             filter_complete: None,
@@ -297,7 +297,7 @@ mod test {
     fn can_show_existing_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
             filter_complete: None,
@@ -313,7 +313,7 @@ mod test {
     fn can_show_existing_file_ext() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
             filter_complete: None,

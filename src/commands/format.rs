@@ -25,7 +25,7 @@ impl Format {
         if let Err(err) = metadata {
             if std::io::ErrorKind::NotFound == err.kind() {
                 if path.extension().is_none() {
-                    path.set_extension(config.default_filetype);
+                    path.set_extension(&config.default_filetype);
                     debug!("path: {:?}", &path);
                 }
             } else {
@@ -43,7 +43,7 @@ impl Format {
                 debug!("metadata: {:?}", &metadata);
                 // if metadata was err then check if it was a not found error, if so then see if extension was there, if it was exit else add default extension and try again
                 // if metadata was ok then see whether dir or file and format appropriately
-                let handler = files::get_file_handler(config.default_filetype);
+                let handler = files::get_file_handler(&config.default_filetype);
                 if metadata.is_dir() {
                     for entry in WalkDir::new(&path) {
                         let entry = entry?;
@@ -107,7 +107,7 @@ mod test {
     #[test]
     fn no_args_is_ok() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
             verbose: false,
@@ -120,7 +120,7 @@ mod test {
     #[test]
     fn empty_args_is_ok() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
             verbose: false,
@@ -133,7 +133,7 @@ mod test {
     #[test]
     fn cant_format_nonexisting_dir() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
             verbose: false,
@@ -154,7 +154,7 @@ mod test {
     fn can_format_an_existing_dir() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::create_dir(dir.path().join("testdir")).expect("Failed to create testdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
             verbose: false,
@@ -169,7 +169,7 @@ mod test {
     #[test]
     fn cant_format_nonexisting_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
             verbose: false,
@@ -190,7 +190,7 @@ mod test {
     fn can_format_existing_file() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
             verbose: false,
@@ -206,7 +206,7 @@ mod test {
     fn can_format_existing_file_with_ext() {
         let dir = tempdir().expect("Couldn't make tempdir");
         std::fs::write(dir.path().join("testfile.md"), "").expect("Failed to create testfile");
-        let mut config = Config::new();
+        let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let format = Format {
             verbose: false,

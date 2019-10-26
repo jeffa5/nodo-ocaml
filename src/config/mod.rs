@@ -7,9 +7,9 @@ pub struct Config {
     pub root_dir: PathBuf,
     pub temp_dir: PathBuf,
     pub archive_dir: PathBuf,
-    pub projects_delimeter: &'static str,
-    pub default_filetype: &'static str,
-    pub date_format: &'static str,
+    pub projects_delimeter: String,
+    pub default_filetype: String,
+    pub date_format: String,
 }
 
 impl std::default::Default for Config {
@@ -18,9 +18,9 @@ impl std::default::Default for Config {
             root_dir: PathBuf::from(".nodo"),
             temp_dir: PathBuf::from("temp"),
             archive_dir: PathBuf::from("archive"),
-            projects_delimeter: "/",
-            default_filetype: "md",
-            date_format: "%d-%m-%Y",
+            projects_delimeter: "/".to_string(),
+            default_filetype: "md".to_string(),
+            date_format: "%d-%m-%Y".to_string(),
         };
         let home = dirs::home_dir().expect("Failed to get home dir");
         config.root_dir = home.join(config.root_dir);
