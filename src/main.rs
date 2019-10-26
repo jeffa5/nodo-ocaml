@@ -21,6 +21,7 @@ fn main() {
         .expect("Failed to initialise logging");
     debug!("{:#?}", opts);
     let config = confy::load("nodo").expect("Failed to get config file");
+    debug!("{:#?}", config);
     if opts.sub_command.is_some() && !opts.target.is_empty() {
         println!("Can't specify a target here and a subcommand");
         return;
