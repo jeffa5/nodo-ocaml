@@ -35,7 +35,7 @@ impl Show {
         match path.metadata() {
             Err(err) => {
                 return Err(match err.kind() {
-                    ErrorKind::NotFound => CommandError::TargetMissing(&self.target),
+                    ErrorKind::NotFound => CommandError::TargetMissing(self.target.clone()),
                     _ => err.into(),
                 })
             }
@@ -55,11 +55,7 @@ impl Show {
         Ok(())
     }
 
-    fn show_file<'a>(
-        &self,
-        config: &Config,
-        path: &std::path::Path,
-    ) -> Result<(), CommandError<'a>> {
+    fn show_file(&self, config: &Config, path: &std::path::Path) -> Result<(), CommandError> {
         let file_handler = files::get_file_handler(config.default_filetype);
         let nodo =
             file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?, &config)?;
@@ -93,7 +89,7 @@ impl Show {
     }
 }
 
-fn show_dir<'a>(config: &Config, path: &std::path::Path) -> Result<(), CommandError<'a>> {
+fn show_dir(config: &Config, path: &std::path::Path) -> Result<(), CommandError> {
     let contents = fs::read_dir(path)?;
     for entry in contents {
         let entry = entry.expect("Failed to get direntry");
@@ -255,7 +251,7 @@ mod test {
         };
         assert_eq!(
             show.exec(config),
-            Err(CommandError::TargetMissing(&Target {
+            Err(CommandError::TargetMissing(Target {
                 inner: "testdir".split('/').map(String::from).collect(),
             }))
         );
@@ -291,7 +287,7 @@ mod test {
         };
         assert_eq!(
             show.exec(config),
-            Err(CommandError::TargetMissing(&Target {
+            Err(CommandError::TargetMissing(Target {
                 inner: "testfile.md".split('/').map(String::from).collect(),
             }))
         );

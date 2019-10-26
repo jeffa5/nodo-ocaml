@@ -39,7 +39,7 @@ impl Edit {
         match path.metadata() {
             Err(err) => {
                 return Err(match err.kind() {
-                    ErrorKind::NotFound => CommandError::TargetMissing(&self.target),
+                    ErrorKind::NotFound => CommandError::TargetMissing(self.target.clone()),
                     _ => err.into(),
                 })
             }
@@ -122,7 +122,7 @@ mod test {
         };
         assert_eq!(
             edit.exec(config),
-            Err(CommandError::TargetMissing(&Target {
+            Err(CommandError::TargetMissing(Target {
                 inner: "testdir/testfile".to_string(),
             }))
         );
@@ -142,7 +142,7 @@ mod test {
         };
         assert_eq!(
             edit.exec(config),
-            Err(CommandError::TargetMissing(&Target {
+            Err(CommandError::TargetMissing(Target {
                 inner: "testdir/testfile.md".to_string(),
             }))
         );

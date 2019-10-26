@@ -36,7 +36,7 @@ impl Overview {
             match path.metadata() {
                 Err(err) => {
                     return Err(match err.kind() {
-                        ErrorKind::NotFound => CommandError::TargetMissing(&self.target),
+                        ErrorKind::NotFound => CommandError::TargetMissing(self.target.clone()),
                         _ => err.into(),
                     })
                 }
@@ -46,6 +46,7 @@ impl Overview {
                     } else if metadata.is_file() {
                         let mut dirtree = DirTree::default();
                         file_overview(&config, &path, &mut dirtree)?;
+                        debug!("{:?}", dirtree);
                         vec![dirtree]
                     } else {
                         Vec::new()
@@ -120,11 +121,7 @@ impl DirTree {
     }
 }
 
-fn dir_overview<'a>(
-    config: &Config,
-    path: &Path,
-    depth: usize,
-) -> Result<Vec<DirTree>, CommandError<'a>> {
+fn dir_overview(config: &Config, path: &Path, depth: usize) -> Result<Vec<DirTree>, CommandError> {
     let mut dirtrees = Vec::new();
     for entry in std::fs::read_dir(&path)? {
         // for entry in WalkDir::new(&path).min_depth(1).max_depth(1) {
@@ -153,11 +150,7 @@ fn dir_overview<'a>(
     Ok(dirtrees)
 }
 
-fn file_overview<'a>(
-    config: &Config,
-    path: &Path,
-    dirtree: &mut DirTree,
-) -> Result<(), CommandError<'a>> {
+fn file_overview(config: &Config, path: &Path, dirtree: &mut DirTree) -> Result<(), CommandError> {
     let handler = files::get_file_handler(config.default_filetype);
     let nodo = handler.read(
         NodoBuilder::default(),
@@ -182,7 +175,7 @@ fn file_overview<'a>(
     Ok(())
 }
 
-fn get_num_complete<'a>(nodo: &Nodo) -> Result<(u32, u32), CommandError<'a>> {
+fn get_num_complete(nodo: &Nodo) -> Result<(u32, u32), CommandError> {
     let mut total = 0;
     let mut complete = 0;
     for block in nodo.blocks() {
@@ -246,7 +239,7 @@ mod test {
         };
         assert_eq!(
             overview.exec(config),
-            Err(CommandError::TargetMissing(&Target {
+            Err(CommandError::TargetMissing(Target {
                 inner: "testdir".to_string(),
             }))
         );
@@ -278,7 +271,7 @@ mod test {
         };
         assert_eq!(
             overview.exec(config),
-            Err(CommandError::TargetMissing(&Target {
+            Err(CommandError::TargetMissing(Target {
                 inner: "testfile".to_string(),
             }))
         );

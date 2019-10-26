@@ -25,7 +25,7 @@ impl Archive {
             fs::create_dir_all(path.parent().unwrap())?;
             fs::rename(path, move_target)?;
         } else {
-            return Err(CommandError::TargetMissing(&self.target));
+            return Err(CommandError::TargetMissing(self.target.clone()));
         }
         println!("Archive successful");
         Ok(())

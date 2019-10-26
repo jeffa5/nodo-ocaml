@@ -32,7 +32,7 @@ fn main() {
         println!("Can't specify a target here and a subcommand");
         return;
     }
-    match opts.sub_command {
+    let result = match opts.sub_command {
         None => {
             let path = util::file::build_path(&config, &opts.target, true);
             if !path.exists() {
@@ -42,58 +42,30 @@ fn main() {
             let overview = cli::Overview {
                 target: opts.target,
             };
-            if let Err(err) = overview.exec(config) {
-                println!("{}", err)
-            }
+            overview.exec(config)
         }
         Some(sub_command) => match sub_command {
-            SubCommand::New(new) => {
-                if let Err(err) = new.exec(config) {
-                    println!("{}", err)
-                }
+            SubCommand::New(new) => new.exec(config),
+            SubCommand::Show(show) => show.exec(config),
+            SubCommand::Remove(remove) => remove.exec(config),
+            SubCommand::Edit(edit) => edit.exec(config),
+            SubCommand::Clean(clean) => clean.exec(config),
+            SubCommand::Format(format) => format.exec(config),
+            SubCommand::Overview(overview) => overview.exec(config),
+            SubCommand::Archive(archive) => archive.exec(config),
+            SubCommand::Completions { shell } => {
+                Cli::clap().gen_completions_to(
+                    "nodo",
+                    shell
+                        .parse()
+                        .expect("Failed to parse shell as a shell candidate"),
+                    &mut std::io::stdout(),
+                );
+                Ok(())
             }
-            SubCommand::Show(show) => {
-                if let Err(err) = show.exec(config) {
-                    println!("{}", err)
-                }
-            }
-            SubCommand::Remove(remove) => {
-                if let Err(err) = remove.exec(config) {
-                    println!("{}", err)
-                }
-            }
-            SubCommand::Edit(edit) => {
-                if let Err(err) = edit.exec(config) {
-                    println!("{}", err)
-                }
-            }
-            SubCommand::Clean(clean) => {
-                if let Err(err) = clean.exec(config) {
-                    println!("{}", err)
-                }
-            }
-            SubCommand::Format(format) => {
-                if let Err(err) = format.exec(config) {
-                    println!("{}", err)
-                }
-            }
-            SubCommand::Overview(overview) => {
-                if let Err(err) = overview.exec(config) {
-                    println!("{}", err)
-                }
-            }
-            SubCommand::Archive(archive) => {
-                if let Err(err) = archive.exec(config) {
-                    println!("{}", err)
-                }
-            }
-            SubCommand::Completions { shell } => Cli::clap().gen_completions_to(
-                "nodo",
-                shell
-                    .parse()
-                    .expect("Failed to parse shell as a shell candidate"),
-                &mut std::io::stdout(),
-            ),
         },
+    };
+    if let Err(err) = result {
+        println!("{}", err)
     }
 }
