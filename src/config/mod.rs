@@ -12,15 +12,15 @@ pub struct Config {
     pub date_format: &'static str,
 }
 
-impl Config {
-    pub fn new() -> Config {
+impl std::default::Default for Config {
+    fn default() -> Self {
         let mut config = Config {
             root_dir: PathBuf::from(".nodo"),
             temp_dir: PathBuf::from("temp"),
             archive_dir: PathBuf::from("archive"),
             projects_delimeter: "/",
             default_filetype: "md",
-            date_format: "%d/%m/%Y",
+            date_format: "%d-%m-%Y",
         };
         let home = dirs::home_dir().expect("Failed to get home dir");
         config.root_dir = home.join(config.root_dir);
