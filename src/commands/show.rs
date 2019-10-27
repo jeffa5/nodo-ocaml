@@ -9,6 +9,7 @@ use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
 use crate::nodo::{Block, List, ListItem, NodoBuilder};
+use crate::util;
 
 impl Show {
     /// Show a project or nodo
@@ -92,10 +93,7 @@ fn show_dir(config: &Config, path: &std::path::Path) -> Result<(), CommandError>
     let contents = fs::read_dir(path)?;
     for entry in contents {
         let entry = entry.expect("Failed to get direntry");
-        if (entry.path().starts_with(&config.temp_dir) && !path.starts_with(&config.temp_dir))
-            || (entry.path().starts_with(&config.archive_dir)
-                && !path.starts_with(&config.archive_dir))
-        {
+        if util::is_hidden_dir(&config, &path, &entry.path()) {
             debug!("Ignoring: {:?}", entry);
             continue;
         }

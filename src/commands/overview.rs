@@ -11,6 +11,7 @@ use crate::files::NodoFile;
 use crate::nodo::Nodo;
 use crate::nodo::TextItem;
 use crate::nodo::{Block, List, ListItem, NodoBuilder};
+use crate::util;
 
 impl Overview {
     /// Provide an overview of the target
@@ -123,12 +124,8 @@ impl DirTree {
 fn dir_overview(config: &Config, path: &Path, depth: usize) -> Result<Vec<DirTree>, CommandError> {
     let mut dirtrees = Vec::new();
     for entry in std::fs::read_dir(&path)? {
-        // for entry in WalkDir::new(&path).min_depth(1).max_depth(1) {
         let entry = entry?;
-        if (entry.path().starts_with(&config.temp_dir) && !path.starts_with(&config.temp_dir))
-            || (entry.path().starts_with(&config.archive_dir)
-                && !path.starts_with(&config.archive_dir))
-        {
+        if util::is_hidden_dir(&config, &path, &entry.path()) {
             debug!("Ignoring: {:?}", entry);
             continue;
         }

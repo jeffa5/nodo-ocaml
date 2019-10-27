@@ -9,6 +9,7 @@ use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
 use crate::nodo::NodoBuilder;
+use crate::util;
 
 impl Format {
     /// Format a nodo
@@ -46,11 +47,7 @@ impl Format {
                 if metadata.is_dir() {
                     for entry in WalkDir::new(&path) {
                         let entry = entry?;
-                        if (entry.path().starts_with(&config.temp_dir)
-                            && !path.starts_with(&config.temp_dir))
-                            || (entry.path().starts_with(&config.archive_dir)
-                                && !path.starts_with(&config.archive_dir))
-                        {
+                        if util::is_hidden_dir(&config, &path, entry.path()) {
                             debug!("Ignoring: {:?}", entry);
                             continue;
                         }

@@ -1,4 +1,5 @@
 use log::*;
+use std::path::Path;
 use std::path::PathBuf;
 
 use crate::cli::Target;
@@ -21,4 +22,10 @@ impl Target {
         info!("Creating the project dirs: {:?}", projects);
         std::fs::create_dir_all(projects)
     }
+}
+
+pub fn is_hidden_dir(config: &Config, target_path: &Path, entry_path: &Path) -> bool {
+    (entry_path.starts_with(&config.temp_dir) && !target_path.starts_with(&config.temp_dir))
+        || (entry_path.starts_with(&config.archive_dir)
+            && !target_path.starts_with(&config.archive_dir))
 }
