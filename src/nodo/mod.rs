@@ -35,6 +35,19 @@ impl From<Vec<TextItem>> for Text {
     }
 }
 
+impl std::fmt::Display for Text {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        for item in self.inner.iter() {
+            match item {
+                TextItem::PlainText(s) => write!(f, "{}", s)?,
+                TextItem::StyledText(s, _) => write!(f, "{}", s)?,
+                TextItem::Link(s, _) => write!(f, "{}", s)?,
+            }
+        }
+        Ok(())
+    }
+}
+
 /// A piece of text can be decorated with a style
 #[derive(Debug, PartialEq, Clone)]
 pub enum TextItem {

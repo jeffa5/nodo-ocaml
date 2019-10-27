@@ -3,6 +3,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::cli::Show;
+use crate::cli::Target;
 use crate::commands::{self, CommandError};
 use crate::config::Config;
 use crate::files;
@@ -19,7 +20,14 @@ impl Show {
             show_dir(&config, &config.root_dir)?;
             return Ok(());
         }
-        let path = util::find_target(&config, &self.target)?;
+        let parts: Vec<String> = self.target.splitn(2, '#').map(String::from).collect();
+        debug!("Parts: {:?}", parts);
+        let path = util::find_target(
+            &config,
+            &Target {
+                inner: parts.first().unwrap().to_string(),
+            },
+        )?;
         if path.is_dir() {
             // show the contents of the directory
             trace!("Target was a directory");
@@ -27,12 +35,17 @@ impl Show {
         } else if path.is_file() {
             // show the content of the nodo
             trace!("Target was a file");
-            self.show_file(&config, &path)?;
+            self.show_file(&config, &path, parts.get(1).unwrap_or(&String::new()))?;
         }
         Ok(())
     }
 
-    fn show_file(&self, config: &Config, path: &std::path::Path) -> commands::Result<()> {
+    fn show_file(
+        &self,
+        config: &Config,
+        path: &std::path::Path,
+        header: &str,
+    ) -> commands::Result<()> {
         let file_handler = files::get_file_handler(&config.default_filetype);
         let nodo = file_handler.read(&mut fs::File::open(path)?, &config)?;
         let mut builder = NodoBuilder::default();
@@ -43,23 +56,74 @@ impl Show {
         if let Some(date) = nodo.due_date() {
             builder.due_date(date);
         }
-        builder.title(nodo.title().clone());
+        let mut header_matched = if header.is_empty() { None } else { Some(false) };
+        let mut header_count = 1;
+        let header_index = header.parse::<u32>();
+        if nodo
+            .title()
+            .to_string()
+            .to_lowercase()
+            .starts_with(&header.to_lowercase())
+        {
+            header_matched = Some(true)
+        }
+        if let Ok(index) = header_index {
+            if index == 1 {
+                header_matched = Some(true)
+            }
+        }
+        if header_matched.is_none() || header_matched.unwrap() {
+            builder.title(nodo.title().clone());
+        }
         for block in nodo.blocks() {
             match block {
+                Block::Heading(t, l) => {
+                    if let Some(matched) = header_matched {
+                        if matched {
+                            break;
+                        }
+                        header_count += 1;
+                        if t.to_string()
+                            .to_lowercase()
+                            .starts_with(&header.to_lowercase())
+                        {
+                            header_matched = Some(true)
+                        }
+                        if let Ok(index) = header_index {
+                            if index == header_count {
+                                header_matched = Some(true)
+                            }
+                        }
+                    }
+                    builder.block(Block::Heading(t.clone(), *l));
+                }
                 Block::List(l) => {
+                    if let Some(matched) = header_matched {
+                        if !matched {
+                            continue;
+                        }
+                    }
                     builder.block(Block::List(filter_list(
                         &trim_list(&l, self.depth),
                         self.filter_complete,
                     )));
                 }
-
                 b => {
+                    if let Some(matched) = header_matched {
+                        if !matched {
+                            continue;
+                        }
+                    }
                     builder.block(b.clone());
                 }
             }
         }
         if !cfg!(test) {
-            file_handler.write(&builder.build(), &mut std::io::stdout(), &config)?;
+            if header_matched.is_some() && !header_matched.unwrap() {
+                println!("Failed to match a header")
+            } else {
+                file_handler.write(&builder.build(), &mut std::io::stdout(), &config)?;
+            }
         }
         Ok(())
     }

@@ -66,8 +66,10 @@ impl NodoFile for Markdown {
     ) -> Result<(), WriteError> {
         write_frontmatter(nodo, writer, config)?;
         // write title as header with level 1
-        write_heading(writer, "", false, nodo.title(), 1)?;
-        writeln!(writer)?;
+        if !nodo.title().inner.is_empty() {
+            write_heading(writer, "", false, nodo.title(), 1)?;
+            writeln!(writer)?;
+        }
         // write fields to the file
 
         for (i, block) in nodo.blocks().iter().enumerate() {
