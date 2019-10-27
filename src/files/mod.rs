@@ -59,10 +59,6 @@ impl std::error::Error for WriteError {}
 pub trait NodoFile: std::fmt::Debug + Default {
     const EXTENSION: &'static str;
 
-    fn ext(&self) -> &'static str {
-        Self::EXTENSION
-    }
-
     fn read<R>(&self, nodo: NodoBuilder, r: &mut R, config: &Config) -> Result<Nodo, ReadError>
     where
         Self: Sized + NodoFile,
