@@ -2,7 +2,7 @@
 pub mod markdown;
 
 use crate::config::Config;
-use crate::nodo::{Nodo, NodoBuilder};
+use crate::nodo::Nodo;
 
 #[derive(Debug)]
 pub enum ReadError {
@@ -59,7 +59,7 @@ impl std::error::Error for WriteError {}
 pub trait NodoFile: std::fmt::Debug + Default {
     const EXTENSION: &'static str;
 
-    fn read<R>(&self, nodo: NodoBuilder, r: &mut R, config: &Config) -> Result<Nodo, ReadError>
+    fn read<R>(&self, r: &mut R, config: &Config) -> Result<Nodo, ReadError>
     where
         Self: Sized + NodoFile,
         R: std::io::Read;

@@ -35,12 +35,8 @@ impl<'a> Iterator for &mut EventsIter<'a> {
 impl NodoFile for Markdown {
     const EXTENSION: &'static str = "md";
 
-    fn read<R: Read>(
-        &self,
-        mut nodo: NodoBuilder,
-        reader: &mut R,
-        config: &Config,
-    ) -> Result<Nodo, ReadError> {
+    fn read<R: Read>(&self, reader: &mut R, config: &Config) -> Result<Nodo, ReadError> {
+        let mut builder = NodoBuilder::default();
         let mut s = String::new();
         reader.read_to_string(&mut s)?;
 
@@ -52,13 +48,13 @@ impl NodoFile for Markdown {
             index: 0,
         };
 
-        read_frontmatter(&mut nodo, &mut events_iter, config)?;
+        read_frontmatter(&mut builder, &mut events_iter, config)?;
 
-        nodo.title(read_heading(&mut events_iter));
+        builder.title(read_heading(&mut events_iter));
 
-        read_body(&mut nodo, &mut events_iter)?;
+        read_body(&mut builder, &mut events_iter)?;
 
-        let nodo = nodo.build();
+        let nodo = builder.build();
         Ok(nodo)
     }
 
@@ -858,18 +854,10 @@ due_date: 16-04-2015
     fn test_formatted_and_unformatted_should_give_same_nodo() {
         assert_eq!(
             Markdown
-                .read(
-                    NodoBuilder::default(),
-                    &mut TEST_NODO_UNFORMATTED.as_bytes(),
-                    &Config::default()
-                )
+                .read(&mut TEST_NODO_UNFORMATTED.as_bytes(), &Config::default())
                 .unwrap(),
             Markdown
-                .read(
-                    NodoBuilder::default(),
-                    &mut TEST_NODO_FORMATTED.as_bytes(),
-                    &Config::default()
-                )
+                .read(&mut TEST_NODO_FORMATTED.as_bytes(), &Config::default())
                 .unwrap()
         )
     }
@@ -878,21 +866,13 @@ due_date: 16-04-2015
     fn test_read() {
         assert_eq!(
             Markdown
-                .read(
-                    NodoBuilder::default(),
-                    &mut TEST_NODO_FORMATTED.as_bytes(),
-                    &Config::default()
-                )
+                .read(&mut TEST_NODO_FORMATTED.as_bytes(), &Config::default())
                 .unwrap(),
             get_test_nodo(),
         );
         assert_eq!(
             Markdown
-                .read(
-                    NodoBuilder::default(),
-                    &mut TEST_NODO_UNFORMATTED.as_bytes(),
-                    &Config::default()
-                )
+                .read(&mut TEST_NODO_UNFORMATTED.as_bytes(), &Config::default())
                 .unwrap(),
             get_test_nodo(),
         );
@@ -914,9 +894,7 @@ due_date: 16-04-2015
             .write(&get_test_nodo(), &mut s, &Config::default())
             .unwrap();
         assert_eq!(
-            Markdown
-                .read(NodoBuilder::default(), &mut &s[..], &Config::default())
-                .unwrap(),
+            Markdown.read(&mut &s[..], &Config::default()).unwrap(),
             get_test_nodo()
         );
     }
@@ -924,11 +902,7 @@ due_date: 16-04-2015
     #[test]
     fn test_read_write_gives_same_output() {
         let nodo = Markdown
-            .read(
-                NodoBuilder::default(),
-                &mut TEST_NODO_FORMATTED.as_bytes(),
-                &Config::default(),
-            )
+            .read(&mut TEST_NODO_FORMATTED.as_bytes(), &Config::default())
             .unwrap();
         let mut s = Vec::new();
 
@@ -943,11 +917,7 @@ due_date: 16-04-2015
         builder.title(vec![TextItem::plain("title")].into());
         assert_eq!(
             Markdown
-                .read(
-                    NodoBuilder::default(),
-                    &mut s.as_bytes(),
-                    &Config::default()
-                )
+                .read(&mut s.as_bytes(), &Config::default())
                 .unwrap(),
             builder.build()
         )
@@ -1278,11 +1248,7 @@ Use the `printf()` function.
     #[test]
     fn test_commonmark_parses() {
         let nodo = Markdown
-            .read(
-                NodoBuilder::default(),
-                &mut LARGE_MD_STRING.as_bytes(),
-                &Config::default(),
-            )
+            .read(&mut LARGE_MD_STRING.as_bytes(), &Config::default())
             .unwrap();
         let mut s = Vec::new();
 
@@ -1294,18 +1260,12 @@ Use the `printf()` function.
     #[test]
     fn test_write_doesnt_change_nodo() {
         let nodo1 = Markdown
-            .read(
-                NodoBuilder::default(),
-                &mut LARGE_MD_STRING.as_bytes(),
-                &Config::default(),
-            )
+            .read(&mut LARGE_MD_STRING.as_bytes(), &Config::default())
             .unwrap();
         let mut s = Vec::new();
         Markdown.write(&nodo1, &mut s, &Config::default()).unwrap();
 
-        let nodo2 = Markdown
-            .read(NodoBuilder::default(), &mut &s[..], &Config::default())
-            .unwrap();
+        let nodo2 = Markdown.read(&mut &s[..], &Config::default()).unwrap();
         assert_eq!(nodo1, nodo2)
     }
 }

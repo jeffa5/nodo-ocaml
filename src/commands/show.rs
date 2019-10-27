@@ -34,8 +34,7 @@ impl Show {
 
     fn show_file(&self, config: &Config, path: &std::path::Path) -> commands::Result<()> {
         let file_handler = files::get_file_handler(&config.default_filetype);
-        let nodo =
-            file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?, &config)?;
+        let nodo = file_handler.read(&mut fs::File::open(path)?, &config)?;
         let mut builder = NodoBuilder::default();
         builder.tags(nodo.tags().to_vec());
         if let Some(date) = nodo.start_date() {

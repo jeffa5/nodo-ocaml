@@ -9,7 +9,7 @@ use crate::files;
 use crate::files::NodoFile;
 use crate::nodo::Nodo;
 use crate::nodo::TextItem;
-use crate::nodo::{Block, List, ListItem, NodoBuilder};
+use crate::nodo::{Block, List, ListItem};
 use crate::util;
 
 impl Overview {
@@ -126,11 +126,7 @@ fn dir_overview(config: &Config, path: &Path, depth: usize) -> commands::Result<
 
 fn file_overview(config: &Config, path: &Path, dirtree: &mut DirTree) -> commands::Result<()> {
     let handler = files::get_file_handler(&config.default_filetype);
-    let nodo = handler.read(
-        NodoBuilder::default(),
-        &mut std::fs::File::open(path)?,
-        config,
-    )?;
+    let nodo = handler.read(&mut std::fs::File::open(path)?, config)?;
     let (complete, total) = get_num_complete(&nodo)?;
     dirtree.complete = complete;
     dirtree.total = total;

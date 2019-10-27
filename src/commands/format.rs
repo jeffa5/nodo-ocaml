@@ -7,7 +7,6 @@ use crate::commands;
 use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
-use crate::nodo::NodoBuilder;
 use crate::util;
 
 impl Format {
@@ -63,13 +62,13 @@ impl Format {
         }
         if self.dry_run {
             handler.write(
-                &handler.read(NodoBuilder::default(), &mut fs::File::open(&path)?, config)?,
+                &handler.read(&mut fs::File::open(&path)?, config)?,
                 &mut std::io::stdout(),
                 config,
             )?;
         } else {
             handler.write(
-                &handler.read(NodoBuilder::default(), &mut fs::File::open(&path)?, config)?,
+                &handler.read(&mut fs::File::open(&path)?, config)?,
                 &mut fs::File::create(&path)?,
                 config,
             )?;
