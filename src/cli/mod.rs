@@ -95,7 +95,7 @@ pub struct Show {
     pub depth: Option<u32>,
     /// Filter task lists to show only complete tasks
     #[structopt(short, long)]
-    pub filter_complete: Option<bool>,
+    pub complete: Option<bool>,
 }
 
 #[derive(Debug, StructOpt)]

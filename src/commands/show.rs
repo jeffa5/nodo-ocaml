@@ -105,7 +105,7 @@ impl Show {
                     }
                     builder.block(Block::List(filter_list(
                         &trim_list(&l, self.depth),
-                        self.filter_complete,
+                        self.complete,
                     )));
                 }
                 b => {
@@ -201,8 +201,8 @@ fn trim_list(list: &List, depth: Option<u32>) -> List {
     }
 }
 
-fn filter_list(list: &List, filter_complete: Option<bool>) -> List {
-    if let Some(filter_complete) = filter_complete {
+fn filter_list(list: &List, complete: Option<bool>) -> List {
+    if let Some(filter_complete) = complete {
         debug!("Filtering list with complete: {}", filter_complete);
         let mut root_items = Vec::new();
         match list {
@@ -252,7 +252,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
-            filter_complete: None,
+            complete: None,
             depth: None,
             target: Target::default(),
         };
@@ -265,7 +265,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
-            filter_complete: None,
+            complete: None,
             depth: None,
             target: Target {
                 inner: "".split('/').map(String::from).collect(),
@@ -280,7 +280,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
-            filter_complete: None,
+            complete: None,
             depth: None,
             target: Target {
                 inner: "testdir".split('/').map(String::from).collect(),
@@ -301,7 +301,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
-            filter_complete: None,
+            complete: None,
             depth: None,
             target: Target {
                 inner: "testdir".split('/').map(String::from).collect(),
@@ -316,7 +316,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
-            filter_complete: None,
+            complete: None,
             depth: None,
             target: Target {
                 inner: "testfile.md".split('/').map(String::from).collect(),
@@ -337,7 +337,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
-            filter_complete: None,
+            complete: None,
             depth: None,
             target: Target {
                 inner: "testfile".split('/').map(String::from).collect(),
@@ -353,7 +353,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let show = Show {
-            filter_complete: None,
+            complete: None,
             depth: None,
             target: Target {
                 inner: "testfile.md".split('/').map(String::from).collect(),
