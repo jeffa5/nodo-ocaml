@@ -1,7 +1,7 @@
 use log::*;
 use std::fs;
 use std::io::ErrorKind;
-use walkdir::WalkDir;
+use std::path::Path;
 
 use crate::cli::Format;
 use crate::commands::CommandError;
@@ -45,20 +45,33 @@ impl Format {
                 // if metadata was ok then see whether dir or file and format appropriately
                 let handler = files::get_file_handler(&config.default_filetype);
                 if metadata.is_dir() {
-                    for entry in WalkDir::new(&path) {
-                        let entry = entry?;
-                        if util::is_hidden_dir(&config, &path, entry.path()) {
-                            debug!("Ignoring: {:?}", entry);
-                            continue;
-                        }
-                        if entry.file_type().is_file() {
-                            debug!("Formatting {}", entry.path().to_string_lossy());
-                            self.format(&handler, &entry.path(), &config)?
-                        }
-                    }
+                    self.format_dir(&config, &path, &handler)?
                 } else if metadata.is_file() {
-                    self.format(&handler, &path, &config)?
+                    self.format(&config, &path, &handler)?
                 }
+            }
+        }
+        Ok(())
+    }
+
+    fn format_dir<F: NodoFile>(
+        &self,
+        config: &Config,
+        path: &Path,
+        handler: &F,
+    ) -> Result<(), CommandError> {
+        for entry in std::fs::read_dir(path)? {
+            let entry = entry?;
+            if util::is_hidden_dir(config, &path, &entry.path()) {
+                debug!("Ignoring: {:?}", entry);
+                continue;
+            }
+            let file_type = entry.file_type().unwrap();
+            if file_type.is_file() {
+                debug!("Formatting {}", entry.path().to_string_lossy());
+                self.format(config, &entry.path(), handler)?
+            } else if file_type.is_dir() {
+                self.format_dir(config, &entry.path(), handler)?
             }
         }
         Ok(())
@@ -66,9 +79,9 @@ impl Format {
 
     fn format<F: NodoFile>(
         &self,
-        handler: &F,
-        path: &std::path::Path,
         config: &Config,
+        path: &Path,
+        handler: &F,
     ) -> Result<(), CommandError> {
         if self.verbose {
             println!(

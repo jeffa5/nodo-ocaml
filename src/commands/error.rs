@@ -56,10 +56,4 @@ impl From<WriteError> for CommandError {
     }
 }
 
-impl From<walkdir::Error> for CommandError {
-    fn from(err: walkdir::Error) -> Self {
-        CommandError::Str(format!("{}", err))
-    }
-}
-
 impl std::error::Error for CommandError {}
