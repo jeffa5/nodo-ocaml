@@ -7,7 +7,6 @@ use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
 use crate::nodo::NodoBuilder;
-use crate::util::{file, project};
 
 impl New {
     /// Create a new nodo with the given options
@@ -29,10 +28,10 @@ impl New {
             }
         }
         // ensure the project exists
-        project::make_dirs(&config, &self.target)?;
+        self.target.make_dirs(&config)?;
         // write the nodo to the default location
-        let pb = file::build_path(&config, &self.target, true);
-        let mut file = file::create_file(&pb)?;
+        let pb = self.target.build_path(&config, true);
+        let mut file = fs::File::create(&pb)?;
         if let Some(template) = &self.template {
             let mut template_path = config.root_dir.join(template);
             if template_path.extension().is_none() {

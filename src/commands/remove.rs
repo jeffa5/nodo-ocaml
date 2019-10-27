@@ -5,7 +5,6 @@ use std::io::ErrorKind;
 use crate::cli::Remove;
 use crate::commands::CommandError;
 use crate::config::Config;
-use crate::util::file;
 
 impl Remove {
     /// Remove a nodo if it exists
@@ -14,7 +13,7 @@ impl Remove {
         if self.target.is_empty() {
             return Err(CommandError::NoTarget);
         }
-        let mut path = file::build_path(&config, &self.target, false);
+        let mut path = self.target.build_path(&config, false);
         debug!("path: {:?}", &path);
         let metadata = path.metadata();
         debug!("metadata: {:?}", &metadata);

@@ -11,14 +11,13 @@ use crate::files::NodoFile;
 use crate::nodo::Nodo;
 use crate::nodo::TextItem;
 use crate::nodo::{Block, List, ListItem, NodoBuilder};
-use crate::util::file::build_path;
 
 impl Overview {
     /// Provide an overview of the target
     /// Accepts an empty target, dir or file
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         debug!("target: {:?}", &self.target);
-        let mut path = build_path(&config, &self.target, false);
+        let mut path = self.target.build_path(&config, false);
         debug!("path: {:?}", &path);
         let dirtrees = if self.target.is_empty() {
             dir_overview(&config, &path, 0)?

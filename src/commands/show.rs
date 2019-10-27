@@ -9,14 +9,13 @@ use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
 use crate::nodo::{Block, List, ListItem, NodoBuilder};
-use crate::util::file::build_path;
 
 impl Show {
     /// Show a project or nodo
     /// Accepts empty target, dir or file
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         debug!("target: {:?}", &self.target);
-        let mut path = build_path(&config, &self.target, false);
+        let mut path = self.target.build_path(&config, false);
         debug!("path: {:?}", &path);
         if self.target.is_empty() {
             show_dir(&config, &path)?;

@@ -20,15 +20,18 @@ fn main() {
         .init()
         .expect("Failed to initialise logging");
     debug!("{:#?}", opts);
-    let config = confy::load("nodo").expect("Failed to get config file");
+    let mut config: config::Config = confy::load("nodo").expect("Failed to get config file");
     debug!("{:#?}", config);
+    if let Some(ft) = opts.filetype {
+        config.default_filetype = ft
+    }
     if opts.sub_command.is_some() && !opts.target.is_empty() {
         println!("Can't specify a target here and a subcommand");
         return;
     }
     let result = match opts.sub_command {
         None => {
-            let path = util::file::build_path(&config, &opts.target, true);
+            let path = opts.target.build_path(&config, true);
             if !path.exists() {
                 Cli::clap().print_help().unwrap();
                 return;

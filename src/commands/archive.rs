@@ -4,7 +4,6 @@ use std::fs;
 use crate::cli::Archive;
 use crate::commands::CommandError;
 use crate::config::Config;
-use crate::util::file;
 
 impl Archive {
     /// Archive a nodo or project tree
@@ -13,7 +12,7 @@ impl Archive {
         if self.target.is_empty() {
             return Err(CommandError::NoTarget);
         }
-        let mut path = file::build_path(&config, &self.target, false);
+        let mut path = self.target.build_path(&config, false);
         if !path.exists() && path.extension().is_none() {
             path.set_extension(config.default_filetype);
         }

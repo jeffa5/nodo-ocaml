@@ -16,6 +16,9 @@ pub struct Cli {
     /// Log with the given verbosity, more 'l' is more verbose
     #[structopt(short, long, parse(from_occurrences), global = true)]
     pub log_level: usize,
+    /// Set the filetype to use for this command
+    #[structopt(long, global = true)]
+    pub filetype: Option<String>,
 }
 
 #[derive(StructOpt, Debug)]

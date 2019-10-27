@@ -9,7 +9,6 @@ use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
 use crate::nodo::NodoBuilder;
-use crate::util::file;
 
 impl Format {
     /// Format a nodo
@@ -18,7 +17,7 @@ impl Format {
         debug!("target: {:?}", &self.target);
         trace!("Formatting a nodo");
         // get the file location
-        let mut path = file::build_path(&config, &self.target, false);
+        let mut path = self.target.build_path(&config, false);
         debug!("path: {:?}", &path);
         let metadata = path.metadata();
         debug!("metadata: {:?}", &metadata);

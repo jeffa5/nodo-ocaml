@@ -8,7 +8,6 @@ use std::process::Command as Cmd;
 use crate::cli::Edit;
 use crate::commands::CommandError;
 use crate::config::Config;
-use crate::util::file;
 
 impl Edit {
     /// Edit a current nodo in the editor
@@ -30,7 +29,7 @@ impl Edit {
         } else if self.target.is_empty() {
             return Err(CommandError::NoTarget);
         } else {
-            file::build_path(&config, &self.target, true)
+            self.target.build_path(&config, true)
         };
         if self.create && !path.exists() {
             File::create(&path)?;
