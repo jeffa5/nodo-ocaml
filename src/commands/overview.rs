@@ -3,7 +3,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::cli::Overview;
-use crate::commands::CommandError;
+use crate::commands;
 use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
@@ -15,7 +15,7 @@ use crate::util;
 impl Overview {
     /// Provide an overview of the target
     /// Accepts an empty target, dir or file
-    pub fn exec(&self, config: Config) -> Result<(), CommandError> {
+    pub fn exec(&self, config: Config) -> commands::Result<()> {
         debug!("target: {:?}", &self.target);
         let dirtrees = if self.target.is_empty() {
             dir_overview(&config, &config.root_dir, 0)?
@@ -99,7 +99,7 @@ impl DirTree {
     }
 }
 
-fn dir_overview(config: &Config, path: &Path, depth: usize) -> Result<Vec<DirTree>, CommandError> {
+fn dir_overview(config: &Config, path: &Path, depth: usize) -> commands::Result<Vec<DirTree>> {
     let mut dirtrees = Vec::new();
     for entry in std::fs::read_dir(&path)? {
         let entry = entry?;
@@ -124,7 +124,7 @@ fn dir_overview(config: &Config, path: &Path, depth: usize) -> Result<Vec<DirTre
     Ok(dirtrees)
 }
 
-fn file_overview(config: &Config, path: &Path, dirtree: &mut DirTree) -> Result<(), CommandError> {
+fn file_overview(config: &Config, path: &Path, dirtree: &mut DirTree) -> commands::Result<()> {
     let handler = files::get_file_handler(&config.default_filetype);
     let nodo = handler.read(
         NodoBuilder::default(),
@@ -149,7 +149,7 @@ fn file_overview(config: &Config, path: &Path, dirtree: &mut DirTree) -> Result<
     Ok(())
 }
 
-fn get_num_complete(nodo: &Nodo) -> Result<(u32, u32), CommandError> {
+fn get_num_complete(nodo: &Nodo) -> commands::Result<(u32, u32)> {
     let mut total = 0;
     let mut complete = 0;
     for block in nodo.blocks() {
@@ -176,6 +176,7 @@ fn get_num_complete(nodo: &Nodo) -> Result<(u32, u32), CommandError> {
 mod test {
     use super::*;
     use crate::cli::Target;
+    use crate::commands::CommandError;
     use pretty_assertions::assert_eq;
     use tempfile::tempdir;
 

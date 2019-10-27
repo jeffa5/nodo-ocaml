@@ -3,7 +3,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::cli::Target;
-use crate::commands::CommandError;
+use crate::commands::{self, CommandError};
 use crate::config::Config;
 
 impl Target {
@@ -25,7 +25,7 @@ impl Target {
     }
 }
 
-pub fn find_target(config: &Config, target: &Target) -> Result<PathBuf, CommandError> {
+pub fn find_target(config: &Config, target: &Target) -> commands::Result<PathBuf> {
     let mut path = target.build_path(config, false);
     if path.exists() {
         return Ok(path);

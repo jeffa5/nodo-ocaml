@@ -3,7 +3,7 @@ use std::fs;
 use std::path::PathBuf;
 
 use crate::cli::Show;
-use crate::commands::CommandError;
+use crate::commands::{self, CommandError};
 use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
@@ -13,7 +13,7 @@ use crate::util;
 impl Show {
     /// Show a project or nodo
     /// Accepts empty target, dir or file
-    pub fn exec(&self, config: Config) -> Result<(), CommandError> {
+    pub fn exec(&self, config: Config) -> commands::Result<()> {
         debug!("target: {:?}", &self.target);
         if self.target.is_empty() {
             show_dir(&config, &config.root_dir)?;
@@ -32,7 +32,7 @@ impl Show {
         Ok(())
     }
 
-    fn show_file(&self, config: &Config, path: &std::path::Path) -> Result<(), CommandError> {
+    fn show_file(&self, config: &Config, path: &std::path::Path) -> commands::Result<()> {
         let file_handler = files::get_file_handler(&config.default_filetype);
         let nodo =
             file_handler.read(NodoBuilder::default(), &mut fs::File::open(path)?, &config)?;
@@ -66,7 +66,7 @@ impl Show {
     }
 }
 
-fn show_dir(config: &Config, path: &std::path::Path) -> Result<(), CommandError> {
+fn show_dir(config: &Config, path: &std::path::Path) -> commands::Result<()> {
     let contents = fs::read_dir(path)?;
     for entry in contents {
         let entry = entry.expect("Failed to get direntry");

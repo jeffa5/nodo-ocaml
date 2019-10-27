@@ -3,7 +3,7 @@ use std::fs;
 use std::path::Path;
 
 use crate::cli::Format;
-use crate::commands::CommandError;
+use crate::commands;
 use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
@@ -13,7 +13,7 @@ use crate::util;
 impl Format {
     /// Format a nodo
     /// Accepts an empty target or a dir or a file
-    pub fn exec(&self, config: Config) -> Result<(), CommandError> {
+    pub fn exec(&self, config: Config) -> commands::Result<()> {
         debug!("target: {:?}", &self.target);
         trace!("Formatting a nodo");
         let path = util::find_target(&config, &self.target)?;
@@ -31,7 +31,7 @@ impl Format {
         config: &Config,
         path: &Path,
         handler: &F,
-    ) -> Result<(), CommandError> {
+    ) -> commands::Result<()> {
         for entry in std::fs::read_dir(path)? {
             let entry = entry?;
             if util::is_hidden_dir(config, &path, &entry.path()) {
@@ -54,7 +54,7 @@ impl Format {
         config: &Config,
         path: &Path,
         handler: &F,
-    ) -> Result<(), CommandError> {
+    ) -> commands::Result<()> {
         if self.verbose {
             println!(
                 "Formatting nodo: {}",
@@ -82,6 +82,7 @@ impl Format {
 mod test {
     use super::*;
     use crate::cli::Target;
+    use crate::commands::CommandError;
     use pretty_assertions::assert_eq;
     use tempfile::tempdir;
 

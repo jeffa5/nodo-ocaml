@@ -2,12 +2,12 @@ use log::*;
 use std::fs;
 
 use crate::cli::Archive;
-use crate::commands::CommandError;
+use crate::commands::{self, CommandError};
 use crate::config::Config;
 
 impl Archive {
     /// Archive a nodo or project tree
-    pub fn exec(&self, config: Config) -> Result<(), CommandError> {
+    pub fn exec(&self, config: Config) -> commands::Result<()> {
         trace!("Archiving {:?}", self.target);
         if self.target.is_empty() {
             return Err(CommandError::NoTarget);

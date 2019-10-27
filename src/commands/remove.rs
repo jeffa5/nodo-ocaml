@@ -2,14 +2,14 @@ use log::*;
 use std::fs;
 
 use crate::cli::Remove;
-use crate::commands::CommandError;
+use crate::commands::{self, CommandError};
 use crate::config::Config;
 use crate::util;
 
 impl Remove {
     /// Remove a nodo if it exists
     /// Accepts a dir (with force) or a file
-    pub fn exec(&self, config: Config) -> Result<(), CommandError> {
+    pub fn exec(&self, config: Config) -> commands::Result<()> {
         if self.target.is_empty() {
             return Err(CommandError::NoTarget);
         }

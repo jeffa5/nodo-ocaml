@@ -2,7 +2,7 @@ use log::*;
 use std::fs;
 
 use crate::cli::New;
-use crate::commands::CommandError;
+use crate::commands::{self, CommandError};
 use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
@@ -10,7 +10,7 @@ use crate::nodo::NodoBuilder;
 
 impl New {
     /// Create a new nodo with the given options
-    pub fn exec(&self, config: Config) -> Result<(), CommandError> {
+    pub fn exec(&self, config: Config) -> commands::Result<()> {
         if self.target.is_empty() {
             return Err(CommandError::NoTarget);
         }
