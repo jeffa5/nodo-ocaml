@@ -2,7 +2,6 @@ use chrono::offset::Local;
 use log::*;
 use std::env;
 use std::fs::File;
-use std::io::ErrorKind;
 use std::process::Command as Cmd;
 
 use crate::cli::Edit;
@@ -35,28 +34,21 @@ impl Edit {
             File::create(&path)?;
         }
         debug!("Using path: {:?}", path);
-        match path.metadata() {
-            Err(err) => {
-                return Err(match err.kind() {
-                    ErrorKind::NotFound => CommandError::TargetMissing(self.target.clone()),
-                    _ => err.into(),
-                })
-            }
-            Ok(metadata) => {
-                if metadata.is_dir() {
-                    return Err(CommandError::Str(format!(
-                        "Can't edit {} since it is a project",
-                        path.to_string_lossy()
-                    )));
-                }
-                let mut command = get_editor();
-                command.arg(path);
-                debug!("Editor command is: {:?}", command);
-                if !cfg!(test) {
-                    let status = command.status().expect("Failed to open editor");
-                    debug!("Editor finished with status: {}", status);
-                }
-            }
+        if !path.exists() {
+            return Err(CommandError::TargetMissing(self.target.clone()));
+        }
+        if path.is_dir() {
+            return Err(CommandError::Str(format!(
+                "Can't edit {} since it is a project",
+                path.to_string_lossy()
+            )));
+        }
+        let mut command = get_editor();
+        command.arg(path);
+        debug!("Editor command is: {:?}", command);
+        if !cfg!(test) {
+            let status = command.status().expect("Failed to open editor");
+            debug!("Editor finished with status: {}", status);
         }
         Ok(())
     }

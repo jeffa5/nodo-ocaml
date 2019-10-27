@@ -3,6 +3,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use crate::cli::Target;
+use crate::commands::CommandError;
 use crate::config::Config;
 
 impl Target {
@@ -22,6 +23,21 @@ impl Target {
         info!("Creating the project dirs: {:?}", projects);
         std::fs::create_dir_all(projects)
     }
+}
+
+pub fn find_target(config: &Config, target: &Target) -> Result<PathBuf, CommandError> {
+    let mut path = target.build_path(config, false);
+    if path.exists() {
+        return Ok(path);
+    }
+    if path.extension().is_none() {
+        path.set_extension(&config.default_filetype);
+        debug!("path: {:?}", &path);
+        if path.exists() {
+            return Ok(path);
+        }
+    }
+    Err(CommandError::TargetMissing(target.clone()))
 }
 
 pub fn is_hidden_dir(config: &Config, target_path: &Path, entry_path: &Path) -> bool {

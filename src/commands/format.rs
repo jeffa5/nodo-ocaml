@@ -1,6 +1,5 @@
 use log::*;
 use std::fs;
-use std::io::ErrorKind;
 use std::path::Path;
 
 use crate::cli::Format;
@@ -17,39 +16,12 @@ impl Format {
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         debug!("target: {:?}", &self.target);
         trace!("Formatting a nodo");
-        // get the file location
-        let mut path = self.target.build_path(&config, false);
-        debug!("path: {:?}", &path);
-        let metadata = path.metadata();
-        debug!("metadata: {:?}", &metadata);
-        if let Err(err) = metadata {
-            if std::io::ErrorKind::NotFound == err.kind() {
-                if path.extension().is_none() {
-                    path.set_extension(&config.default_filetype);
-                    debug!("path: {:?}", &path);
-                }
-            } else {
-                return Err(err.into());
-            }
-        }
-        match path.metadata() {
-            Err(err) => {
-                return Err(match err.kind() {
-                    ErrorKind::NotFound => CommandError::TargetMissing(self.target.clone()),
-                    _ => err.into(),
-                })
-            }
-            Ok(metadata) => {
-                debug!("metadata: {:?}", &metadata);
-                // if metadata was err then check if it was a not found error, if so then see if extension was there, if it was exit else add default extension and try again
-                // if metadata was ok then see whether dir or file and format appropriately
-                let handler = files::get_file_handler(&config.default_filetype);
-                if metadata.is_dir() {
-                    self.format_dir(&config, &path, &handler)?
-                } else if metadata.is_file() {
-                    self.format(&config, &path, &handler)?
-                }
-            }
+        let path = util::find_target(&config, &self.target)?;
+        let handler = files::get_file_handler(&config.default_filetype);
+        if path.is_dir() {
+            self.format_dir(&config, &path, &handler)?
+        } else if path.is_file() {
+            self.format(&config, &path, &handler)?
         }
         Ok(())
     }

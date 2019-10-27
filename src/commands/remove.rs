@@ -1,10 +1,10 @@
 use log::*;
 use std::fs;
-use std::io::ErrorKind;
 
 use crate::cli::Remove;
 use crate::commands::CommandError;
 use crate::config::Config;
+use crate::util;
 
 impl Remove {
     /// Remove a nodo if it exists
@@ -13,56 +13,32 @@ impl Remove {
         if self.target.is_empty() {
             return Err(CommandError::NoTarget);
         }
-        let mut path = self.target.build_path(&config, false);
-        debug!("path: {:?}", &path);
-        let metadata = path.metadata();
-        debug!("metadata: {:?}", &metadata);
-        if let Err(err) = metadata {
-            if std::io::ErrorKind::NotFound == err.kind() {
-                if path.extension().is_none() {
-                    path.set_extension(config.default_filetype);
-                    debug!("path: {:?}", &path);
-                }
+        let path = util::find_target(&config, &self.target)?;
+        let res = if path.is_file() {
+            trace!("found a file");
+            fs::remove_file(&path)
+        } else if path.is_dir() {
+            trace!("found a dir");
+            if self.force {
+                fs::remove_dir_all(&path)
             } else {
-                return Err(err.into());
+                return Err(CommandError::Str(format!(
+                    "'{}' is a directory, can't remove without '-f'",
+                    self.target
+                )));
             }
-        }
-        match path.metadata() {
-            Err(err) => {
-                return Err(match err.kind() {
-                    ErrorKind::NotFound => CommandError::TargetMissing(self.target.clone()),
-                    _ => err.into(),
-                })
-            }
-            Ok(metadata) => {
-                debug!("metadata: {:?}", &metadata);
-                let res = if metadata.is_file() {
-                    trace!("found a file");
-                    fs::remove_file(&path)
-                } else if metadata.is_dir() {
-                    trace!("found a dir");
-                    if self.force {
-                        fs::remove_dir_all(&path)
-                    } else {
-                        return Err(CommandError::Str(format!(
-                            "'{}' is a directory, can't remove without '-f'",
-                            self.target
-                        )));
-                    }
-                } else {
-                    return Err("Not sure what type of file the target was".into());
-                };
-                match res {
-                    Ok(()) => {
-                        if metadata.is_dir() {
-                            println!("Removed project: {}", self.target);
-                        } else if metadata.is_file() {
-                            println!("Removed nodo: {}", self.target);
-                        }
-                    }
-                    Err(_) => println!("No such nodo to remove: {}", self.target),
+        } else {
+            return Err("Not sure what type of file the target was".into());
+        };
+        match res {
+            Ok(()) => {
+                if path.is_dir() {
+                    println!("Removed project: {}", self.target);
+                } else if path.is_file() {
+                    println!("Removed nodo: {}", self.target);
                 }
             }
+            Err(_) => println!("No such nodo to remove: {}", self.target),
         }
         Ok(())
     }

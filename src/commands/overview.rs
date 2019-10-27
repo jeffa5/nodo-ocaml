@@ -1,5 +1,4 @@
 use log::*;
-use std::io::ErrorKind;
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -18,40 +17,19 @@ impl Overview {
     /// Accepts an empty target, dir or file
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         debug!("target: {:?}", &self.target);
-        let mut path = self.target.build_path(&config, false);
-        debug!("path: {:?}", &path);
         let dirtrees = if self.target.is_empty() {
-            dir_overview(&config, &path, 0)?
+            dir_overview(&config, &config.root_dir, 0)?
         } else {
-            if let Err(err) = path.metadata() {
-                if std::io::ErrorKind::NotFound == err.kind() {
-                    if path.extension().is_none() {
-                        path.set_extension(&config.default_filetype);
-                        debug!("path: {:?}", &path);
-                    }
-                } else {
-                    return Err(err.into());
-                }
-            }
-            match path.metadata() {
-                Err(err) => {
-                    return Err(match err.kind() {
-                        ErrorKind::NotFound => CommandError::TargetMissing(self.target.clone()),
-                        _ => err.into(),
-                    })
-                }
-                Ok(metadata) => {
-                    if metadata.is_dir() {
-                        dir_overview(&config, &path, 0)?
-                    } else if metadata.is_file() {
-                        let mut dirtree = DirTree::default();
-                        file_overview(&config, &path, &mut dirtree)?;
-                        debug!("{:?}", dirtree);
-                        vec![dirtree]
-                    } else {
-                        Vec::new()
-                    }
-                }
+            let path = util::find_target(&config, &self.target)?;
+            if path.is_dir() {
+                dir_overview(&config, &path, 0)?
+            } else if path.is_file() {
+                let mut dirtree = DirTree::default();
+                file_overview(&config, &path, &mut dirtree)?;
+                debug!("{:?}", dirtree);
+                vec![dirtree]
+            } else {
+                Vec::new()
             }
         };
         for dirtree in dirtrees {

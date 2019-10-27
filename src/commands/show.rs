@@ -1,6 +1,5 @@
 use log::*;
 use std::fs;
-use std::io::ErrorKind;
 use std::path::PathBuf;
 
 use crate::cli::Show;
@@ -16,41 +15,19 @@ impl Show {
     /// Accepts empty target, dir or file
     pub fn exec(&self, config: Config) -> Result<(), CommandError> {
         debug!("target: {:?}", &self.target);
-        let mut path = self.target.build_path(&config, false);
-        debug!("path: {:?}", &path);
         if self.target.is_empty() {
-            show_dir(&config, &path)?;
+            show_dir(&config, &config.root_dir)?;
             return Ok(());
         }
-        if let Err(err) = path.metadata() {
-            if std::io::ErrorKind::NotFound == err.kind() {
-                if path.extension().is_none() {
-                    path.set_extension(&config.default_filetype);
-                    debug!("path: {:?}", &path);
-                }
-            } else {
-                return Err(err.into());
-            }
-        }
-        match path.metadata() {
-            Err(err) => {
-                return Err(match err.kind() {
-                    ErrorKind::NotFound => CommandError::TargetMissing(self.target.clone()),
-                    _ => err.into(),
-                })
-            }
-            Ok(metadata) => {
-                debug!("metadata: {:?}", &metadata);
-                if metadata.is_dir() {
-                    // show the contents of the directory
-                    trace!("Target was a directory");
-                    show_dir(&config, &path)?;
-                } else if metadata.is_file() {
-                    // show the content of the nodo
-                    trace!("Target was a file");
-                    self.show_file(&config, &path)?;
-                }
-            }
+        let path = util::find_target(&config, &self.target)?;
+        if path.is_dir() {
+            // show the contents of the directory
+            trace!("Target was a directory");
+            show_dir(&config, &path)?;
+        } else if path.is_file() {
+            // show the content of the nodo
+            trace!("Target was a file");
+            self.show_file(&config, &path)?;
         }
         Ok(())
     }
