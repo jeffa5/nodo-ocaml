@@ -103,15 +103,14 @@ fn dir_overview(config: &Config, path: &Path, depth: usize) -> commands::Result<
     let mut dirtrees = Vec::new();
     for entry in std::fs::read_dir(&path)? {
         let entry = entry?;
-        if util::is_hidden_dir(&config, &path, &entry.path())
-            || config.overview_ignore_dirs.iter().any(|d| {
-                d == &entry
-                    .path()
-                    .strip_prefix(&config.root_dir)
-                    .unwrap()
-                    .to_string_lossy()
-            })
-        {
+        let found_ignore_dirs = config.overview_ignore_dirs.iter().any(|d| {
+            d == &entry
+                .path()
+                .strip_prefix(&config.root_dir)
+                .unwrap()
+                .to_string_lossy()
+        });
+        if util::is_hidden_dir(&config, &path, &entry.path()) || found_ignore_dirs {
             debug!("Ignoring: {:?}", entry);
             continue;
         }
