@@ -16,6 +16,12 @@ struct EventsIter<'a> {
     index: usize,
 }
 
+impl<'a> EventsIter<'a> {
+    fn peek(&self) -> Option<&Event<'a>> {
+        self.events.get(self.index)
+    }
+}
+
 impl<'a> Iterator for &mut EventsIter<'a> {
     type Item = Event<'a>;
 
@@ -50,7 +56,12 @@ impl NodoFile for Markdown {
 
         read_frontmatter(&mut builder, &mut events_iter, config)?;
 
-        builder.title(read_heading(&mut events_iter));
+        match events_iter.peek() {
+            Some(Event::Start(Tag::Heading(_))) | Some(Event::Text(_)) => {
+                builder.title(read_heading(&mut events_iter));
+            }
+            _ => (),
+        }
 
         read_body(&mut builder, &mut events_iter)?;
 
