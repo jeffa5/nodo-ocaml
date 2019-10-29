@@ -40,7 +40,13 @@ impl Format {
             let file_type = entry.file_type().unwrap();
             if file_type.is_file() {
                 debug!("Formatting {}", entry.path().to_string_lossy());
-                self.format(config, &entry.path(), handler)?
+                if let Err(err) = self.format(config, &entry.path(), handler) {
+                    println!(
+                        "Failed to format {}: {}",
+                        entry.path().to_string_lossy(),
+                        err
+                    )
+                }
             } else if file_type.is_dir() {
                 self.format_dir(config, &entry.path(), handler)?
             }
