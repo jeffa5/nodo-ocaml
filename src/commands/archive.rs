@@ -19,9 +19,10 @@ impl Archive {
         let move_target = config.archive_dir.join(&self.target.inner);
         debug!("Moving {:?} to {:?}", path, move_target);
         if path.is_file() {
+            fs::create_dir_all(move_target.parent().unwrap())?;
             fs::rename(path, move_target)?;
         } else if path.is_dir() {
-            fs::create_dir_all(path.parent().unwrap())?;
+            fs::create_dir_all(move_target.parent().unwrap())?;
             fs::rename(path, move_target)?;
         } else {
             return Err(CommandError::TargetMissing(self.target.clone()));
