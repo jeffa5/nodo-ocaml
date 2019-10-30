@@ -76,14 +76,28 @@ impl std::fmt::Display for Target {
     }
 }
 
+#[derive(StructOpt, Debug, Default, PartialEq, Clone)]
+pub struct Template {
+    /// Create the nodo from the given template file
+    #[structopt(name = "template", long, parse(from_os_str))]
+    pub inner: Option<PathBuf>,
+}
+
+impl ops::Deref for Template {
+    type Target = Option<PathBuf>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
 #[derive(Debug, StructOpt)]
 pub struct New {
     #[structopt(flatten)]
     pub target: Target,
 
-    /// Create the nodo from the given template file
-    #[structopt(short, long, parse(from_os_str))]
-    pub template: Option<PathBuf>,
+    #[structopt(flatten)]
+    pub template: Template,
 }
 
 #[derive(Debug, StructOpt)]
@@ -111,6 +125,9 @@ pub struct Remove {
 pub struct Edit {
     #[structopt(flatten)]
     pub target: Target,
+
+    #[structopt(flatten)]
+    pub template: Template,
 
     /// Use a temporary file, use `nodo clean` to tidy up
     #[structopt(short, long)]

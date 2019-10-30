@@ -1,6 +1,7 @@
 use chrono::offset::Local;
 use log::*;
 use std::env;
+use std::fs;
 use std::fs::File;
 use std::process::Command as Cmd;
 
@@ -30,8 +31,33 @@ impl Edit {
         } else {
             self.target.build_path(&config, true)
         };
+        if !self.create && self.template.is_some() {
+            return Err(CommandError::Str(
+                "Can't edit from a template without the `create` option".to_string(),
+            ));
+        }
         if self.create && !path.exists() {
-            File::create(&path)?;
+            if let Some(template) = &self.template.inner {
+                debug!("Template given: {}", template.to_string_lossy());
+                let mut template_path = config.root_dir.join(template);
+                if template_path.extension().is_none() {
+                    template_path.set_extension(&config.default_filetype);
+                }
+                if !template_path.is_file() {
+                    return Err(CommandError::Str(format!(
+                        "Template '{}' isn't a nodo in the root directory",
+                        template.to_string_lossy()
+                    )));
+                }
+                debug!(
+                    "Copying from template {} to {}",
+                    template_path.to_string_lossy(),
+                    path.to_string_lossy()
+                );
+                fs::copy(template_path, &path)?;
+            } else {
+                File::create(&path)?;
+            }
         }
         debug!("Using path: {:?}", path);
         if !path.exists() {
@@ -67,7 +93,7 @@ fn get_editor() -> Cmd {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cli::Target;
+    use crate::cli::{Target, Template};
     use pretty_assertions::assert_eq;
     use std::fs;
     use std::path::PathBuf;
@@ -79,6 +105,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            template: Template::default(),
             create: false,
             temp: false,
             target: Target::default(),
@@ -92,6 +119,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            template: Template::default(),
             create: false,
             temp: false,
             target: Target::default(),
@@ -105,6 +133,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            template: Template::default(),
             create: false,
             temp: false,
             target: Target {
@@ -125,6 +154,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            template: Template::default(),
             create: false,
             temp: false,
             target: Target {
@@ -146,6 +176,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            template: Template::default(),
             create: false,
             temp: false,
             target: Target {
@@ -162,6 +193,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
         let edit = Edit {
+            template: Template::default(),
             create: false,
             temp: false,
             target: Target {

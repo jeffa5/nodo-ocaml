@@ -14,7 +14,7 @@ impl New {
         if self.target.is_empty() {
             return Err(CommandError::NoTarget);
         }
-        if let Some(template) = &self.template {
+        if let Some(template) = &self.template.inner {
             debug!("Template given: {}", template.to_string_lossy());
             let mut template_path = config.root_dir.join(template);
             if template_path.extension().is_none() {
@@ -32,7 +32,7 @@ impl New {
         // write the nodo to the default location
         let pb = self.target.build_path(&config, true);
         let mut file = fs::File::create(&pb)?;
-        if let Some(template) = &self.template {
+        if let Some(template) = &self.template.inner {
             let mut template_path = config.root_dir.join(template);
             if template_path.extension().is_none() {
                 template_path.set_extension(&config.default_filetype);
@@ -57,7 +57,7 @@ impl New {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cli::Target;
+    use crate::cli::{Target, Template};
     use pretty_assertions::assert_eq;
     use tempfile::tempdir;
 
@@ -67,7 +67,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
-            template: None,
+            template: Template::default(),
             target: Target::default(),
         };
         assert_eq!(new.exec(config), Err(CommandError::NoTarget));
@@ -79,7 +79,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
-            template: None,
+            template: Template::default(),
             target: Target {
                 inner: "".to_string(),
             },
@@ -93,7 +93,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
-            template: None,
+            template: Template::default(),
             target: Target {
                 inner: "testdir/testfile".to_string(),
             },
@@ -120,7 +120,7 @@ mod test {
         let mut config = Config::default();
         config.root_dir = std::path::PathBuf::from(dir.path());
         let new = New {
-            template: None,
+            template: Template::default(),
             target: Target {
                 inner: "testdir/testfile.md".to_string(),
             },
