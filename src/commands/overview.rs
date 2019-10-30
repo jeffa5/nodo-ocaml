@@ -124,7 +124,13 @@ fn dir_overview(config: &Config, path: &Path, depth: usize) -> commands::Result<
             dirtree.total = dirtree.children.iter().map(|c| c.total).sum();
             dirtree.complete = dirtree.children.iter().map(|c| c.complete).sum();
         } else if entry.file_type().unwrap().is_file() {
-            file_overview(config, &entry.path(), &mut dirtree)?
+            if let Err(err) = file_overview(config, &entry.path(), &mut dirtree) {
+                warn!(
+                    "Failed to overview {}: {}",
+                    entry.path().to_string_lossy(),
+                    err
+                )
+            }
         }
         dirtrees.push(dirtree)
     }
