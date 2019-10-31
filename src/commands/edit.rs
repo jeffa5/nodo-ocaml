@@ -23,7 +23,8 @@ impl Edit {
             }
             let s = Local::now().format("%F-%T").to_string();
             debug!("temp file name: {}", s);
-            let filename = config.temp_dir.join(s);
+            let mut filename = config.temp_dir.join(s);
+            filename.set_extension(&config.default_filetype);
             File::create(&filename)?;
             filename
         } else if self.target.is_empty() {
