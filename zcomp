@@ -1,0 +1,4 @@
+#compdef nodo
+
+base_dir=(~/.nodo/)
+_files -W base_dir
