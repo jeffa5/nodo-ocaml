@@ -49,7 +49,7 @@ pub enum SubCommand {
 #[derive(Debug, Default, StructOpt, PartialEq, Clone)]
 pub struct Target {
     /// A '/' separated value of the form project/subproject/.../nodo_name
-    #[structopt(name = "target", default_value = "")]
+    #[structopt(name = "target")]
     pub inner: String,
 }
 
