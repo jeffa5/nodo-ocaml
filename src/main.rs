@@ -52,16 +52,6 @@ fn main() {
             SubCommand::Format(format) => format.exec(config),
             SubCommand::Overview(overview) => overview.exec(config),
             SubCommand::Archive(archive) => archive.exec(config),
-            SubCommand::Completions { shell } => {
-                Cli::clap().gen_completions_to(
-                    "nodo",
-                    shell
-                        .parse()
-                        .expect("Failed to parse shell as a shell candidate"),
-                    &mut std::io::stdout(),
-                );
-                Ok(())
-            }
         },
     };
     if let Err(err) = result {

@@ -46,13 +46,6 @@ pub enum SubCommand {
 
     /// Archive a nodo or project tree
     Archive(Archive),
-
-    /// Generates completion scripts for your shell
-    Completions {
-        /// The shell to generate the script for
-        #[structopt(possible_values = &structopt::clap::Shell::variants())]
-        shell: String,
-    },
 }
 
 #[derive(Debug, Default, StructOpt, PartialEq, Clone)]
