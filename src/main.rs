@@ -20,7 +20,6 @@ fn main() {
         .init()
         .expect("Failed to initialise logging");
     debug!("{:#?}", opts);
-    // let mut config: config::Config = confy::load("nodo").expect("Failed to get config file");
 
     let mut config = config::Config::load();
     debug!("{:#?}", config);
