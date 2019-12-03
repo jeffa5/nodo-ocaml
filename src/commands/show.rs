@@ -1,13 +1,16 @@
 use log::*;
 use std::fs;
+use std::path;
 use std::path::PathBuf;
 
 use crate::cli::Show;
 use crate::cli::Target;
-use crate::commands::{self, CommandError};
+use crate::commands;
 use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
+use crate::nodo::Nodo;
+use crate::nodo::TextItem;
 use crate::nodo::{Block, List, ListItem, NodoBuilder};
 use crate::util;
 
@@ -129,32 +132,162 @@ impl Show {
     }
 }
 
-fn show_dir(config: &Config, path: &std::path::Path) -> commands::Result<()> {
-    let contents = fs::read_dir(path)?;
-    for entry in contents {
-        let entry = entry.expect("Failed to get direntry");
-        if util::is_hidden_dir(&config, &path, &entry.path()) {
+#[derive(Default, Debug)]
+struct DirTree {
+    depth: usize,
+    complete: u32,
+    total: u32,
+    title: String,
+    path: PathBuf,
+    children: Vec<DirTree>,
+}
+
+impl std::fmt::Display for DirTree {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> Result<(), std::fmt::Error> {
+        self.write_tree(f, "")
+    }
+}
+
+impl DirTree {
+    fn write_tree(&self, f: &mut std::fmt::Formatter, prefix: &str) -> Result<(), std::fmt::Error> {
+        let complete_string = if self.total > 0 {
+            format!(
+                " [{}/{} ({:.1}%)]",
+                self.complete,
+                self.total,
+                100. * f64::from(self.complete) / f64::from(self.total)
+            )
+        } else {
+            String::new()
+        };
+        if self.path.is_dir() {
+            write!(
+                f,
+                "P: {}{}",
+                self.path.file_name().unwrap().to_string_lossy(),
+                complete_string
+            )?;
+        } else if self.path.is_file() {
+            write!(
+                f,
+                "N: ({}) {}{}",
+                self.path.file_name().unwrap().to_string_lossy(),
+                self.title,
+                complete_string
+            )?;
+        }
+        for (i, child) in self.children.iter().enumerate() {
+            writeln!(f)?;
+            let mut prefix = prefix.to_string();
+            if i == self.children.len() - 1 {
+                write!(f, "{}└─ ", prefix)?;
+                prefix.push_str("   ");
+            } else {
+                write!(f, "{}├─ ", prefix)?;
+                prefix.push_str("│  ");
+            };
+            child.write_tree(f, &prefix)?;
+        }
+        Ok(())
+    }
+}
+
+fn show_dir(config: &Config, path: &path::Path) -> commands::Result<()> {
+    let trees = show_dir_internal(config, path, 0)?;
+    for tree in trees {
+        println!("{}", tree);
+    }
+    Ok(())
+}
+
+fn show_dir_internal(
+    config: &Config,
+    path: &path::Path,
+    depth: usize,
+) -> commands::Result<Vec<DirTree>> {
+    let mut dirtrees = Vec::new();
+    for entry in fs::read_dir(&path)? {
+        let entry = entry?;
+        let found_ignore_dirs = config.overview_ignore_dirs.iter().any(|d| {
+            d == &entry
+                .path()
+                .strip_prefix(&config.root_dir)
+                .unwrap()
+                .to_string_lossy()
+        });
+        if util::is_hidden_dir(&config, &path, &entry.path()) || found_ignore_dirs {
             debug!("Ignoring: {:?}", entry);
             continue;
         }
-        let filetype = entry.file_type()?;
-        let prefix = if filetype.is_dir() {
-            "P"
-        } else if filetype.is_file() {
-            "N"
-        } else {
-            return Err(CommandError::Str(format!(
-                "Failed to determine filetype of {:?}",
-                entry
-            )));
-        };
-        println!(
-            "{} {}",
-            prefix,
-            PathBuf::from(entry.file_name()).to_string_lossy()
-        )
+        debug!("Found {:?} while walking", entry);
+        let mut dirtree = DirTree::default();
+        dirtree.depth = depth;
+        dirtree.path = entry.path().to_path_buf();
+
+        if entry.file_type().unwrap().is_dir() {
+            dirtree.children = show_dir_internal(config, &entry.path(), depth + 1)?;
+            dirtree.total = dirtree.children.iter().map(|c| c.total).sum();
+            dirtree.complete = dirtree.children.iter().map(|c| c.complete).sum();
+        } else if entry.file_type().unwrap().is_file() {
+            if let Err(err) = file_overview(config, &entry.path(), &mut dirtree) {
+                warn!(
+                    "Failed to overview {}: {}",
+                    entry.path().to_string_lossy(),
+                    err
+                )
+            }
+        }
+        dirtrees.push(dirtree)
     }
+    Ok(dirtrees)
+}
+
+fn file_overview(
+    config: &Config,
+    path: &path::Path,
+    dirtree: &mut DirTree,
+) -> commands::Result<()> {
+    let handler = files::get_file_handler(&config.default_filetype);
+    let nodo = handler.read(&mut std::fs::File::open(path)?, config)?;
+    let (complete, total) = get_num_complete(&nodo)?;
+    dirtree.complete = complete;
+    dirtree.total = total;
+    let title = nodo
+        .title()
+        .inner
+        .iter()
+        .map(|item| match item {
+            TextItem::PlainText(s) => s.to_string(),
+            TextItem::StyledText(s, _) => s.to_string(),
+            TextItem::Link(s, _) => s.to_string(),
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    dirtree.title = title;
     Ok(())
+}
+
+fn get_num_complete(nodo: &Nodo) -> commands::Result<(u32, u32)> {
+    let mut total = 0;
+    let mut complete = 0;
+    for block in nodo.blocks() {
+        match block {
+            Block::List(List::Plain(items)) | Block::List(List::Numbered(items, _)) => {
+                for item in items {
+                    debug!("Counting item: {:?}", item);
+                    // not recursive so doesn't count sub-tasks
+                    if let ListItem::Task(_, is_complete, _) = item {
+                        if *is_complete {
+                            complete += 1;
+                        }
+                        total += 1;
+                    }
+                }
+            }
+            _ => (),
+        }
+    }
+    Ok((complete, total))
 }
 
 fn trim_list(list: &List, depth: Option<u32>) -> List {
@@ -243,6 +376,7 @@ fn filter_list(list: &List, complete: Option<bool>) -> List {
 mod test {
     use super::*;
     use crate::cli::Target;
+    use crate::commands::CommandError;
     use pretty_assertions::assert_eq;
     use tempfile::tempdir;
 

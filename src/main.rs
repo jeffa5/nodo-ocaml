@@ -28,10 +28,12 @@ fn main() {
     }
     let result = match opts.sub_command {
         None => {
-            let overview = cli::Overview {
+            let show = cli::Show {
                 target: Target::default(),
+                depth: None,
+                complete: None,
             };
-            overview.exec(config)
+            show.exec(config)
         }
         Some(sub_command) => match sub_command {
             SubCommand::New(new) => new.exec(config),
@@ -40,7 +42,6 @@ fn main() {
             SubCommand::Edit(edit) => edit.exec(config),
             SubCommand::Clean(clean) => clean.exec(config),
             SubCommand::Format(format) => format.exec(config),
-            SubCommand::Overview(overview) => overview.exec(config),
             SubCommand::Archive(archive) => archive.exec(config),
         },
     };

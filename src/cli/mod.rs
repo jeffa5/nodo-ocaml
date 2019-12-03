@@ -39,9 +39,6 @@ pub enum SubCommand {
     /// Format nodos or a target
     Format(Format),
 
-    /// Provide an overview of the target
-    Overview(Overview),
-
     /// Archive a nodo or project tree
     Archive(Archive),
 }
@@ -144,12 +141,6 @@ pub struct Format {
     /// Show output of files being formatted
     #[structopt(short, long)]
     pub verbose: bool,
-}
-
-#[derive(Debug, StructOpt)]
-pub struct Overview {
-    #[structopt(flatten)]
-    pub target: Target,
 }
 
 #[derive(Debug, StructOpt)]
