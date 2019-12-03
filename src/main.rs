@@ -5,7 +5,7 @@ mod files;
 mod nodo;
 mod util;
 
-use cli::{Cli, SubCommand};
+use cli::{Cli, SubCommand, Target};
 
 use log::*;
 use structopt::StructOpt;
@@ -27,19 +27,10 @@ fn main() {
     if let Some(ft) = opts.filetype {
         config.default_filetype = ft
     }
-    if opts.sub_command.is_some() && !opts.target.is_empty() {
-        println!("Can't specify a target here and a subcommand");
-        return;
-    }
     let result = match opts.sub_command {
         None => {
-            let path = opts.target.build_path(&config, true);
-            if !path.exists() {
-                Cli::clap().print_help().unwrap();
-                return;
-            }
             let overview = cli::Overview {
-                target: opts.target,
+                target: Target::default(),
             };
             overview.exec(config)
         }

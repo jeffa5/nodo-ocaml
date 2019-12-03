@@ -8,8 +8,6 @@ use structopt::StructOpt;
 pub struct Cli {
     #[structopt(subcommand)]
     pub sub_command: Option<SubCommand>,
-    #[structopt(flatten)]
-    pub target: Target,
     /// Suppress logging completely, overrides '-l'
     #[structopt(short, long, global = true)]
     pub quiet: bool,
