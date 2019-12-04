@@ -57,6 +57,7 @@ impl Edit {
                 );
                 fs::copy(template_path, &path)?;
             } else {
+                fs::create_dir_all(path.parent().unwrap())?;
                 File::create(&path)?;
             }
         }
