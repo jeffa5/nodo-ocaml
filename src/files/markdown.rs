@@ -312,7 +312,7 @@ fn read_paragraph(mut events_iter: &mut EventsIter) -> Vec<Text> {
                 return lines;
             }
             Event::Text(t) => line.push(TextItem::PlainText(t.to_string())),
-            Event::SoftBreak => {
+            Event::SoftBreak | Event::HardBreak => {
                 if !line.is_empty() {
                     lines.push(line.into())
                 }
