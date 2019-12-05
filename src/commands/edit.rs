@@ -8,6 +8,7 @@ use std::process::Command as Cmd;
 use crate::cli::Edit;
 use crate::commands::{self, CommandError};
 use crate::config::Config;
+use crate::util;
 
 impl Edit {
     /// Edit a current nodo in the editor
@@ -28,7 +29,8 @@ impl Edit {
             File::create(&filename)?;
             filename
         } else if self.target.is_empty() {
-            return Err(CommandError::NoTarget);
+            debug!("Using local file");
+            util::local_file(&config)
         } else {
             self.target.build_path(&config, true)
         };
@@ -102,7 +104,7 @@ mod test {
     use tempfile::tempdir;
 
     #[test]
-    fn no_args_is_error() {
+    fn no_args_is_local() {
         let dir = tempdir().expect("Couldn't make tempdir");
         let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
@@ -112,11 +114,11 @@ mod test {
             temp: false,
             target: Target::default(),
         };
-        assert_eq!(edit.exec(config), Err(CommandError::NoTarget));
+        assert_eq!(edit.exec(config), Ok(()));
     }
 
     #[test]
-    fn empty_args_is_error() {
+    fn empty_args_is_local() {
         let dir = tempdir().expect("Couldn't make tempdir");
         let mut config = Config::default();
         config.root_dir = PathBuf::from(dir.path());
@@ -126,7 +128,7 @@ mod test {
             temp: false,
             target: Target::default(),
         };
-        assert_eq!(edit.exec(config), Err(CommandError::NoTarget));
+        assert_eq!(edit.exec(config), Ok(()));
     }
 
     #[test]
