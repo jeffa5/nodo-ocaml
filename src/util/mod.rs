@@ -60,14 +60,14 @@ pub fn local_file(config: &Config) -> PathBuf {
         let exclude_file = git_base.join("info/exclude");
 
         let exclude_contents = fs::read_to_string(&exclude_file).unwrap();
-        if !exclude_contents.contains(".nodo") {
+        if !exclude_contents.contains(&format!(".nodo.{}", config.default_filetype)) {
             let mut file = fs::OpenOptions::new()
                 .write(true)
                 .append(true)
                 .open(&exclude_file)
                 .unwrap();
 
-            if let Err(e) = writeln!(file, ".nodo.*") {
+            if let Err(e) = writeln!(file, ".nodo.{}", config.default_filetype) {
                 eprintln!("Couldn't write to file: {}", e);
             }
         }
