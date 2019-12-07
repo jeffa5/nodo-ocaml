@@ -17,7 +17,13 @@ impl std::fmt::Display for CommandError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
             CommandError::NoTarget => write!(f, "Please provide a target"),
-            CommandError::TargetMissing(target) => write!(f, "Couldn't find target: '{}'", target),
+            CommandError::TargetMissing(target) => {
+                if target.inner == "" {
+                    write!(f, "Couldn't find local file")
+                } else {
+                    write!(f, "Couldn't find target: '{}'", target)
+                }
+            }
             CommandError::Str(s) => write!(f, "{}", s),
         }
     }

@@ -114,7 +114,12 @@ mod test {
             temp: false,
             target: Target::default(),
         };
-        assert_eq!(edit.exec(config), Ok(()));
+        assert_eq!(
+            edit.exec(config),
+            Err(CommandError::TargetMissing(Target {
+                inner: String::new()
+            }))
+        );
     }
 
     #[test]
@@ -128,7 +133,12 @@ mod test {
             temp: false,
             target: Target::default(),
         };
-        assert_eq!(edit.exec(config), Ok(()));
+        assert_eq!(
+            edit.exec(config),
+            Err(CommandError::TargetMissing(Target {
+                inner: String::new()
+            }))
+        );
     }
 
     #[test]
