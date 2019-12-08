@@ -1,4 +1,5 @@
 use chrono::NaiveDate;
+use std::cmp::Ordering;
 /// A Nodo is a mixture of a todo and a note.
 ///
 /// They are formed of optional metadata and blocks.
@@ -140,6 +141,37 @@ impl Nodo {
 
     pub fn blocks(&self) -> &[Block] {
         &self.blocks
+    }
+
+    pub fn sort_tasks(&mut self) {
+        for b in self.blocks.iter_mut() {
+            if let Block::List(l) = b {
+                let items = match l {
+                    List::Plain(items) | List::Numbered(items, _) => items,
+                };
+                items.sort_by(|a, b| {
+                    // match items with task or text
+                    match a {
+                        ListItem::Text(_, _) => Ordering::Equal,
+                        ListItem::Task(_, c, _) => match b {
+                            ListItem::Text(_, _) => Ordering::Equal,
+                            ListItem::Task(_, d, _) => {
+                                if !c && !d {
+                                    Ordering::Equal
+                                } else if !c && *d {
+                                    Ordering::Less
+                                } else if *c && !d {
+                                    Ordering::Greater
+                                } else {
+                                    /* c && d */
+                                    Ordering::Equal
+                                }
+                            }
+                        },
+                    }
+                })
+            }
+        }
     }
 }
 

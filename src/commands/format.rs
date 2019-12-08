@@ -71,18 +71,15 @@ impl Format {
                 path.strip_prefix(&config.root_dir).unwrap().display()
             )
         }
+        let mut nodo = handler.read(&mut fs::File::open(&path)?, config)?;
+        if config.sort_tasks {
+            trace!("Sorting tasks");
+            nodo.sort_tasks()
+        }
         if self.dry_run {
-            handler.write(
-                &handler.read(&mut fs::File::open(&path)?, config)?,
-                &mut std::io::stdout(),
-                config,
-            )?;
+            handler.write(&nodo, &mut std::io::stdout(), config)?;
         } else {
-            handler.write(
-                &handler.read(&mut fs::File::open(&path)?, config)?,
-                &mut fs::File::create(&path)?,
-                config,
-            )?;
+            handler.write(&nodo, &mut fs::File::create(&path)?, config)?;
         }
         Ok(())
     }

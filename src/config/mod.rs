@@ -13,6 +13,7 @@ pub struct Config {
     pub default_filetype: String,
     pub date_format: String,
     pub overview_ignore_dirs: Vec<String>,
+    pub sort_tasks: bool,
 }
 
 impl std::default::Default for Config {
@@ -25,6 +26,7 @@ impl std::default::Default for Config {
             default_filetype: "md".to_string(),
             date_format: "%d-%m-%Y".to_string(),
             overview_ignore_dirs: Vec::new(),
+            sort_tasks: true,
         };
         let home = dirs::home_dir().expect("Failed to get home dir");
         config.root_dir = home.join(config.root_dir);
