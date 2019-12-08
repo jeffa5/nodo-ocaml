@@ -20,7 +20,9 @@ impl Show {
     pub fn exec(&self, config: Config) -> commands::Result<()> {
         debug!("target: {:?}", &self.target);
         if self.target.is_empty() {
-            show_dir(&config, &config.root_dir)?;
+            let local = util::local_file(&config);
+            let local_opt = if local.exists() { Some(local) } else { None };
+            show_dir(&config, &config.root_dir, local_opt)?;
             return Ok(());
         }
         let parts: Vec<String> = self.target.splitn(2, '#').map(String::from).collect();
@@ -34,7 +36,7 @@ impl Show {
         if path.is_dir() {
             // show the contents of the directory
             trace!("Target was a directory");
-            show_dir(&config, &path)?;
+            show_dir(&config, &path, None)?;
         } else if path.is_file() {
             // show the content of the nodo
             trace!("Target was a file");
@@ -192,7 +194,28 @@ impl DirTree {
     }
 }
 
-fn show_dir(config: &Config, path: &path::Path) -> commands::Result<()> {
+fn show_dir(config: &Config, path: &path::Path, local: Option<PathBuf>) -> commands::Result<()> {
+    if let Some(l) = local {
+        let handler = files::get_file_handler(&config.default_filetype);
+        let nodo = handler.read(&mut std::fs::File::open(&l)?, config)?;
+        let (complete, total) = get_num_complete(&nodo)?;
+        let complete_string = if total > 0 {
+            format!(
+                " [{}/{} ({:.1}%)]",
+                complete,
+                total,
+                100. * f64::from(complete) / f64::from(total)
+            )
+        } else {
+            String::new()
+        };
+        println!(
+            "N: ({}) {}{}",
+            l.file_name().unwrap().to_string_lossy(),
+            nodo.title(),
+            complete_string,
+        );
+    }
     let trees = show_dir_internal(config, path, 0)?;
     for tree in trees {
         println!("{}", tree);
