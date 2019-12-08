@@ -11,7 +11,16 @@ impl Remove {
     /// Accepts a dir (with force) or a file
     pub fn exec(&self, config: Config) -> commands::Result<()> {
         if self.target.is_empty() {
-            return Err(CommandError::NoTarget);
+            trace!("No target, trying to use local file");
+            let local = util::local_file(&config);
+            if local.exists() {
+                debug!("Local: {:?}", local);
+                trace!("Local exists");
+                fs::remove_file(&local)?;
+                return Ok(());
+            } else {
+                return Err(CommandError::NoTarget);
+            }
         }
         let path = util::find_target(&config, &self.target)?;
         let res = if path.is_file() {
