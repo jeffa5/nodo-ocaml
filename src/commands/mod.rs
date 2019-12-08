@@ -3,7 +3,6 @@ mod clean;
 mod edit;
 mod error;
 mod format;
-mod new;
 mod remove;
 mod show;
 
