@@ -18,6 +18,11 @@ impl Format {
         let path = util::find_target(&config, &self.target)?;
         let handler = files::get_file_handler(&config.default_filetype);
         if path.is_dir() {
+            let local = util::local_file(&config);
+            if local.exists() {
+                self.format(&config, &local, &handler)?
+            }
+
             self.format_dir(&config, &path, &handler)?
         } else if path.is_file() {
             self.format(&config, &path, &handler)?
