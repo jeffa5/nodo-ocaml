@@ -36,7 +36,6 @@ fn main() {
             show.exec(config)
         }
         Some(sub_command) => match sub_command {
-            SubCommand::New(new) => new.exec(config),
             SubCommand::Show(show) => show.exec(config),
             SubCommand::Remove(remove) => remove.exec(config),
             SubCommand::Edit(edit) => edit.exec(config),

@@ -21,9 +21,6 @@ pub struct Cli {
 
 #[derive(StructOpt, Debug)]
 pub enum SubCommand {
-    /// Create a new nodo
-    New(New),
-
     /// Show available projects and nodos
     Show(Show),
 
@@ -77,15 +74,6 @@ impl ops::Deref for Template {
     fn deref(&self) -> &Self::Target {
         &self.inner
     }
-}
-
-#[derive(Debug, StructOpt)]
-pub struct New {
-    #[structopt(flatten)]
-    pub target: Target,
-
-    #[structopt(flatten)]
-    pub template: Template,
 }
 
 #[derive(Debug, StructOpt)]

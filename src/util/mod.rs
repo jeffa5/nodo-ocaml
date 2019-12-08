@@ -2,7 +2,6 @@ use git2::Repository;
 use log::*;
 use std::env;
 use std::fs;
-use std::io;
 use std::io::Write;
 use std::path::Path;
 use std::path::PathBuf;
@@ -20,13 +19,6 @@ impl Target {
         }
         debug!("Built filepath: {:?}", pb);
         pb
-    }
-
-    pub fn make_dirs(&self, config: &Config) -> io::Result<()> {
-        let pb = config.root_dir.join(&self.inner);
-        let projects = pb.parent().unwrap();
-        info!("Creating the project dirs: {:?}", projects);
-        fs::create_dir_all(projects)
     }
 }
 
