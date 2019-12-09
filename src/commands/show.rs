@@ -140,6 +140,7 @@ struct DirTree {
     complete: u32,
     total: u32,
     title: String,
+    due_date: String,
     path: PathBuf,
     children: Vec<DirTree>,
 }
@@ -162,6 +163,11 @@ impl DirTree {
         } else {
             String::new()
         };
+        let due_date_string = if !self.due_date.is_empty() {
+            format!(" [due: {}]", self.due_date)
+        } else {
+            String::new()
+        };
         if self.path.is_dir() {
             write!(
                 f,
@@ -172,10 +178,11 @@ impl DirTree {
         } else if self.path.is_file() {
             write!(
                 f,
-                "N: ({}) {}{}",
+                "N: ({}) {}{}{}",
                 self.path.file_name().unwrap().to_string_lossy(),
                 self.title,
-                complete_string
+                complete_string,
+                due_date_string
             )?;
         }
         for (i, child) in self.children.iter().enumerate() {
@@ -287,6 +294,9 @@ fn file_overview(
         .collect::<Vec<_>>()
         .join(" ");
     dirtree.title = title;
+    if let Some(dd) = nodo.due_date() {
+        dirtree.due_date = dd.format(&config.date_format).to_string()
+    }
     Ok(())
 }
 
