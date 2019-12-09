@@ -325,7 +325,11 @@ fn read_paragraph(mut events_iter: &mut EventsIter) -> Vec<Text> {
             Event::Start(Tag::Link(_inline, url, _title)) => {
                 line.push(read_link(events_iter, &url))
             }
-            _ => unimplemented!(),
+            Event::Html(s) => line.push(TextItem::PlainText(s.to_string())),
+            e => {
+                debug!("{:?}", e);
+                unimplemented!()
+            }
         }
     }
     Vec::new()
