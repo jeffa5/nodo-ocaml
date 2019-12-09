@@ -12,7 +12,7 @@ test:
 
 .PHONY: completion
 completion:
-	cp zcomp ~/.zsh_functions/_nodo
+	cp zcomp ~/.zsh/functions/_nodo
 
 .PHONY: install
 install: completion
