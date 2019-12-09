@@ -146,12 +146,9 @@ impl Nodo {
     pub fn sort_tasks(&mut self) {
         for b in self.blocks.iter_mut() {
             if let Block::List(l) = b {
-                let items = match l {
-                    List::Plain(items) | List::Numbered(items, _) => items,
-                };
-                items.sort_by(|a, b| {
-                    // match items with task or text
-                    match a {
+                // Don't want to sort numbered lists
+                if let List::Plain(items) = l {
+                    items.sort_by(|a, b| match a {
                         ListItem::Text(_, _) => Ordering::Equal,
                         ListItem::Task(_, c, _) => match b {
                             ListItem::Text(_, _) => Ordering::Equal,
@@ -163,13 +160,12 @@ impl Nodo {
                                 } else if *c && !d {
                                     Ordering::Greater
                                 } else {
-                                    /* c && d */
                                     Ordering::Equal
                                 }
                             }
                         },
-                    }
-                })
+                    })
+                }
             }
         }
     }
