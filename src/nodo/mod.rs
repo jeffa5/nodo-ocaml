@@ -114,9 +114,13 @@ pub enum ListItem {
 /// Other content within the nodo is represented as a sequence of Blocks
 #[derive(Debug, PartialEq, Default)]
 pub struct Nodo {
+    /// The tags associated with this nodo
     tags: Vec<String>,
+    /// The start date of this nodo, date it was created
     start_date: Option<NaiveDate>,
+    /// The due date of this nodo
     due_date: Option<NaiveDate>,
+    /// The title for this nodo
     title: Text,
     /// The rest of the content
     blocks: Vec<Block>,
