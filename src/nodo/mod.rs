@@ -146,25 +146,38 @@ impl Nodo {
     pub fn sort_tasks(&mut self) {
         for b in self.blocks.iter_mut() {
             if let Block::List(l) = b {
-                // Don't want to sort numbered lists
-                if let List::Plain(items) = l {
-                    items.sort_by(|a, b| match a {
-                        ListItem::Text(_, _) => Ordering::Equal,
-                        ListItem::Task(_, c, _) => match b {
-                            ListItem::Text(_, _) => Ordering::Equal,
-                            ListItem::Task(_, d, _) => {
-                                if !c && !d {
-                                    Ordering::Equal
-                                } else if !c && *d {
-                                    Ordering::Less
-                                } else if *c && !d {
-                                    Ordering::Greater
-                                } else {
-                                    Ordering::Equal
-                                }
-                            }
-                        },
-                    })
+                sort_list(l)
+            }
+        }
+    }
+}
+
+fn sort_list(l: &mut List) {
+    // Don't want to sort numbered lists
+    if let List::Plain(items) = l {
+        items.sort_by(|a, b| match a {
+            ListItem::Text(_, _) => Ordering::Equal,
+            ListItem::Task(_, c, _) => match b {
+                ListItem::Text(_, _) => Ordering::Equal,
+                ListItem::Task(_, d, _) => {
+                    if !c && !d {
+                        Ordering::Equal
+                    } else if !c && *d {
+                        Ordering::Less
+                    } else if *c && !d {
+                        Ordering::Greater
+                    } else {
+                        Ordering::Equal
+                    }
+                }
+            },
+        });
+        for i in items {
+            match i {
+                ListItem::Text(_, ll) | ListItem::Task(_, _, ll) => {
+                    if let Some(ll) = ll {
+                        sort_list(ll)
+                    }
                 }
             }
         }
