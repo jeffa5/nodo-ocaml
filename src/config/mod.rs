@@ -41,13 +41,13 @@ impl std::default::Default for Config {
 
 impl Config {
     pub fn load() -> Self {
-        let conf_path = dirs::config_dir().unwrap().join("nodo/nodo.toml");
+        let conf_path = dirs::config_dir().unwrap().join("nodo/nodo.yaml");
         debug!("Loading config from {:?}", conf_path);
         if !conf_path.is_file() {
             fs::create_dir_all(conf_path.parent().unwrap())
                 .expect("Failed to make dirs for config");
             let mut conf_file = fs::File::create(&conf_path).expect("Failed to create config file");
-            let conf_str = toml::to_string_pretty(&Self::default())
+            let conf_str = serde_yaml::to_string(&Self::default())
                 .expect("Failed to serialise default config");
             conf_file
                 .write_all(conf_str.as_bytes())
@@ -58,7 +58,7 @@ impl Config {
         conf_file
             .read_to_string(&mut s)
             .expect("Failed to read contents of config file");
-        toml::from_str(&s).expect("Failed to load config as toml")
+        serde_yaml::from_str(&s).expect("Failed to load config as yaml")
     }
 }
 
