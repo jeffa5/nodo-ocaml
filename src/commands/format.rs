@@ -1,3 +1,4 @@
+use colored::*;
 use log::*;
 use std::fs;
 use std::path::Path;
@@ -77,7 +78,17 @@ impl Format {
             nodo.sort_tasks()
         }
         if self.dry_run {
+            println!(
+                "{}{}",
+                "Formatted nodo: ".bold(),
+                path.strip_prefix(&config.root_dir)
+                    .unwrap()
+                    .to_string_lossy()
+                    .bold()
+            );
+            println!();
             handler.write(&nodo, &mut std::io::stdout(), config)?;
+            println!()
         } else {
             handler.write(&nodo, &mut fs::File::create(&path)?, config)?;
         }
