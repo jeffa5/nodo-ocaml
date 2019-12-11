@@ -65,7 +65,7 @@ impl NodoFile for Markdown {
 
         read_body(&mut builder, &mut events_iter)?;
 
-        let nodo = builder.build();
+        let nodo = builder.build(&Config::default());
         Ok(nodo)
     }
 
@@ -812,7 +812,7 @@ mod test {
                     None,
                 ),
             ])));
-        builder.build()
+        builder.build(&Config::default())
     }
 
     static TEST_NODO_UNFORMATTED: &str = "---
@@ -936,7 +936,7 @@ due_date: 16-04-2015
             Markdown
                 .read(&mut s.as_bytes(), &Config::default())
                 .unwrap(),
-            builder.build()
+            builder.build(&Config::default())
         )
     }
 

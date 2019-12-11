@@ -11,6 +11,7 @@ pub struct Config {
     pub projects_delimeter: String,
     pub default_filetype: String,
     pub date_format: String,
+    pub set_start_date: bool,
     #[serde(default)]
     pub overview_ignore_dirs: Vec<String>,
     pub sort_tasks: bool,
@@ -31,6 +32,7 @@ impl std::default::Default for Config {
             projects_delimeter: "/".to_string(),
             default_filetype: "md".to_string(),
             date_format: "%d-%m-%Y".to_string(),
+            set_start_date: true,
             overview_ignore_dirs: Vec::new(),
             sort_tasks: true,
         };

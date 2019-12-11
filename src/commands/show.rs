@@ -127,7 +127,7 @@ impl Show {
             if header_matched.is_some() && !header_matched.unwrap() {
                 println!("Failed to match a header")
             } else {
-                file_handler.write(&builder.build(), &mut std::io::stdout(), &config)?;
+                file_handler.write(&builder.build(config), &mut std::io::stdout(), config)?;
             }
         }
         Ok(())

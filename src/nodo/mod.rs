@@ -1,5 +1,8 @@
-use chrono::NaiveDate;
+use chrono::{NaiveDate, Utc};
 use std::cmp::Ordering;
+
+use crate::config::Config;
+
 /// A Nodo is a mixture of a todo and a note.
 ///
 /// They are formed of optional metadata and blocks.
@@ -194,7 +197,10 @@ pub struct NodoBuilder {
 }
 
 impl NodoBuilder {
-    pub fn build(self) -> Nodo {
+    pub fn build(mut self, config: &Config) -> Nodo {
+        if config.set_start_date && self.nodo.start_date.is_none() {
+            self.nodo.start_date = Some(Utc::today().naive_utc())
+        }
         self.nodo
     }
 
