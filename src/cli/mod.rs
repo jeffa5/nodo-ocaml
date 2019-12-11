@@ -24,6 +24,9 @@ pub enum SubCommand {
     /// Show available projects and nodos
     Show(Show),
 
+    /// Show the nodos that are due
+    Due(Due),
+
     /// Remove a nodo
     Remove(Remove),
 
@@ -87,6 +90,9 @@ pub struct Show {
     #[structopt(short, long)]
     pub complete: Option<bool>,
 }
+
+#[derive(Debug, StructOpt)]
+pub struct Due {}
 
 #[derive(Debug, StructOpt)]
 pub struct Remove {

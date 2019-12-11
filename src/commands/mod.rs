@@ -1,5 +1,6 @@
 mod archive;
 mod clean;
+mod due;
 mod edit;
 mod error;
 mod format;
