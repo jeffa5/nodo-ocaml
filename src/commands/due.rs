@@ -1,17 +1,16 @@
+use colored::*;
 use log::*;
+use std::cmp::Reverse;
 use std::fs;
-use std::path;
 use std::path::PathBuf;
 
 use crate::cli::Due;
-use crate::cli::Target;
 use crate::commands;
 use crate::config::Config;
 use crate::files;
 use crate::files::NodoFile;
 use crate::nodo::Nodo;
 use crate::nodo::TextItem;
-use crate::nodo::{Block, List, ListItem, NodoBuilder};
 use crate::util;
 
 impl Due {
@@ -19,7 +18,9 @@ impl Due {
     pub fn exec(&self, config: Config) -> commands::Result<()> {
         let mut due = Vec::new();
         get_nodos_due(&config, &config.root_dir, &mut due)?;
-        // sort the vec by due date and print
+
+        due.sort_by_key(|n| Reverse(n.due_date()));
+
         for n in due {
             let title = n
                 .title()
@@ -32,12 +33,18 @@ impl Due {
                 })
                 .collect::<Vec<_>>()
                 .join(" ");
+
             println!(
                 "{} {}",
+                n.due_date()
+                    .unwrap()
+                    .format(&config.date_format)
+                    .to_string()
+                    .bold(),
                 title,
-                n.due_date().unwrap().format(&config.date_format)
             )
         }
+
         Ok(())
     }
 }
