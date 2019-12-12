@@ -1,5 +1,7 @@
 use colored::*;
+use diff::Result;
 use log::*;
+use std::cmp::{max, min};
 use std::fs;
 use std::path::Path;
 
@@ -77,7 +79,15 @@ impl Format {
             trace!("Sorting tasks");
             nodo.sort_tasks()
         }
+
         if self.dry_run {
+            let original = fs::read_to_string(path)?;
+
+            let mut buffer = Vec::new();
+            handler.write(&nodo, &mut buffer, config)?;
+
+            let formatted = String::from_utf8(buffer).unwrap();
+
             println!(
                 "{}{}",
                 "Formatted nodo: ".bold(),
@@ -86,12 +96,34 @@ impl Format {
                     .to_string_lossy()
                     .bold()
             );
-            println!();
-            handler.write(&nodo, &mut std::io::stdout(), config)?;
-            println!()
+
+            let diff = diff::lines(&original, &formatted);
+            let context = 2;
+
+            for (i, d) in diff.iter().enumerate() {
+                let l = max(i.saturating_sub(context), 0);
+                let u = min(i + context, diff.len() - 1);
+
+                let mut changed_in_context = false;
+                for j in l..=u {
+                    if let Result::Both(_, _) = diff[j] {
+                    } else {
+                        changed_in_context = true;
+                    }
+                }
+
+                if changed_in_context {
+                    match d {
+                        Result::Both(t, _) => println!(" |{}", t),
+                        Result::Right(t) => println!("{}|{}", "+".green(), t.green()),
+                        Result::Left(t) => println!("{}|{}", "-".red(), t.red()),
+                    }
+                }
+            }
         } else {
             handler.write(&nodo, &mut fs::File::create(&path)?, config)?;
         }
+
         Ok(())
     }
 }
