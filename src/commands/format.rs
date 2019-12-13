@@ -105,8 +105,8 @@ impl Format {
                 let u = min(i + context, diff.len() - 1);
 
                 let mut changed_in_context = false;
-                for j in l..=u {
-                    if let Result::Both(_, _) = diff[j] {
+                for dj in diff.iter().take(u + 1).skip(l) {
+                    if let Result::Both(_, _) = dj {
                     } else {
                         changed_in_context = true;
                     }
