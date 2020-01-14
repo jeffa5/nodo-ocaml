@@ -940,7 +940,7 @@ due_date: 16-04-2015
         )
     }
 
-    const LARGE_MD_STRING:&str = r#"---
+    const LARGE_MD_STRING: &str = r#"---
 tags: nodo, more tags, hey another tag
 start_date: 14-03-2015
 due_date: 16-04-2015
