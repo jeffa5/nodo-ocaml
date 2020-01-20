@@ -6,7 +6,7 @@ edition = "2018"
 
 [dependencies]
 pulldown-cmark = "0.6.1"
-structopt = "0.3.7"
+structopt = "0.3.8"
 log = "0.4.10"
 stderrlog = "0.4.1"
 dirs = "2.0.2"
