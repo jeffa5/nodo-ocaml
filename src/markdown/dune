@@ -1,0 +1,3 @@
+(library
+ (name nodo_markdown)
+ (libraries nodo_core omd))
