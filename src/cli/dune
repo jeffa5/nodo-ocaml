@@ -1,0 +1,3 @@
+(executable
+ (name nodo_cli)
+ (libraries nodo_core nodo_filesystem nodo_markdown cmdliner))
