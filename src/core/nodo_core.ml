@@ -42,4 +42,6 @@ module type Storage = sig
   val remove : t -> unit
 
   val classify : string -> t option
+
+  val name : t -> string
 end
