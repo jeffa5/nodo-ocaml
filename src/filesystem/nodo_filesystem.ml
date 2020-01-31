@@ -28,7 +28,8 @@ module Make (Prefix : Prefix_type) = struct
   let list (`Project project) =
     Sys.readdir project |> Array.to_list
     |> List.map (fun f ->
-           if Sys.is_directory (project ^ "/" ^ f) then `Project f else `Nodo f)
+           let path = project ^ "/" ^ f in
+           if Sys.is_directory path then `Project path else `Nodo path)
 
   let classify target =
     let path = build_path target in
@@ -45,4 +46,11 @@ module Make (Prefix : Prefix_type) = struct
   let remove = function
     | `Nodo n -> FileUtil.rm [ n ]
     | `Project p -> FileUtil.rm ~recurse:true [ p ]
+
+  let name t =
+    let parts =
+      (match t with `Nodo n -> n | `Project p -> p)
+      |> Astring.String.cut ~rev:true ~sep:"/"
+    in
+    match parts with None -> "" | Some (_, r) -> r
 end
