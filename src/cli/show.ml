@@ -1,3 +1,5 @@
+let contains e = List.fold_left (fun a i -> a || i = e) false
+
 module S
     (Storage : Nodo_core.Storage)
     (Format : Nodo_core.Format)
@@ -5,22 +7,40 @@ module S
 struct
   let config = Config.default
 
-  let contains e = List.fold_left (fun a i -> a || i = e) false
+  type tree = Project of (string * tree list) | Nodo of string
+
+  let rec build_tree l =
+    List.map
+      (fun item ->
+        match item with
+        | `Nodo n -> Nodo n
+        | `Project p ->
+            let sub_tree = Storage.list (`Project p) |> build_tree in
+            Project (p, sub_tree))
+      l
 
   let filter_hidden =
     List.filter (fun d ->
-        let s = match d with `Nodo n -> n | `Project p -> p in
+        let s = Storage.name d in
         let contained = contains s config.hidden_dirs in
         not contained)
 
-  let show_project project =
-    Storage.list project |> filter_hidden
-    |> List.iter (fun f ->
-           match f with
-           | `Nodo n -> print_endline n
-           | `Project p -> print_endline p)
-
   let show_nodo nodo = Storage.read nodo |> print_endline
+
+  let rec map_but_last prefix a l = function
+    | [] -> ""
+    | [ x ] -> (prefix ^ "└─ ") ^ show_tree (prefix ^ l) x
+    | x :: xs ->
+        (prefix ^ "├─ ")
+        ^ show_tree (prefix ^ a) x
+        ^ map_but_last prefix a l xs
+
+  and show_tree prefix t =
+    match t with
+    | Nodo n -> "N: " ^ Storage.name (`Nodo n) ^ "\n"
+    | Project (p, tl) ->
+        ("P: " ^ Storage.name (`Project p) ^ "\n")
+        ^ map_but_last prefix "│  " "   " tl
 
   let exec target =
     match Storage.classify target with
@@ -28,5 +48,8 @@ struct
     | Some target -> (
         match target with
         | `Nodo _ as n -> show_nodo n
-        | `Project _ as p -> show_project p )
+        | `Project _ as p ->
+            Storage.list p |> filter_hidden |> build_tree
+            |> List.map @@ show_tree ""
+            |> String.concat "" |> print_string )
 end
