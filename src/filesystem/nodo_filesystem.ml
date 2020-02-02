@@ -7,10 +7,11 @@ end
 module Make (Prefix : Prefix_type) = struct
   include Nodo_core.Storage_types
 
-  let build_path p = Prefix.prefix ^ "/" ^ p
+  let build_path p =
+    if FilePath.is_relative p then Prefix.prefix ^ "/" ^ p else p
 
-  let read (`Nodo nodo) =
-    let chan = open_in nodo and lines = ref [] in
+  let read (`Nodo p) =
+    let chan = open_in p and lines = ref [] in
     ( try
         while true do
           lines := input_line chan :: !lines
@@ -21,8 +22,8 @@ module Make (Prefix : Prefix_type) = struct
         List.rev !lines )
     |> String.concat "\n"
 
-  let write content (`Nodo nodo) =
-    let chan = open_out nodo in
+  let write content (`Nodo path) =
+    let chan = open_out path in
     output_string chan content
 
   let list (`Project project) =
