@@ -1,6 +1,22 @@
 module Nodo = struct
   type metadata = { due_date : float }
 
+  type text_type = Plain | Bold | Italic | Code
+
+  type text_item = text_type * string
+
+  type text = text_item list
+
+  type list_type = Ordered | Unordered
+
+  type list_item = Task of bool * text | Plain of text
+
+  type list_ =
+    | Ordered of (int * list_item * list_ option) list
+    | Unordered of (list_item * list_ option) list
+
+  type block = Paragraph of text list | List of list_
+
   type t = Omd.t
 end
 
