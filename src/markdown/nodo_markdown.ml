@@ -74,19 +74,18 @@ let render (m, _) =
   let meta = render_metadata m in
   meta
 
+let test_parse t =
+  match parse t with
+  | Error e -> print_endline e
+  | Ok n -> Nodo.show n |> print_endline
+
 let%expect_test "reading in a heading" =
   let text = "# A level 1 heading" in
-  match parse text with
-  | Error e -> print_endline e
-  | Ok nodo ->
-      Nodo.show nodo |> print_endline;
-      [%expect
-        {| ({ due_date = "" }, [(Heading (1, [(Plain, "A level 1 heading")]))]) |}]
+  test_parse text;
+  [%expect
+    {| ({ due_date = "" }, [(Heading (1, [(Plain, "A level 1 heading")]))]) |}]
 
 let%expect_test "reading in metadata" =
   let text = "---\n  due_date: test\n  ---" in
-  match parse text with
-  | Error e -> print_endline e
-  | Ok nodo ->
-      Nodo.show nodo |> print_endline;
-      [%expect {| ({ due_date = "test" }, []) |}]
+  test_parse text;
+  [%expect {| ({ due_date = "test" }, []) |}]
