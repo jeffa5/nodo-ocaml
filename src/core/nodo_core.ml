@@ -1,23 +1,28 @@
 module Nodo = struct
-  type metadata = { due_date : float }
+  type metadata = { due_date : string [@default ""] }
+  [@@deriving show { with_path = false }, make]
 
-  type text_type = Plain | Bold | Italic | Code
+  type text_type = Plain | Bold | Italic | Code of string
+  [@@deriving show { with_path = false }]
 
-  type text_item = text_type * string
+  type text_item = text_type * string [@@deriving show { with_path = false }]
 
-  type text = text_item list
+  type text = text_item list [@@deriving show { with_path = false }]
 
-  type list_type = Ordered | Unordered
+  type list_type = Ordered | Unordered [@@deriving show { with_path = false }]
 
-  type list_item = Task of bool * text | Plain of text
+  type list_item = Task of bool * text | Bullet of text
+  [@@deriving show { with_path = false }]
 
   type list_ =
     | Ordered of (int * list_item * list_ option) list
     | Unordered of (list_item * list_ option) list
+  [@@deriving show { with_path = false }]
 
-  type block = Paragraph of text list | List of list_
+  type block = Paragraph of text list | List of list_ | Heading of int * text
+  [@@deriving show { with_path = false }]
 
-  type t = Omd.t
+  type t = metadata * block list [@@deriving show { with_path = false }]
 end
 
 module type Format = sig
