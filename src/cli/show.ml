@@ -25,7 +25,13 @@ struct
         let contained = contains s config.hidden_dirs in
         not contained)
 
-  let show_nodo nodo = Storage.read nodo |> print_endline
+  let show_nodo nodo =
+    match Storage.read nodo |> Format.parse with
+    | Error s -> print_endline @@ "Failed to read nodo" ^ s
+    | Ok nodo -> (
+        match Format.render nodo with
+        | Error s -> print_endline @@ "Failed to render nodo" ^ s
+        | Ok s -> print_endline s )
 
   let rec map_but_last prefix a l = function
     | [] -> ""
