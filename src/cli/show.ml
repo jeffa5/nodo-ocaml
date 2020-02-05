@@ -43,6 +43,7 @@ struct
         ^ map_but_last prefix "│  " "   " tl
 
   let exec target =
+    let target = target ^ "." ^ List.hd Format.extensions in
     match Storage.classify target with
     | None -> print_endline "target not found"
     | Some target -> (
