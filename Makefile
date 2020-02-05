@@ -9,3 +9,11 @@ watch:
 .PHONY: check
 check:
 	dune build @check
+
+.PHONY: test
+test:
+	dune runtest
+
+.PHONY: promote
+promote:
+	dune promote
