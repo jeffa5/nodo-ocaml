@@ -2,4 +2,4 @@
  (name nodo_markdown)
  (inline_tests)
  (preprocess (pps ppx_expect))
- (libraries nodo_core omd astring))
+ (libraries nodo_core omd astring tyre re))

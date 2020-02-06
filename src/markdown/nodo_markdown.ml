@@ -1,3 +1,4 @@
+open Astring
 module Nodo = Nodo_core.Nodo
 
 exception ParseError of string
@@ -36,14 +37,16 @@ let rec flatten_text l : Nodo.text =
   match l with
   | [] -> []
   | [ x ] -> [ x ]
-  | (Nodo.Plain, s) :: (Plain, t) :: xs -> flatten_text ((Plain, s ^ t) :: xs)
+  | (Nodo.Plain, s) :: (Plain, t) :: xs ->
+      let x = String.trim (s ^ " " ^ t) in
+      flatten_text ((Plain, x) :: xs)
   | x :: xs -> x :: flatten_text xs
 
 let parse_text_item e : Nodo_core.Nodo.text_item =
   match e with
   | Omd.Text s -> (Plain, s)
-  | Emph e -> (Italic, String.concat " " @@ List.map parse_plaintext e)
-  | Bold e -> (Bold, String.concat " " @@ List.map parse_plaintext e)
+  | Emph e -> (Italic, String.concat ~sep:" " @@ List.map parse_plaintext e)
+  | Bold e -> (Bold, String.concat ~sep:" " @@ List.map parse_plaintext e)
   | Code (n, s) -> (Code n, s)
   | t -> raise @@ ParseError ("Failed to parse text " ^ Omd.to_html [ t ])
 
@@ -52,7 +55,23 @@ let parse_text l = List.map parse_text_item l |> flatten_text
 let parse_list l =
   match l with
   | Omd.Text s :: xs -> (Nodo.Bullet (parse_text (Text s :: xs)), None)
-  | _ -> assert false
+  | Ref (_, _, _, f) :: xs -> (
+      let x = Tyre.(opt blanks *> opt (str "x") <* opt blanks) in
+      let box = Tyre.(str "[" *> x <* str "]") in
+      let re = Tyre.compile box in
+      let s = f#to_string in
+      match Tyre.exec re s with
+      | Error (`NoMatch _) ->
+          print_endline "Failed to match";
+          assert false
+      | Error (`ConverterFailure _) ->
+          print_endline "converter failure";
+          assert false
+      | Ok None -> (Nodo.Task (false, parse_text xs), None)
+      | Ok (Some ()) -> (Nodo.Task (true, parse_text xs), None) )
+  | t ->
+      print_endline @@ Omd.to_html t;
+      assert false
 
 let parse_element e : Nodo_core.Nodo.block option =
   match e with
@@ -112,3 +131,11 @@ let%expect_test "reading in a plain list" =
     {|
       ({ due_date = "" },
        [(List (Unordered [((Bullet [(Plain, "some text")]), None)]))]) |}]
+
+let%expect_test "reading in a task list" =
+  let text = "- [] some text" in
+  test_parse text;
+  [%expect
+    {|
+      ({ due_date = "" },
+       [(List (Unordered [((Task (false, [(Plain, "some text")])), None)]))]) |}]
