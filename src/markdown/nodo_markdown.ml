@@ -108,10 +108,9 @@ let test_parse t =
   | Ok n -> Nodo.show n |> print_endline
 
 let%expect_test "Empty text gives empty nodo" =
-  let text = "# A level 1 heading" in
+  let text = "" in
   test_parse text;
-  [%expect
-    {| ({ due_date = "" }, [(Heading (1, [(Plain, "A level 1 heading")]))]) |}]
+  [%expect {| ({ due_date = "" }, []) |}]
 
 let%expect_test "reading in a heading" =
   let text = "# A level 1 heading" in
@@ -120,7 +119,7 @@ let%expect_test "reading in a heading" =
     {| ({ due_date = "" }, [(Heading (1, [(Plain, "A level 1 heading")]))]) |}]
 
 let%expect_test "reading in metadata" =
-  let text = "---\n  due_date: test\n  ---" in
+  let text = "---\n due_date: test\n  ---" in
   test_parse text;
   [%expect {| ({ due_date = "test" }, []) |}]
 
