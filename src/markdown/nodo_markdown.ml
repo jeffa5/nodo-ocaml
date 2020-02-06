@@ -138,10 +138,22 @@ let%expect_test "reading in an incomplete task list" =
   [%expect
     {|
       ({ due_date = "" },
+       [(List (Unordered [((Task (false, [(Plain, "some text")])), None)]))]) |}];
+  let text = "-   [   ]   some text" in
+  test_parse text;
+  [%expect
+    {|
+      ({ due_date = "" },
        [(List (Unordered [((Task (false, [(Plain, "some text")])), None)]))]) |}]
 
 let%expect_test "reading in a complete task list" =
   let text = "- [x] some text" in
+  test_parse text;
+  [%expect
+    {|
+      ({ due_date = "" },
+       [(List (Unordered [((Task (true, [(Plain, "some text")])), None)]))]) |}];
+  let text = "-    [   x  ]   some text" in
   test_parse text;
   [%expect
     {|
