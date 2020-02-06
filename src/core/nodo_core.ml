@@ -9,8 +9,6 @@ module Nodo = struct
 
   type text = text_item list [@@deriving show { with_path = false }]
 
-  type list_type = Ordered | Unordered [@@deriving show { with_path = false }]
-
   type list_item = Task of bool * text | Bullet of text
   [@@deriving show { with_path = false }]
 
