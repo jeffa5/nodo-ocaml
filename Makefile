@@ -4,7 +4,7 @@ build:
 
 .PHONY: watch
 watch:
-	dune build --watch
+	dune runtest --watch
 
 .PHONY: check
 check:
@@ -17,3 +17,8 @@ test:
 .PHONY: promote
 promote:
 	dune promote
+
+.PHONY: coverage
+coverage:
+	BISECT_ENABLE=yes dune runtest --force
+	bisect-ppx-report html
