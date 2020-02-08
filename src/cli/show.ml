@@ -26,12 +26,7 @@ struct
         not contained)
 
   let show_nodo nodo =
-    match Storage.read nodo |> Format.parse with
-    | Error s -> print_endline @@ "Failed to read nodo" ^ s
-    | Ok nodo -> (
-        match Format.render nodo with
-        | Error s -> print_endline @@ "Failed to render nodo" ^ s
-        | Ok s -> print_endline s )
+    Storage.read nodo |> Format.parse |> Format.render |> print_endline
 
   let rec map_but_last prefix a l = function
     | [] -> ""
