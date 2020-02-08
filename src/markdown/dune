@@ -1,5 +1,5 @@
 (library
  (name nodo_markdown)
  (inline_tests)
- (preprocess (pps ppx_expect))
+ (preprocess (pps ppx_expect bisect_ppx --conditional))
  (libraries nodo_core omd astring tyre re))
