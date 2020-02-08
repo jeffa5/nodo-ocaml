@@ -2,7 +2,7 @@ module Nodo = struct
   type metadata = { due_date : string [@default ""] }
   [@@deriving show { with_path = false }, make]
 
-  type text_type = Plain | Bold | Italic | Code of string
+  type text_type = Plain | Bold | Italic | Code
   [@@deriving show { with_path = false }]
 
   type text_item = text_type * string [@@deriving show { with_path = false }]
