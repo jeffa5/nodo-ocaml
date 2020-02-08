@@ -76,11 +76,11 @@ let parse_list l =
 let parse_element e : Nodo_core.Nodo.block option =
   match e with
   | Omd.H1 e -> Some (Heading (1, parse_text e))
-  | H2 _ -> Some (Heading (2, []))
-  | H3 _ -> Some (Heading (3, []))
-  | H4 _ -> Some (Heading (4, []))
-  | H5 _ -> Some (Heading (5, []))
-  | H6 _ -> Some (Heading (6, []))
+  | H2 e -> Some (Heading (2, parse_text e))
+  | H3 e -> Some (Heading (3, parse_text e))
+  | H4 e -> Some (Heading (4, parse_text e))
+  | H5 e -> Some (Heading (5, parse_text e))
+  | H6 e -> Some (Heading (6, parse_text e))
   | Paragraph e -> Some (Paragraph [ parse_text e ])
   | Ul l ->
       let l = List.map parse_list l in
