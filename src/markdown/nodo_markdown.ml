@@ -25,6 +25,7 @@ let parse_metadata l : Nodo_core.Nodo.metadata * Omd.t =
   match l with
   | Omd.Paragraph (Omd.Hr :: meta) :: _ ->
       parse_inner_metadata (Nodo_core.Nodo.make_metadata ()) meta
+  | H2 [ Hr ] :: l -> (Nodo.make_metadata (), l)
   | _ -> (Nodo_core.Nodo.make_metadata (), l)
 
 let parse_plaintext e =
@@ -121,7 +122,10 @@ let%expect_test "reading in a heading" =
 let%expect_test "reading in metadata" =
   let text = "---\n due_date: test\n  ---" in
   test_parse text;
-  [%expect {| ({ due_date = "test" }, []) |}]
+  [%expect {| ({ due_date = "test" }, []) |}];
+  let text = "---\n---" in
+  test_parse text;
+  [%expect {| ({ due_date = "" }, []) |}]
 
 let%expect_test "reading in a plain list" =
   let text = "- some text" in
