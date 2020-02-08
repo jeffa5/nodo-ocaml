@@ -17,16 +17,16 @@ module Nodo = struct
     | Unordered of (list_item * list_ option) list
   [@@deriving show { with_path = false }]
 
-  type block = Paragraph of text list | List of list_ | Heading of int * text
+  type block = Paragraph of text | List of list_ | Heading of int * text
   [@@deriving show { with_path = false }]
 
   type t = metadata * block list [@@deriving show { with_path = false }]
 end
 
 module type Format = sig
-  val parse : string -> (Nodo.t, string) result
+  val parse : string -> Nodo.t
 
-  val render : Nodo.t -> (string, string) result
+  val render : Nodo.t -> string
 
   val extensions : string list
 end
