@@ -128,91 +128,74 @@ let render (m, bs) =
 let test_parse t = parse t |> Nodo.show |> print_endline
 
 let%expect_test "Empty text gives empty nodo" =
-  let text = "" in
-  test_parse text;
+  test_parse "";
   [%expect {| ({ due_date = "" }, []) |}]
 
 let%expect_test "reading in a heading" =
-  let text = "# A level 1 heading" in
-  test_parse text;
+  test_parse "# A level 1 heading";
   [%expect
     {| ({ due_date = "" }, [(Heading (1, [(Plain, "A level 1 heading")]))]) |}];
-  let text = "## A level 2 heading" in
-  test_parse text;
+  test_parse "## A level 2 heading";
   [%expect
     {| ({ due_date = "" }, [(Heading (2, [(Plain, "A level 2 heading")]))]) |}];
-  let text = "### A level 3 heading" in
-  test_parse text;
+  test_parse "### A level 3 heading";
   [%expect
     {| ({ due_date = "" }, [(Heading (3, [(Plain, "A level 3 heading")]))]) |}];
-  let text = "#### A level 4 heading" in
-  test_parse text;
+  test_parse "#### A level 4 heading";
   [%expect
     {| ({ due_date = "" }, [(Heading (4, [(Plain, "A level 4 heading")]))]) |}];
-  let text = "##### A level 5 heading" in
-  test_parse text;
+  test_parse "##### A level 5 heading";
   [%expect
     {| ({ due_date = "" }, [(Heading (5, [(Plain, "A level 5 heading")]))]) |}];
-  let text = "###### A level 6 heading" in
-  test_parse text;
+  test_parse "###### A level 6 heading";
   [%expect
     {| ({ due_date = "" }, [(Heading (6, [(Plain, "A level 6 heading")]))]) |}]
 
 let%expect_test "reading in metadata" =
-  let text = "---\n due_date: test\n  ---" in
-  test_parse text;
+  test_parse "---\n due_date: test\n  ---";
   [%expect {| ({ due_date = "test" }, []) |}];
-  let text = "---\n---" in
-  test_parse text;
+  test_parse "---\n---";
   [%expect {| ({ due_date = "" }, []) |}]
 
 let%expect_test "reading in a plain list" =
-  let text = "- some text" in
-  test_parse text;
+  test_parse "- some text";
   [%expect
     {|
       ({ due_date = "" },
        [(List (Unordered [((Bullet [(Plain, "some text")]), None)]))]) |}]
 
 let%expect_test "reading in an incomplete task list" =
-  let text = "- [] some text" in
-  test_parse text;
+  test_parse "- [] some text";
   [%expect
     {|
       ({ due_date = "" },
        [(List (Unordered [((Task (false, [(Plain, "some text")])), None)]))]) |}];
-  let text = "-   [   ]   some text" in
-  test_parse text;
+  test_parse "-   [   ]   some text";
   [%expect
     {|
       ({ due_date = "" },
        [(List (Unordered [((Task (false, [(Plain, "some text")])), None)]))]) |}]
 
 let%expect_test "reading in a complete task list" =
-  let text = "- [x] some text" in
-  test_parse text;
+  test_parse "- [x] some text";
   [%expect
     {|
       ({ due_date = "" },
        [(List (Unordered [((Task (true, [(Plain, "some text")])), None)]))]) |}];
-  let text = "-    [   x  ]   some text" in
-  test_parse text;
+  test_parse "-    [   x  ]   some text";
   [%expect
     {|
       ({ due_date = "" },
        [(List (Unordered [((Task (true, [(Plain, "some text")])), None)]))]) |}]
 
 let%expect_test "reading in a heading after metadata" =
-  let text = "---\n---\n# A level 1 heading" in
-  test_parse text;
+  test_parse "---\n---\n# A level 1 heading";
   [%expect
     {| ({ due_date = "" }, [(Heading (1, [(Plain, "A level 1 heading")]))]) |}];
-  let text = "---\n---\n\n\n# A level 1 heading" in
-  test_parse text;
+  test_parse "---\n---\n\n\n# A level 1 heading";
   [%expect
     {| ({ due_date = "" }, [(Heading (1, [(Plain, "A level 1 heading")]))]) |}];
-  let text = "---\ndue_date: test\n---\n\n# A level 1 heading" in
-  test_parse text;
+  test_parse "---\ndue_date: test\n---\n\n# A level 1 heading";
   [%expect
     {| ({ due_date = "test" }, [(Heading (1, [(Plain, "A level 1 heading")]))]) |}]
 
@@ -230,4 +213,6 @@ let%expect_test "reading in italic text" =
 
 let%expect_test "reading in inline code text" =
   test_parse "`code`";
-  [%expect {| ({ due_date = "" }, [(Paragraph [(Code, "code")])])|}]
+  [%expect {| ({ due_date = "" }, [(Paragraph [(Code, "code")])])|}];
+  test_parse "`code text`";
+  [%expect {| ({ due_date = "" }, [(Paragraph [(Code, "code text")])])|}]
