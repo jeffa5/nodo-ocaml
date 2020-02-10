@@ -8,5 +8,5 @@
 
 (package
 (name nodo)
-(depends
-()))
+(synopsis "A notes and todo organiser")
+)
