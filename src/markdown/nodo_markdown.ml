@@ -8,7 +8,7 @@ let rec flatten_text l : Nodo.text =
   | [] -> []
   | [ x ] -> [ x ]
   | (Nodo.Plain, s) :: (Plain, t) :: xs ->
-      let x = String.trim (s ^ t) in
+      let x = s ^ t in
       flatten_text ((Plain, x) :: xs)
   | x :: xs -> x :: flatten_text xs
 
@@ -35,9 +35,7 @@ let rec parse_text i =
       Omd.to_sexp [ Omd.Paragraph i ] |> print_endline;
       assert false
 
-and text_contents l =
-  List.map (function Nodo.Plain, s -> s | _, s -> s) l
-  |> String.concat ~sep:" "
+and text_contents l = List.map (fun (_, s) -> s) l |> String.concat ~sep:" "
 
 let rec parse_inner_metadata (m : Nodo_core.Nodo.metadata) l :
     Nodo_core.Nodo.metadata * Omd.t =
@@ -60,9 +58,12 @@ let parse_metadata l =
   | Omd.Thematic_break :: xs -> parse_inner_metadata (Nodo.make_metadata ()) xs
   | _ -> (Nodo_core.Nodo.make_metadata (), l)
 
-let parse_list_item l =
+let rec parse_list_item l =
   match l with
-  | Omd.Paragraph e :: _ -> (
+  | Omd.Paragraph e :: l -> (
+      let nested =
+        match l with Omd.List l :: _ -> Some (parse_list l) | _ -> None
+      in
       let x = Tyre.(opt blanks *> opt (str "x") <* opt blanks) in
       let box = Tyre.(start *> str "[" *> x <* str "]") in
       let text =
@@ -70,17 +71,30 @@ let parse_list_item l =
       in
       let list_item = Tyre.(box <&> text) in
       let re = Tyre.compile list_item in
-      let s = parse_text e |> text_contents in
+      let s, rest =
+        match parse_text e with (Plain, s) :: xs -> (s, xs) | xs -> ("", xs)
+      in
       match Tyre.exec re s with
-      | Error (`NoMatch _) -> (Nodo.Bullet [ (Plain, s) ], None)
+      | Error (`NoMatch _) ->
+          (Nodo.Bullet (if s = "" then rest else (Plain, s) :: rest), nested)
       | Error (`ConverterFailure _) ->
           print_endline "converter failure";
           assert false
-      | Ok (None, s) -> (Nodo.Task (false, [ (Plain, s) ]), None)
-      | Ok (Some (), s) -> (Nodo.Task (true, [ (Plain, s) ]), None) )
+      | Ok (None, s) ->
+          ( Nodo.Task (false, if s = "" then rest else (Plain, s) :: rest),
+            nested )
+      | Ok (Some (), s) ->
+          (Nodo.Task (true, if s = "" then rest else (Plain, s) :: rest), nested)
+      )
   | t ->
       print_endline @@ Omd.to_sexp t;
       assert false
+
+and parse_list l =
+  let items = List.map parse_list_item l.blocks in
+  match l.kind with
+  | Ordered (_, _) -> Nodo.Ordered (List.mapi (fun i (a, b) -> (i, a, b)) items)
+  | Unordered _ -> Nodo.Unordered items
 
 let parse_inline = function
   | Omd.Text s -> (Nodo.Plain, s)
@@ -92,11 +106,7 @@ let parse_element (e : Omd.inline Omd.block) : Nodo_core.Nodo.block option =
   match e with
   | Omd.Heading h -> Some (Heading (h.level, [ parse_inline h.text ]))
   | Paragraph i -> Some (Paragraph (parse_text i))
-  | List l -> (
-      let items = List.map parse_list_item l.blocks in
-      match l.kind with
-      | Ordered (_, _) -> Some (List (Ordered []))
-      | Unordered _ -> Some (List (Unordered items)) )
+  | List l -> Some (List (parse_list l))
   | _ ->
       Omd.to_sexp [ e ] |> print_endline;
       assert false
@@ -120,15 +130,16 @@ let render_metadata (m : Nodo_core.Nodo.metadata) =
 let render_text_item t =
   match t with
   | Nodo.Plain, s -> s
-  | _ ->
-      print_endline "failed to render text item";
-      assert false
+  | Italic, s -> "*" ^ s ^ "*"
+  | Bold, s -> "**" ^ s ^ "**"
+  | Code, s -> "`" ^ s ^ "`"
 
 let render_text t = List.map render_text_item t |> String.concat ~sep:" "
 
 let render_list_item ~prefix i =
   match i with
-  | Nodo.Task (b, t) -> prefix ^ (if b then "[x] " else "[ ] ") ^ render_text t
+  | Nodo.Task (b, t) ->
+      prefix ^ "[" ^ (if b then "x" else " ") ^ "] " ^ render_text t
   | Bullet t -> prefix ^ render_text t
 
 let rec render_list ?(prefix = "") l =
@@ -163,7 +174,7 @@ let render_block b =
 
 let render (m, bs) =
   let meta = render_metadata m in
-  let blocks = List.map render_block bs |> String.concat ~sep:"\n" in
+  let blocks = List.map render_block bs |> String.concat ~sep:"\n\n" in
   meta ^ "\n" ^ blocks
 
 let test_parse t = parse t |> Nodo.show |> print_endline
@@ -230,6 +241,17 @@ let%expect_test "reading in a complete task list" =
     {|
       ({ due_date = "" },
        [(List (Unordered [((Task (true, [(Plain, "some text")])), None)]))]) |}]
+
+let%expect_test "reading in a nested list" =
+  test_parse "- text\n  - nested";
+  [%expect
+    {|
+    ({ due_date = "" },
+     [(List
+         (Unordered
+            [((Bullet [(Plain, "text")]),
+              (Some (Unordered [((Bullet [(Plain, "nested")]), None)])))]))
+       ]) |}]
 
 let%expect_test "reading in a heading after metadata" =
   test_parse "---\n---\n# A level 1 heading";
