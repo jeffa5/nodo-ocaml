@@ -22,3 +22,7 @@ promote:
 coverage:
 	BISECT_ENABLE=yes dune runtest --force
 	bisect-ppx-report html
+
+.PHONY: completion
+completion:
+	cp zcomp ~/.zsh/functions/_nodo
