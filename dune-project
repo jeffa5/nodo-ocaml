@@ -1,4 +1,5 @@
 (lang dune 2.1)
+(name nodo)
 
 (generate_opam_files true)
 
