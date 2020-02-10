@@ -1,0 +1,5 @@
+#compdef nodo
+
+base_dir=(~/.nodo/)
+ignore=(archive temp)
+_files -W base_dir -F ignore
