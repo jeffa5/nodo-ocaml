@@ -22,6 +22,11 @@ format:
 promote:
 	dune promote
 
+.PHONY: install
+install:
+	dune build @install
+	dune install
+
 .PHONY: coverage
 coverage:
 	BISECT_ENABLE=yes dune runtest --force

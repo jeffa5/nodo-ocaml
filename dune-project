@@ -23,6 +23,11 @@
 )
 
 (package
-(name nodo-cli)
+(name nodo-cli-lib)
 (synopsis "A cli frontend for Nodo")
+)
+
+(package
+(name nodo-cli)
+(synopsis "The Nodo cli")
 )

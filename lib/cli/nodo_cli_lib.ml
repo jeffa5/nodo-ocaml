@@ -23,4 +23,7 @@ let remove_cmd = (Term.(const Remove.exec $ target_arg), Term.info "remove")
 
 let commands = [ show_cmd; edit_cmd; remove_cmd ]
 
-let () = Term.(exit @@ eval_choice show_cmd commands)
+let exec ~formats ~storage =
+  ignore formats;
+  ignore storage;
+  Term.(exit @@ eval_choice show_cmd commands)
