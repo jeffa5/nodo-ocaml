@@ -1,5 +1,6 @@
 (library
- (name nodo_core)
+ (name nodo)
+ (public_name nodo)
  (preprocess
   (pps ppx_deriving.show ppx_deriving.make))
- (libraries ISO8601 omd))
+ (libraries ISO8601))

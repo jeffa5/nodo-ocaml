@@ -1,4 +1,4 @@
-module S (Storage : Nodo_core.Storage) (Format : Nodo_core.Format) = struct
+module S (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
   let exec target =
     match Storage.classify target with
     | None -> print_endline "target not found"

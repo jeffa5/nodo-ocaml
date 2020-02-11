@@ -1,9 +1,6 @@
 let contains e = List.fold_left (fun a i -> a || i = e) false
 
-module S
-    (Storage : Nodo_core.Storage)
-    (Format : Nodo_core.Format)
-    (Config : Config.S) =
+module S (Storage : Nodo.Storage) (Format : Nodo.Format) (Config : Config.S) =
 struct
   let config = Config.default
 

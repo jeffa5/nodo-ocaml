@@ -1,5 +1,5 @@
 open Astring
-module Nodo = Nodo_core.Nodo
+module Nodo = Nodo.T
 
 let extensions = [ "md" ]
 
@@ -37,8 +37,7 @@ let rec parse_text i =
 
 and text_contents l = List.map (fun (_, s) -> s) l |> String.concat ~sep:" "
 
-let rec parse_inner_metadata (m : Nodo_core.Nodo.metadata) l :
-    Nodo_core.Nodo.metadata * Omd.t =
+let rec parse_inner_metadata (m : Nodo.metadata) l : Nodo.metadata * Omd.t =
   match l with
   | Omd.Heading h :: xs when h.level = 2 -> (
       let text = parse_text h.text in
@@ -46,7 +45,7 @@ let rec parse_inner_metadata (m : Nodo_core.Nodo.metadata) l :
       | None -> parse_inner_metadata m xs
       | Some (l, r) ->
           let l = String.trim l and r = String.trim r in
-          let meta : Nodo_core.Nodo.metadata =
+          let meta : Nodo.metadata =
             match l with "due_date" -> { due_date = r } | _ -> m
           in
           parse_inner_metadata meta xs )
@@ -56,7 +55,7 @@ let rec parse_inner_metadata (m : Nodo_core.Nodo.metadata) l :
 let parse_metadata l =
   match l with
   | Omd.Thematic_break :: xs -> parse_inner_metadata (Nodo.make_metadata ()) xs
-  | _ -> (Nodo_core.Nodo.make_metadata (), l)
+  | _ -> (Nodo.make_metadata (), l)
 
 let rec parse_list_item l =
   match l with
@@ -102,7 +101,7 @@ let parse_inline = function
       Omd.to_sexp [ Omd.Paragraph i ] |> print_endline;
       assert false
 
-let parse_element (e : Omd.inline Omd.block) : Nodo_core.Nodo.block option =
+let parse_element (e : Omd.inline Omd.block) : Nodo.block option =
   match e with
   | Omd.Heading h -> Some (Heading (h.level, [ parse_inline h.text ]))
   | Paragraph i -> Some (Paragraph (parse_text i))
@@ -119,7 +118,7 @@ let parse content =
   let l = parse_elements els in
   (metadata, l)
 
-let render_metadata (m : Nodo_core.Nodo.metadata) =
+let render_metadata (m : Nodo.metadata) =
   let due_date =
     if m.due_date = "" then "" else "due_date: " ^ m.due_date ^ "\n"
   in

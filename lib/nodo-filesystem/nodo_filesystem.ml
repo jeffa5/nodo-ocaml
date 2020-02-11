@@ -5,7 +5,7 @@ module type Prefix_type = sig
 end
 
 module Make (Prefix : Prefix_type) = struct
-  include Nodo_core.Storage_types
+  include Nodo.Storage_types
 
   let build_path p =
     if FilePath.is_relative p then Prefix.prefix ^ "/" ^ p else p

@@ -1,4 +1,4 @@
-module Nodo = struct
+module T = struct
   type metadata = { due_date : string [@default ""] }
   [@@deriving show { with_path = false }, make]
 
@@ -24,9 +24,9 @@ module Nodo = struct
 end
 
 module type Format = sig
-  val parse : string -> Nodo.t
+  val parse : string -> T.t
 
-  val render : Nodo.t -> string
+  val render : T.t -> string
 
   val extensions : string list
 end

@@ -1,4 +1,4 @@
-module S (Storage : Nodo_core.Storage) (Format : Nodo_core.Format) = struct
+module S (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
   let edit (`Nodo nodo) =
     let _ = Sys.command @@ "vim " ^ nodo in
     ()

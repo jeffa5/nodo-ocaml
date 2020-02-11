@@ -11,3 +11,18 @@
 (name nodo)
 (synopsis "A notes and todo organiser")
 )
+
+(package
+(name nodo-markdown)
+(synopsis "A markdown formatting backend for Nodo")
+)
+
+(package
+(name nodo-filesystem)
+(synopsis "A filesystem storage backend for Nodo")
+)
+
+(package
+(name nodo-cli)
+(synopsis "A cli frontend for Nodo")
+)

@@ -1,0 +1,4 @@
+(library
+ (name nodo_filesystem)
+ (public_name nodo-filesystem)
+ (libraries nodo fileutils astring))

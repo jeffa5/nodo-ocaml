@@ -1,0 +1,4 @@
+(library
+ (name nodo_cli)
+ (public_name nodo-cli)
+ (libraries nodo nodo-filesystem nodo-markdown cmdliner))

@@ -3,5 +3,5 @@ module type Prefix_type = sig
 end
 
 module Make (Prefix : Prefix_type) : sig
-  include Nodo_core.Storage
+  include Nodo.Storage
 end
