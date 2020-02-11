@@ -5,7 +5,7 @@ let target_arg =
   Arg.(value & pos 0 string "" doc)
 
 module Prefix : Nodo_filesystem.Prefix_type = struct
-  let prefix = "/home/andrew/.nodo"
+  let prefix = [ "/home"; "andrew"; ".nodo" ]
 end
 
 module Fs = Nodo_filesystem.Make (Prefix)

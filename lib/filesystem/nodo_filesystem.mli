@@ -1,5 +1,5 @@
 module type Prefix_type = sig
-  val prefix : string
+  val prefix : string list
 end
 
 module Make (Prefix : Prefix_type) : sig

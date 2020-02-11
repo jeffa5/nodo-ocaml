@@ -1,17 +1,19 @@
 open Option
 
 module type Prefix_type = sig
-  val prefix : string
+  val prefix : string list
 end
 
 module Make (Prefix : Prefix_type) = struct
   include Nodo.Storage_types
 
   let build_path p =
-    if FilePath.is_relative p then Prefix.prefix ^ "/" ^ p else p
+    let path = String.concat "/" p in
+    if FilePath.is_relative path then Prefix.prefix @ p else p
 
   let read (`Nodo p) =
-    let chan = open_in p and lines = ref [] in
+    let path = String.concat "/" p in
+    let chan = open_in path and lines = ref [] in
     ( try
         while true do
           lines := input_line chan :: !lines
@@ -22,20 +24,24 @@ module Make (Prefix : Prefix_type) = struct
         List.rev !lines )
     |> String.concat "\n"
 
-  let write content (`Nodo path) =
+  let write content (`Nodo p) =
+    let path = String.concat "/" p in
     let chan = open_out path in
     output_string chan content
 
-  let list (`Project project) =
-    Sys.readdir project |> Array.to_list
+  let list (`Project p) =
+    let path = String.concat "/" p in
+    Sys.readdir path |> Array.to_list
     |> List.map (fun f ->
-           let path = project ^ "/" ^ f in
-           if Sys.is_directory path then `Project path else `Nodo path)
+           let path = path ^ "/" ^ f in
+           if Sys.is_directory path then `Project (p @ [ f ])
+           else `Nodo (p @ [ f ]))
 
   let classify target =
-    let path = build_path target in
+    let p = build_path target in
+    let path = String.concat "/" p in
     if Sys.file_exists path then
-      if Sys.is_directory path then some (`Project path) else some (`Nodo path)
+      if Sys.is_directory path then some (`Project p) else some (`Nodo p)
     else None
 
   let create f =
@@ -45,13 +51,14 @@ module Make (Prefix : Prefix_type) = struct
     nodo
 
   let remove = function
-    | `Nodo n -> FileUtil.rm [ n ]
-    | `Project p -> FileUtil.rm ~recurse:true [ p ]
+    | `Nodo n ->
+        let path = String.concat "/" n in
+        FileUtil.rm [ path ]
+    | `Project p ->
+        let path = String.concat "/" p in
+        FileUtil.rm ~recurse:true [ path ]
 
   let name t =
-    let parts =
-      (match t with `Nodo n -> n | `Project p -> p)
-      |> Astring.String.cut ~rev:true ~sep:"/"
-    in
-    match parts with None -> "" | Some (_, r) -> r
+    let parts = (match t with `Nodo n -> n | `Project p -> p) |> List.rev in
+    match parts with [] -> "" | r :: _ -> r
 end

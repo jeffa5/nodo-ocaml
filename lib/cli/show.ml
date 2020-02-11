@@ -4,7 +4,9 @@ module S (Storage : Nodo.Storage) (Format : Nodo.Format) (Config : Config.S) =
 struct
   let config = Config.default
 
-  type tree = Project of (string * tree list) | Nodo of string
+  type tree =
+    | Project of (Storage.location * tree list)
+    | Nodo of Storage.location
 
   let rec build_tree l =
     List.map
@@ -27,13 +29,13 @@ struct
 
   let rec map_but_last prefix a l = function
     | [] -> ""
-    | [ x ] -> (prefix ^ "└─ ") ^ show_tree (prefix ^ l) x
+    | [ x ] -> (prefix ^ "└─ ") ^ show_tree ~prefix:(prefix ^ l) x
     | x :: xs ->
         (prefix ^ "├─ ")
-        ^ show_tree (prefix ^ a) x
+        ^ show_tree ~prefix:(prefix ^ a) x
         ^ map_but_last prefix a l xs
 
-  and show_tree prefix t =
+  and show_tree ~prefix t =
     match t with
     | Nodo n -> "N: " ^ Storage.name (`Nodo n) ^ "\n"
     | Project (p, tl) ->
@@ -42,6 +44,8 @@ struct
 
   let exec target =
     let target = target ^ "." ^ List.hd Format.extensions in
+    let open Astring in
+    let target = String.cuts ~sep:"/" target in
     match Storage.classify target with
     | None -> print_endline "target not found"
     | Some target -> (
@@ -49,6 +53,6 @@ struct
         | `Nodo _ as n -> show_nodo n
         | `Project _ as p ->
             Storage.list p |> filter_hidden |> build_tree
-            |> List.map @@ show_tree ""
-            |> String.concat "" |> print_string )
+            |> List.map (show_tree ~prefix:"")
+            |> String.concat ~sep:"" |> print_string )
 end

@@ -32,17 +32,21 @@ module type Format = sig
 end
 
 module type Storage_types = sig
-  type nodo = [ `Nodo of string ]
+  type location = string list
 
-  type project = [ `Project of string ]
+  type nodo = [ `Nodo of location ]
+
+  type project = [ `Project of location ]
 
   type t = [ nodo | project ]
 end
 
 module Storage_types = struct
-  type nodo = [ `Nodo of string ]
+  type location = string list
 
-  type project = [ `Project of string ]
+  type nodo = [ `Nodo of location ]
+
+  type project = [ `Project of location ]
 
   type t = [ nodo | project ]
 end
@@ -56,11 +60,11 @@ module type Storage = sig
 
   val list : project -> t list
 
-  val create : string -> nodo
+  val create : location -> nodo
 
   val remove : t -> unit
 
-  val classify : string -> t option
+  val classify : location -> t option
 
   val name : t -> string
 end

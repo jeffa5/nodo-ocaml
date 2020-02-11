@@ -23,7 +23,7 @@ promote:
 	dune promote
 
 .PHONY: install
-install:
+install: build
 	dune build @install
 	dune install
 

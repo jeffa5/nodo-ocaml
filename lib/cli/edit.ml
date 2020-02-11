@@ -1,6 +1,7 @@
 module S (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
   let edit (`Nodo nodo) =
-    let _ = Sys.command @@ "vim " ^ nodo in
+    let path = String.concat "/" nodo in
+    let _ = Sys.command @@ "vim " ^ path in
     ()
 
   let exec create target =
@@ -8,6 +9,8 @@ module S (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
     let target =
       if target = "" then Sys.getcwd () ^ "/.nodo." ^ extension else target
     in
+    let open Astring in
+    let target = String.cuts ~sep:"/" target in
     match Storage.classify target with
     | None -> if create then edit (Storage.create target)
     | Some target -> (
