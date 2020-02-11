@@ -14,6 +14,10 @@ check:
 test:
 	dune runtest
 
+.PHONY: format
+format:
+	dune build @fmt
+
 .PHONY: promote
 promote:
 	dune promote
