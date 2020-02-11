@@ -1,0 +1,4 @@
+(library
+ (name nodo)
+ (public_name nodo)
+ (libraries nodo_core nodo_cli nodo_markdown nodo_filesystem))
