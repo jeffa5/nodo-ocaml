@@ -15,19 +15,30 @@
 (package
 (name nodo-markdown)
 (synopsis "A markdown formatting backend for Nodo")
+(depends
+(nodo :dev))
 )
 
 (package
 (name nodo-filesystem)
 (synopsis "A filesystem storage backend for Nodo")
+(depends
+(nodo :dev))
 )
 
 (package
 (name nodo-cli-lib)
 (synopsis "A cli frontend for Nodo")
+(depends
+(nodo :dev))
 )
 
 (package
 (name nodo-cli)
 (synopsis "The Nodo cli")
+(depends
+(nodo-markdown :dev)
+(nodo-filesystem :dev)
+(nodo-cli-lib :dev)
+)
 )
