@@ -13,17 +13,26 @@ module Show = Show.S (Fs) (Nodo_markdown) (Config.V)
 module Edit = Edit.S (Fs) (Nodo_markdown)
 module Remove = Remove.S (Fs) (Nodo_markdown)
 
-let show_cmd = (Term.(const Show.exec $ target_arg), Term.info "show")
+let show_cmd =
+  let doc = "Show the project tree or nodo." in
+  (Term.(const Show.exec $ target_arg), Term.info ~doc "show")
+
+let default_cmd =
+  let doc = "A note and todo manager." in
+  (Term.(const (Show.exec "")), Term.info ~doc "nodo")
 
 let edit_cmd =
+  let doc = "Edit a nodo." in
   let create_arg = Arg.(value & flag (info [ "c" ])) in
-  (Term.(const Edit.exec $ create_arg $ target_arg), Term.info "edit")
+  (Term.(const Edit.exec $ create_arg $ target_arg), Term.info ~doc "edit")
 
-let remove_cmd = (Term.(const Remove.exec $ target_arg), Term.info "remove")
+let remove_cmd =
+  let doc = "Remove a nodo." in
+  (Term.(const Remove.exec $ target_arg), Term.info ~doc "remove")
 
 let commands = [ show_cmd; edit_cmd; remove_cmd ]
 
 let exec ~formats ~storage =
   ignore formats;
   ignore storage;
-  Term.(exit @@ eval_choice show_cmd commands)
+  Term.(exit @@ eval_choice default_cmd commands)

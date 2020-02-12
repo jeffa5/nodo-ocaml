@@ -24,7 +24,8 @@ promote:
 
 .PHONY: install
 install: build
-	opam install .
+	dune build @install
+	dune install
 
 .PHONY: coverage
 coverage:
