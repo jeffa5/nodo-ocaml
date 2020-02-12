@@ -7,6 +7,9 @@ homepage: "https://github.com/jeffa5/nodo"
 bug-reports: "https://github.com/jeffa5/nodo/issues"
 depends: [
   "dune" {>= "2.1"}
+  "nodo-markdown" {dev}
+  "nodo-filesystem" {dev}
+  "nodo-cli-lib" {dev}
 ]
 build: [
   ["dune" "subst"] {pinned}
