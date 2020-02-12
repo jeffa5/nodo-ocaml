@@ -1,7 +1,7 @@
 open Cmdliner
 
 let target_arg =
-  let doc = Arg.info ~docv:"TARGET" ~doc:"The target to use" [] in
+  let doc = Arg.info ~docv:"TARGET" ~doc:"The target nodo or project" [] in
   Arg.(value & pos 0 string "" doc)
 
 module Prefix : Nodo_filesystem.Prefix_type = struct
@@ -9,17 +9,17 @@ module Prefix : Nodo_filesystem.Prefix_type = struct
 end
 
 module Fs = Nodo_filesystem.Make (Prefix)
-module Show = Show.S (Fs) (Nodo_markdown) (Config.V)
-module Edit = Edit.S (Fs) (Nodo_markdown)
-module Remove = Remove.S (Fs) (Nodo_markdown)
-
-let show_cmd =
-  let doc = "Show the project tree or nodo." in
-  (Term.(const Show.exec $ target_arg), Term.info ~doc "show")
+module Show = Show.Make (Fs) (Nodo_markdown) (Config.V)
+module Edit = Edit.Make (Fs) (Nodo_markdown)
+module Remove = Remove.Make (Fs) (Nodo_markdown)
 
 let default_cmd =
   let doc = "A note and todo manager." in
   (Term.(const (Show.exec "")), Term.info ~doc "nodo")
+
+let show_cmd =
+  let doc = "Show the project tree or nodo." in
+  (Term.(const Show.exec $ target_arg), Term.info ~doc "show")
 
 let edit_cmd =
   let doc = "Edit a nodo." in
@@ -28,7 +28,11 @@ let edit_cmd =
 
 let remove_cmd =
   let doc = "Remove a nodo." in
-  (Term.(const Remove.exec $ target_arg), Term.info ~doc "remove")
+  let force_arg =
+    let doc = "Use force, for removing projects." in
+    Arg.(value & flag (info ~doc [ "f" ]))
+  in
+  (Term.(const Remove.exec $ target_arg $ force_arg), Term.info ~doc "remove")
 
 let commands = [ show_cmd; edit_cmd; remove_cmd ]
 

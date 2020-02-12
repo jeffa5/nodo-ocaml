@@ -1,4 +1,4 @@
-module S (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
+module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
   let edit (`Nodo nodo) =
     let path = String.concat "/" nodo in
     let _ = Sys.command @@ "vim " ^ path in

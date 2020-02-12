@@ -1,6 +1,6 @@
 let contains e = List.fold_left (fun a i -> a || i = e) false
 
-module S (Storage : Nodo.Storage) (Format : Nodo.Format) (Config : Config.S) =
+module Make (Storage : Nodo.Storage) (Format : Nodo.Format) (Config : Config.S) =
 struct
   let config = Config.default
 
@@ -43,7 +43,9 @@ struct
         ^ map_but_last prefix "│  " "   " tl
 
   let exec target =
-    let target = target ^ "." ^ List.hd Format.extensions in
+    let target =
+      if target = "" then target else target ^ "." ^ List.hd Format.extensions
+    in
     let open Astring in
     let target = String.cuts ~sep:"/" target in
     match Storage.classify target with
