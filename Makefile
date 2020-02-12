@@ -35,3 +35,7 @@ coverage:
 .PHONY: completion
 completion:
 	cp zcomp ~/.zsh/functions/_nodo
+
+.PHONY: ci
+ci:
+	dune exec ci/nodo_ci.exe
