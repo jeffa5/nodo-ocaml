@@ -1,7 +1,7 @@
 module Git = Current_git
 module Docker = Current_docker.Default
 
-let pull = false (* Whether to check for updates using "docker build --pull" *)
+let pull = true (* Whether to check for updates using "docker build --pull" *)
 
 let () = Logging.init ()
 
