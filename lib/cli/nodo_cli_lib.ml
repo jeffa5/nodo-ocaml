@@ -15,7 +15,7 @@ module Remove = Remove.Make (Fs) (Nodo_markdown)
 
 let default_cmd =
   let doc = "A note and todo manager." in
-  (Term.(const (Show.exec "")), Term.info ~doc "nodo")
+  (Term.(const Show.exec $ const ""), Term.info ~doc "nodo")
 
 let show_cmd =
   let doc = "Show the project tree or nodo." in
