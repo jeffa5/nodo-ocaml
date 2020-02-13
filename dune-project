@@ -15,8 +15,8 @@
  (name nodo)
  (synopsis "A notes and todo organiser")
  (depends
- (ppx_deriving (=4))
- (ISO8601 (=0.2))
+ (ppx_deriving (= 4))
+ (ISO8601 (= 0.2))
  )
  )
 
