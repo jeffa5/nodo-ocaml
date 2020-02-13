@@ -12,9 +12,12 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
     let open Astring in
     let target = String.cuts ~sep:"/" target in
     match Storage.classify target with
-    | None -> if create then edit (Storage.create target)
+    | None ->
+        if create then edit (Storage.create target)
     | Some target -> (
-        match target with
-        | `Nodo _ as n -> edit n
-        | `Project _ -> print_endline "Unable to edit a project" )
+      match target with
+      | `Nodo _ as n ->
+          edit n
+      | `Project _ ->
+          print_endline "Unable to edit a project" )
 end

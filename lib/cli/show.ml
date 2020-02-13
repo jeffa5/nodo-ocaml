@@ -12,7 +12,8 @@ struct
     List.map
       (fun item ->
         match item with
-        | `Nodo n -> Nodo n
+        | `Nodo n ->
+            Nodo n
         | `Project p ->
             let sub_tree = Storage.list (`Project p) |> build_tree in
             Project (p, sub_tree))
@@ -28,8 +29,10 @@ struct
     Storage.read nodo |> Format.parse |> Format.render |> print_endline
 
   let rec map_but_last prefix a l = function
-    | [] -> ""
-    | [ x ] -> (prefix ^ "└─ ") ^ show_tree ~prefix:(prefix ^ l) x
+    | [] ->
+        ""
+    | [x] ->
+        (prefix ^ "└─ ") ^ show_tree ~prefix:(prefix ^ l) x
     | x :: xs ->
         (prefix ^ "├─ ")
         ^ show_tree ~prefix:(prefix ^ a) x
@@ -37,7 +40,8 @@ struct
 
   and show_tree ~prefix t =
     match t with
-    | Nodo n -> "N: " ^ Storage.name (`Nodo n) ^ "\n"
+    | Nodo n ->
+        "N: " ^ Storage.name (`Nodo n) ^ "\n"
     | Project (p, tl) ->
         ("P: " ^ Storage.name (`Project p) ^ "\n")
         ^ map_but_last prefix "│  " "   " tl
@@ -49,12 +53,14 @@ struct
     let open Astring in
     let target = String.cuts ~sep:"/" target in
     match Storage.classify target with
-    | None -> print_endline "target not found"
+    | None ->
+        print_endline "target not found"
     | Some target -> (
-        match target with
-        | `Nodo _ as n -> show_nodo n
-        | `Project _ as p ->
-            Storage.list p |> filter_hidden |> build_tree
-            |> List.map (show_tree ~prefix:"")
-            |> String.concat ~sep:"" |> print_string )
+      match target with
+      | `Nodo _ as n ->
+          show_nodo n
+      | `Project _ as p ->
+          Storage.list p |> filter_hidden |> build_tree
+          |> List.map (show_tree ~prefix:"")
+          |> String.concat ~sep:"" |> print_string )
 end

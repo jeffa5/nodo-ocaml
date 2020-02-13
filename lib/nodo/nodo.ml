@@ -1,26 +1,26 @@
 module T = struct
-  type metadata = { due_date : string [@default ""] }
-  [@@deriving show { with_path = false }, make]
+  type metadata = {due_date: string [@default ""]}
+  [@@deriving show {with_path= false}, make]
 
   type text_type = Plain | Bold | Italic | Code
-  [@@deriving show { with_path = false }]
+  [@@deriving show {with_path= false}]
 
-  type text_item = text_type * string [@@deriving show { with_path = false }]
+  type text_item = text_type * string [@@deriving show {with_path= false}]
 
-  type text = text_item list [@@deriving show { with_path = false }]
+  type text = text_item list [@@deriving show {with_path= false}]
 
   type list_item = Task of bool * text | Bullet of text
-  [@@deriving show { with_path = false }]
+  [@@deriving show {with_path= false}]
 
   type list_ =
     | Ordered of (int * list_item * list_ option) list
     | Unordered of (list_item * list_ option) list
-  [@@deriving show { with_path = false }]
+  [@@deriving show {with_path= false}]
 
   type block = Paragraph of text | List of list_ | Heading of int * text
-  [@@deriving show { with_path = false }]
+  [@@deriving show {with_path= false}]
 
-  type t = metadata * block list [@@deriving show { with_path = false }]
+  type t = metadata * block list [@@deriving show {with_path= false}]
 end
 
 module type Format = sig
@@ -34,21 +34,21 @@ end
 module type Storage_types = sig
   type location = string list
 
-  type nodo = [ `Nodo of location ]
+  type nodo = [`Nodo of location]
 
-  type project = [ `Project of location ]
+  type project = [`Project of location]
 
-  type t = [ nodo | project ]
+  type t = [nodo | project]
 end
 
 module Storage_types = struct
   type location = string list
 
-  type nodo = [ `Nodo of location ]
+  type nodo = [`Nodo of location]
 
-  type project = [ `Project of location ]
+  type project = [`Project of location]
 
-  type t = [ nodo | project ]
+  type t = [nodo | project]
 end
 
 module type Storage = sig

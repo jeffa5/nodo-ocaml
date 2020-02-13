@@ -17,11 +17,9 @@ module Make (Prefix : Prefix_type) = struct
     ( try
         while true do
           lines := input_line chan :: !lines
-        done;
+        done ;
         !lines
-      with End_of_file ->
-        close_in chan;
-        List.rev !lines )
+      with End_of_file -> close_in chan ; List.rev !lines )
     |> String.concat "\n"
 
   let write content (`Nodo p) =
@@ -34,8 +32,7 @@ module Make (Prefix : Prefix_type) = struct
     Sys.readdir path |> Array.to_list
     |> List.map (fun f ->
            let path = path ^ "/" ^ f in
-           if Sys.is_directory path then `Project (p @ [ f ])
-           else `Nodo (p @ [ f ]))
+           if Sys.is_directory path then `Project (p @ [f]) else `Nodo (p @ [f]))
 
   let classify target =
     let p = build_path target in
@@ -47,16 +44,15 @@ module Make (Prefix : Prefix_type) = struct
   let create f =
     let path = build_path f in
     let nodo = `Nodo path in
-    write "" nodo;
-    nodo
+    write "" nodo ; nodo
 
   let remove = function
     | `Nodo n ->
         let path = String.concat "/" n in
-        FileUtil.rm [ path ]
+        FileUtil.rm [path]
     | `Project p ->
         let path = String.concat "/" p in
-        FileUtil.rm ~recurse:true [ path ]
+        FileUtil.rm ~recurse:true [path]
 
   let name t =
     let parts = (match t with `Nodo n -> n | `Project p -> p) |> List.rev in
