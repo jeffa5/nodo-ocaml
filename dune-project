@@ -15,18 +15,19 @@
  (name nodo)
  (synopsis "A notes and todo organiser")
  (depends
- (ppx_deriving (= 4))
- (ISO8601 (= 0.2))
- )
- )
+  (ppx_deriving
+   (= 4.4))
+  (ISO8601
+   (= 0.2.6))))
 
 (package
  (name nodo-markdown)
  (synopsis "A markdown formatting backend for Nodo")
  (depends
   (nodo :dev)
-  (dune
-   (>= 2.0.0))))
+  (ppx_expect (= v0.13.0))
+  (bisect_ppx :dev)
+   ))
 
 (package
  (name nodo-filesystem)

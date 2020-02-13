@@ -4,16 +4,17 @@ COPY . .
 RUN opam pin add . --no-action
 
 FROM base
-RUN opam install nodo
+RUN opam depext --install nodo
 
 FROM base
-RUN opam install nodo-markdown
+RUN opam depext --install nodo-markdown
 
 FROM base
-RUN opam install nodo-filesystem
+RUN opam pin add --dev-repo bisect_ppx \
+    && opam depext --install nodo-filesystem
 
 FROM base
-RUN opam install nodo-cli-lib
+RUN opam depext --install nodo-cli-lib
 
 FROM base
-RUN opam install nodo-cli
+RUN opam depext --install nodo-cli
