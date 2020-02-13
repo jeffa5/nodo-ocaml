@@ -6,8 +6,8 @@ authors: ["Andrew Jeffery <dev@jeffas.io>"]
 homepage: "https://github.com/jeffa5/nodo"
 bug-reports: "https://github.com/jeffa5/nodo/issues"
 depends: [
-  "dune" {>= "2.1"}
   "nodo" {dev}
+  "dune" {>= "2.0.0"}
 ]
 build: [
   ["dune" "subst"] {pinned}
