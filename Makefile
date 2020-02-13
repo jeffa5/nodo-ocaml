@@ -16,7 +16,8 @@ test:
 
 .PHONY: format
 format:
-	dune build @fmt
+	dune build @fmt --auto-promote
+	dune format-dune-file dune-project > dune-project.bak && mv dune-project.bak dune-project
 
 .PHONY: promote
 promote:
