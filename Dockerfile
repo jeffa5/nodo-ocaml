@@ -1,6 +1,7 @@
 FROM ocaml/opam2:latest AS base
 RUN opam update
 COPY . .
+RUN opam pin add . --no-action
 
 FROM base
 RUN opam install nodo
