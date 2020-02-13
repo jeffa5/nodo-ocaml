@@ -25,10 +25,13 @@ end
 
 module type Format = sig
   val parse : string -> T.t
+  (** [parse s] attempts to parse [s] into a t *)
 
   val render : T.t -> string
+  (** [render t] formats [t] *)
 
   val extensions : string list
+  (** [extensions] represents the list of associated extensions for this format. E.g. md for markdown. This list should be sorted in order of preference (first being most preferred) *)
 end
 
 module type Storage_types = sig
