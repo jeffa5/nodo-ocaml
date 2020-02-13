@@ -55,16 +55,26 @@ module type Storage = sig
   include Storage_types
 
   val read : nodo -> string
+  (** [read n] reads the nodo and returns the entire contents *)
 
   val write : string -> nodo -> unit
+  (** [write s n] writes [s] (likely from a formatter) to the given nodo *)
 
   val list : project -> t list
+  (** [list p] returns the list of projects and nodos that are immediate children of the project  *)
 
   val create : location -> nodo
+  (** [create l] creates a nodo at the given location *)
 
   val remove : t -> unit
+  (** [remove t] removes [t], regardless of whether it is a project or nodo. If [t] is a project then it should remove all contained nodos and projects before removing itself *)
 
   val classify : location -> t option
+  (** [classify l] attempts to classify the given location as either a project or a nodo *)
 
   val name : t -> string
+  (** [name t] returns the name part of the location in [t] *)
+
+  val with_extension : nodo -> string -> nodo
+  (** [with_format n e] returns [n] with the format (extension) added *)
 end
