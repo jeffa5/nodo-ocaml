@@ -1,4 +1,3 @@
 (executable
-(name nodo_ci)
-(libraries current current_docker current.fs current_web logs.fmt fmt.tty)
-)
+ (name nodo_ci)
+ (libraries current current_docker current.fs current_web logs.fmt fmt.tty))
