@@ -13,7 +13,12 @@
 
 (package
  (name nodo)
- (synopsis "A notes and todo organiser"))
+ (synopsis "A notes and todo organiser")
+ (depends
+ (ppx_deriving (=4))
+ (ISO8601 (=0.2))
+ )
+ )
 
 (package
  (name nodo-markdown)
