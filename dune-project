@@ -34,6 +34,8 @@
  (synopsis "A filesystem storage backend for Nodo")
  (depends
   (nodo :dev)
+  (astring (= 0.8.3))
+  (fileutils (= 0.6.1))
   (dune
    (>= 2.0.0))))
 
