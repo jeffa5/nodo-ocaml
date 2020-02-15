@@ -43,23 +43,21 @@ module type Format = sig
 end
 
 module type Storage_types = sig
-  type location = string list
+  type n
 
-  type nodo = [`Nodo of location]
+  type nodo = [`Nodo of n]
 
-  type project = [`Project of location]
+  type p
+
+  type project = [`Project of p]
 
   type t = [nodo | project]
+
+  type location = string list
 end
 
 module Storage_types = struct
   type location = string list
-
-  type nodo = [`Nodo of location]
-
-  type project = [`Project of location]
-
-  type t = [nodo | project]
 end
 
 module type Storage = sig
@@ -77,15 +75,17 @@ module type Storage = sig
   val create : location -> nodo
   (** [create l] creates a nodo at the given location *)
 
-  val remove : t -> unit
+  val remove : [< nodo | project] -> unit
   (** [remove t] removes [t], regardless of whether it is a project or nodo. If [t] is a project then it should remove all contained nodos and projects before removing itself *)
 
   val classify : location -> t option
   (** [classify l] attempts to classify the given location as either a project or a nodo *)
 
-  val name : t -> string
+  val name : [< nodo | project] -> string
   (** [name t] returns the name part of the location in [t] *)
 
   val with_extension : nodo -> string -> nodo
   (** [with_format n e] returns [n] with the format (extension) added *)
+
+  val location : [< nodo | project] -> location
 end

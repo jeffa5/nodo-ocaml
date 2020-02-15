@@ -7,6 +7,16 @@ end
 module Make (Prefix : Prefix_type) = struct
   include Nodo.Storage_types
 
+  type n = location
+
+  type nodo = [`Nodo of n]
+
+  type p = location
+
+  type project = [`Project of p]
+
+  type t = [nodo | project]
+
   let build_path p =
     let path = String.concat "/" p in
     if FilePath.is_relative path then Prefix.prefix @ p else p
@@ -41,8 +51,8 @@ module Make (Prefix : Prefix_type) = struct
       if Sys.is_directory path then some (`Project p) else some (`Nodo p)
     else None
 
-  let create f =
-    let path = build_path f in
+  let create l =
+    let path = build_path l in
     let nodo = `Nodo path in
     write "" nodo ; nodo
 
@@ -57,4 +67,13 @@ module Make (Prefix : Prefix_type) = struct
   let name t =
     let parts = (match t with `Nodo n -> n | `Project p -> p) |> List.rev in
     match parts with [] -> "" | r :: _ -> r
+
+  let with_extension (`Nodo l) e =
+    match List.rev l with
+    | [] ->
+        `Nodo l
+    | x :: xs ->
+        `Nodo (List.rev ((x ^ "." ^ e) :: xs))
+
+  let location = function `Nodo l -> l | `Project l -> l
 end

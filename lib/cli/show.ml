@@ -4,18 +4,16 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) (Config : Config.S) 
 struct
   let config = Config.default
 
-  type tree =
-    | Project of (Storage.location * tree list)
-    | Nodo of Storage.location
+  type tree = Project of (Storage.project * tree list) | Nodo of Storage.nodo
 
   let rec build_tree l =
     List.map
       (fun item ->
         match item with
-        | `Nodo n ->
+        | `Nodo _ as n ->
             Nodo n
-        | `Project p ->
-            let sub_tree = Storage.list (`Project p) |> build_tree in
+        | `Project _ as p ->
+            let sub_tree = Storage.list p |> build_tree in
             Project (p, sub_tree))
       l
 
@@ -41,10 +39,9 @@ struct
   and show_tree ~prefix t =
     match t with
     | Nodo n ->
-        "N: " ^ Storage.name (`Nodo n) ^ "\n"
+        "N: " ^ Storage.name n ^ "\n"
     | Project (p, tl) ->
-        ("P: " ^ Storage.name (`Project p) ^ "\n")
-        ^ map_but_last prefix "│  " "   " tl
+        ("P: " ^ Storage.name p ^ "\n") ^ map_but_last prefix "│  " "   " tl
 
   let exec target =
     let target =
@@ -55,8 +52,8 @@ struct
     match Storage.classify target with
     | None ->
         print_endline "target not found"
-    | Some target -> (
-      match target with
+    | Some t -> (
+      match t with
       | `Nodo _ as n ->
           show_nodo n
       | `Project _ as p ->
