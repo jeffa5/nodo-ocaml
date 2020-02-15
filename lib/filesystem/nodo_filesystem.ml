@@ -74,6 +74,4 @@ module Make (Prefix : Prefix_type) = struct
         `Nodo l
     | x :: xs ->
         `Nodo (List.rev ((x ^ "." ^ e) :: xs))
-
-  let location = function `Nodo l -> l | `Project l -> l
 end

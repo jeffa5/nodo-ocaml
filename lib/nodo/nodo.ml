@@ -86,6 +86,4 @@ module type Storage = sig
 
   val with_extension : nodo -> string -> nodo
   (** [with_format n e] returns [n] with the format (extension) added *)
-
-  val location : [< nodo | project] -> location
 end
