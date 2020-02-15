@@ -32,7 +32,7 @@ module Make (Prefix : Prefix_type) = struct
       with End_of_file -> close_in chan ; List.rev !lines )
     |> String.concat "\n"
 
-  let write content (`Nodo p) =
+  let write (`Nodo p) content =
     let path = String.concat "/" p in
     let chan = open_out path in
     output_string chan content
@@ -54,7 +54,7 @@ module Make (Prefix : Prefix_type) = struct
   let create l =
     let path = build_path l in
     let nodo = `Nodo path in
-    write "" nodo ; nodo
+    write nodo "" ; nodo
 
   let remove = function
     | `Nodo n ->

@@ -66,7 +66,7 @@ module type Storage = sig
   val read : nodo -> string
   (** [read n] reads the nodo and returns the entire contents *)
 
-  val write : string -> nodo -> unit
+  val write : nodo -> string -> unit
   (** [write s n] writes [s] (likely from a formatter) to the given nodo *)
 
   val list : project -> t list
