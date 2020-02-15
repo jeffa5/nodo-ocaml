@@ -31,12 +31,12 @@ module Make (Prefix : Prefix_type) = struct
         done ;
         !lines
       with End_of_file -> close_in chan ; List.rev !lines )
-    |> String.concat "\n"
+    |> String.concat "\n" |> ok
 
   let write (`Nodo p) content =
     let path = String.concat "/" p in
     let chan = open_out path in
-    output_string chan content
+    output_string chan content |> ok
 
   let list (`Project p) =
     let path = String.concat "/" p in
@@ -44,6 +44,7 @@ module Make (Prefix : Prefix_type) = struct
     |> List.map (fun f ->
            let path = path ^ "/" ^ f in
            if Sys.is_directory path then `Project (p @ [f]) else `Nodo (p @ [f]))
+    |> ok
 
   let classify target =
     let p = build_path target in
@@ -55,15 +56,15 @@ module Make (Prefix : Prefix_type) = struct
   let create l =
     let path = build_path l in
     let nodo = `Nodo path in
-    write nodo "" ; nodo
+    match write nodo "" with Error e -> error e | Ok _ -> ok nodo
 
   let remove = function
     | `Nodo n ->
         let path = String.concat "/" n in
-        FileUtil.rm [path]
+        FileUtil.rm [path] |> ok
     | `Project p ->
         let path = String.concat "/" p in
-        FileUtil.rm ~recurse:true [path]
+        FileUtil.rm ~recurse:true [path] |> ok
 
   let name t =
     let parts = (match t with `Nodo n -> n | `Project p -> p) |> List.rev in

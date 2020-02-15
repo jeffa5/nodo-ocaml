@@ -1,3 +1,5 @@
+module Result = Stdlib.Result
+
 let contains e = List.fold_left (fun a i -> a || i = e) false
 
 module Make (Storage : Nodo.Storage) (Format : Nodo.Format) (Config : Config.S) =
@@ -7,14 +9,17 @@ struct
   type tree = Project of (Storage.project * tree list) | Nodo of Storage.nodo
 
   let rec build_tree l =
-    List.map
+    List.filter_map
       (fun item ->
         match item with
         | `Nodo _ as n ->
-            Nodo n
+            Some (Nodo n)
         | `Project _ as p ->
-            let sub_tree = Storage.list p |> build_tree in
-            Project (p, sub_tree))
+            Storage.list p
+            |> Result.map (fun l ->
+                   let sub_tree = build_tree l in
+                   Project (p, sub_tree))
+            |> Result.to_option)
       l
 
   let filter_hidden =
@@ -24,7 +29,10 @@ struct
         not contained)
 
   let show_nodo nodo =
-    Storage.read nodo |> Format.parse |> Format.render |> print_endline
+    Storage.read nodo
+    |> Result.fold
+         ~ok:(fun c -> Format.parse c |> Format.render |> print_endline)
+         ~error:print_endline
 
   let rec map_but_last prefix a l = function
     | [] ->
@@ -57,7 +65,11 @@ struct
       | `Nodo _ as n ->
           show_nodo n
       | `Project _ as p ->
-          Storage.list p |> filter_hidden |> build_tree
-          |> List.map (show_tree ~prefix:"")
-          |> String.concat ~sep:"" |> print_string )
+          Storage.list p
+          |> Result.fold
+               ~ok:(fun l ->
+                 filter_hidden l |> build_tree
+                 |> List.map (show_tree ~prefix:"")
+                 |> String.concat ~sep:"" |> print_string)
+               ~error:print_endline )
 end
