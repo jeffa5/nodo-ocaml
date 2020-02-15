@@ -86,4 +86,7 @@ module type Storage = sig
 
   val with_extension : nodo -> string -> nodo
   (** [with_format n e] returns [n] with the format (extension) added *)
+
+  val sync : unit -> (unit, string) result
+  (** [sync ()] asks the storage module to sync the current state with a configured remote state *)
 end

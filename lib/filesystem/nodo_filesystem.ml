@@ -1,4 +1,5 @@
 open Option
+open Stdlib.Result
 
 module type Prefix_type = sig
   val prefix : string list
@@ -74,4 +75,6 @@ module Make (Prefix : Prefix_type) = struct
         `Nodo l
     | x :: xs ->
         `Nodo (List.rev ((x ^ "." ^ e) :: xs))
+
+  let sync () = ok ()
 end
