@@ -63,22 +63,22 @@ end
 module type Storage = sig
   include Storage_types
 
-  val read : nodo -> (string, string) result
+  val read : nodo -> (string, string) Lwt_result.t
   (** [read n] reads the nodo and returns the entire contents *)
 
-  val write : nodo -> string -> (unit, string) result
+  val write : nodo -> string -> (unit, string) Lwt_result.t
   (** [write s n] writes [s] (likely from a formatter) to the given nodo *)
 
-  val list : project -> (t list, string) result
+  val list : project -> (t list, string) Lwt_result.t
   (** [list p] returns the list of projects and nodos that are immediate children of the project  *)
 
-  val create : location -> (nodo, string) result
+  val create : location -> (nodo, string) Lwt_result.t
   (** [create l] creates a nodo at the given location *)
 
-  val remove : [< nodo | project] -> (unit, string) result
+  val remove : [< nodo | project] -> (unit, string) Lwt_result.t
   (** [remove t] removes [t], regardless of whether it is a project or nodo. If [t] is a project then it should remove all contained nodos and projects before removing itself *)
 
-  val classify : location -> t option
+  val classify : location -> t option Lwt.t
   (** [classify l] attempts to classify the given location as either a project or a nodo *)
 
   val name : [< nodo | project] -> string
@@ -87,6 +87,6 @@ module type Storage = sig
   val with_extension : nodo -> string -> nodo
   (** [with_format n e] returns [n] with the format (extension) added *)
 
-  val sync : unit -> (unit, string) result
+  val sync : unit -> (unit, string) Lwt_result.t
   (** [sync ()] asks the storage module to sync the current state with a configured remote state *)
 end

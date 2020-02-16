@@ -1,5 +1,9 @@
 module Result = Stdlib.Result
 
+let ( let* ) = Lwt.bind
+
+let ( let+ ) x y = Lwt.map y x
+
 let contains e = List.fold_left (fun a i -> a || i = e) false
 
 module Make (Storage : Nodo.Storage) (Format : Nodo.Format) (Config : Config.S) =
@@ -9,17 +13,19 @@ struct
   type tree = Project of (Storage.project * tree list) | Nodo of Storage.nodo
 
   let rec build_tree l =
-    List.filter_map
+    Lwt_list.filter_map_s
       (fun item ->
         match item with
         | `Nodo _ as n ->
-            Some (Nodo n)
+            Lwt.return_some (Nodo n)
         | `Project _ as p ->
-            Storage.list p
-            |> Result.map (fun l ->
-                   let sub_tree = build_tree l in
-                   Project (p, sub_tree))
-            |> Result.to_option)
+            let+ r =
+              let l = Storage.list p in
+              Lwt_result.bind l (fun l ->
+                  let* sub_tree = build_tree l in
+                  Lwt.return_ok (Project (p, sub_tree)))
+            in
+            Result.to_option r)
       l
 
   let filter_hidden =
@@ -29,10 +35,12 @@ struct
         not contained)
 
   let show_nodo nodo =
-    Storage.read nodo
-    |> Result.fold
-         ~ok:(fun c -> Format.parse c |> Format.render |> print_endline)
-         ~error:print_endline
+    let* r = Storage.read nodo in
+    match r with
+    | Ok c ->
+        Format.parse c |> Format.render |> Lwt_io.printl
+    | Error e ->
+        Lwt_io.printl e
 
   let rec map_but_last prefix a l = function
     | [] ->
@@ -57,19 +65,21 @@ struct
     in
     let open Astring in
     let target = String.cuts ~sep:"/" target in
-    match Storage.classify target with
+    let* r = Storage.classify target in
+    match r with
     | None ->
-        print_endline "target not found"
+        Lwt_io.printl "target not found"
     | Some t -> (
       match t with
       | `Nodo _ as n ->
           show_nodo n
-      | `Project _ as p ->
-          Storage.list p
-          |> Result.fold
-               ~ok:(fun l ->
-                 filter_hidden l |> build_tree
-                 |> List.map (show_tree ~prefix:"")
-                 |> String.concat ~sep:"" |> print_string)
-               ~error:print_endline )
+      | `Project _ as p -> (
+          let* l = Storage.list p in
+          match l with
+          | Ok l ->
+              let* t = filter_hidden l |> build_tree in
+              List.map (show_tree ~prefix:"") t
+              |> String.concat ~sep:"" |> Lwt_io.print
+          | Error e ->
+              Lwt_io.printl e ) )
 end

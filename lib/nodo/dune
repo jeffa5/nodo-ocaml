@@ -3,4 +3,4 @@
  (public_name nodo)
  (preprocess
   (pps ppx_deriving.show ppx_deriving.make))
- (libraries ISO8601))
+ (libraries ISO8601 lwt))

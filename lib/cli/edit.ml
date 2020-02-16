@@ -1,5 +1,9 @@
 module Result = Stdlib.Result
 
+let ( let* ) = Lwt.bind
+
+let ( let+ ) x y = Lwt.map y x
+
 module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
   let read_file f =
     let chan = open_in f and lines = ref [] in
@@ -12,15 +16,19 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
     |> String.concat "\n"
 
   let edit nodo =
-    let f, o =
-      Filename.open_temp_file "nodo-" ("." ^ List.hd Format.extensions)
+    let* content =
+      Lwt_io.with_temp_file (fun (f, o) ->
+          let* r = Storage.read nodo in
+          let+ () =
+            match r with
+            | Ok c ->
+                Format.parse c |> Format.render |> Lwt_io.write o
+            | Error e ->
+                Lwt_io.printl e
+          in
+          let _ = Sys.command @@ "vim " ^ f in
+          read_file f)
     in
-    Storage.read nodo
-    |> Result.fold
-         ~ok:(fun c -> Format.parse c |> Format.render |> output_string o)
-         ~error:print_endline ;
-    let _ = Sys.command @@ "vim " ^ f in
-    let content = read_file f in
     Format.parse content |> Format.render |> Storage.write nodo
 
   let exec create target =
@@ -30,14 +38,25 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
     in
     let open Astring in
     let target = String.cuts ~sep:"/" target in
-    match Storage.classify target with
+    let* t = Storage.classify target in
+    match t with
     | None ->
         if create then
-          Result.fold
-            ~ok:(fun f -> edit f |> Result.iter_error print_endline)
-            ~error:print_endline (Storage.create target)
-    | Some (`Nodo _ as n) ->
-        edit n |> Result.iter_error print_endline
+          let* t = Storage.create target in
+          match t with
+          | Ok f -> (
+              let* e = edit f in
+              match e with
+              | Ok () ->
+                  Lwt.return_unit
+              | Error e ->
+                  Lwt_io.printl e )
+          | Error e ->
+              Lwt_io.printl e
+        else Lwt.return_unit
+    | Some (`Nodo _ as n) -> (
+        let* e = edit n in
+        match e with Ok () -> Lwt.return_unit | Error e -> Lwt_io.printl e )
     | Some (`Project _) ->
-        print_endline "Unable to edit a project"
+        Lwt_io.printl "Unable to edit a project"
 end

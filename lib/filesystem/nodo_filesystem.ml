@@ -1,5 +1,8 @@
-open Option
 open Stdlib.Result
+
+let ( let* ) = Lwt.bind
+
+let ( let+ ) x y = Lwt.map y x
 
 module type Prefix_type = sig
   val prefix : string list
@@ -24,47 +27,56 @@ module Make (Prefix : Prefix_type) = struct
 
   let read (`Nodo p) =
     let path = String.concat "/" p in
-    let chan = open_in path and lines = ref [] in
-    ( try
-        while true do
-          lines := input_line chan :: !lines
-        done ;
-        !lines
-      with End_of_file -> close_in chan ; List.rev !lines )
-    |> String.concat "\n" |> ok
+    let+ s = Lwt_io.lines_of_file path |> Lwt_stream.to_list in
+    String.concat "\n" s |> ok
 
   let write (`Nodo p) content =
     let path = String.concat "/" p in
-    let chan = open_out path in
-    output_string chan content |> ok
+    let+ () =
+      String.split_on_char '\n' content
+      |> Lwt_stream.of_list |> Lwt_io.lines_to_file path
+    in
+    Ok ()
 
   let list (`Project p) =
     let path = String.concat "/" p in
-    Sys.readdir path |> Array.to_list
-    |> List.map (fun f ->
-           let path = path ^ "/" ^ f in
-           if Sys.is_directory path then `Project (p @ [f]) else `Nodo (p @ [f]))
-    |> ok
+    let* l =
+      Lwt_unix.files_of_directory path
+      |> Lwt_stream.map_s (fun f ->
+             let path = path ^ "/" ^ f in
+             let+ stat = Lwt_unix.stat path in
+             match stat.st_kind with
+             | Lwt_unix.S_REG ->
+                 `Nodo (p @ [f])
+             | S_DIR ->
+                 `Project (p @ [f])
+             | _ ->
+                 assert false)
+      |> Lwt_stream.to_list
+    in
+    Lwt.return_ok l
 
   let classify target =
     let p = build_path target in
     let path = String.concat "/" p in
-    if Sys.file_exists path then
-      if Sys.is_directory path then some (`Project p) else some (`Nodo p)
-    else None
+    let* exists = Lwt_unix.file_exists path in
+    if exists then
+      if Sys.is_directory path then Lwt.return_some (`Project p)
+      else Lwt.return_some (`Nodo p)
+    else Lwt.return_none
 
   let create l =
     let path = build_path l in
     let nodo = `Nodo path in
-    match write nodo "" with Error e -> error e | Ok _ -> ok nodo
+    write nodo "" |> Lwt_result.map (fun _ -> nodo)
 
   let remove = function
     | `Nodo n ->
         let path = String.concat "/" n in
-        FileUtil.rm [path] |> ok
+        FileUtil.rm [path] |> Lwt.return_ok
     | `Project p ->
         let path = String.concat "/" p in
-        FileUtil.rm ~recurse:true [path] |> ok
+        FileUtil.rm ~recurse:true [path] |> Lwt.return_ok
 
   let name t =
     let parts = (match t with `Nodo n -> n | `Project p -> p) |> List.rev in
@@ -77,5 +89,5 @@ module Make (Prefix : Prefix_type) = struct
     | x :: xs ->
         `Nodo (List.rev ((x ^ "." ^ e) :: xs))
 
-  let sync () = ok ()
+  let sync () = Lwt.return_ok ()
 end

@@ -1,14 +1,18 @@
-module Result = Stdlib.Result
+let ( let* ) = Lwt.bind
 
 module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
   let exec target force =
     let target = Astring.String.cuts ~sep:"/" target in
-    match Storage.classify target with
+    let* t = Storage.classify target in
+    match t with
     | None ->
-        print_endline "target not found"
-    | Some (`Nodo _ as n) ->
-        Storage.remove n |> Result.iter_error print_endline
+        Lwt_io.printl "target not found"
+    | Some (`Nodo _ as n) -> (
+        let* r = Storage.remove n in
+        match r with Ok () -> Lwt.return_unit | Error s -> Lwt_io.printl s )
     | Some (`Project _ as p) ->
-        if force then Storage.remove p |> Result.iter_error print_endline
-        else print_endline "Refusing to remove a project without force"
+        if force then
+          let* r = Storage.remove p |> Lwt_result.map_err print_endline in
+          match r with Ok () -> Lwt.return_unit | Error () -> Lwt.return_unit
+        else Lwt_io.printl "Refusing to remove a project without force"
 end

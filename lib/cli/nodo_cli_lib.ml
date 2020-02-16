@@ -12,16 +12,19 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
 
   let default_cmd =
     let doc = "A note and todo manager." in
-    (Term.(const Show.exec $ const ""), Term.info ~doc "nodo")
+    ( Term.(const Lwt_main.run $ (const Show.exec $ const ""))
+    , Term.info ~doc "nodo" )
 
   let show_cmd =
     let doc = "Show the project tree or nodo." in
-    (Term.(const Show.exec $ target_arg), Term.info ~doc "show")
+    ( Term.(const Lwt_main.run $ (const Show.exec $ target_arg))
+    , Term.info ~doc "show" )
 
   let edit_cmd =
     let doc = "Edit a nodo." in
     let create_arg = Arg.(value & flag (info ["c"])) in
-    (Term.(const Edit.exec $ create_arg $ target_arg), Term.info ~doc "edit")
+    ( Term.(const Lwt_main.run $ (const Edit.exec $ create_arg $ target_arg))
+    , Term.info ~doc "edit" )
 
   let remove_cmd =
     let doc = "Remove a nodo." in
@@ -29,11 +32,13 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
       let doc = "Use force, for removing projects." in
       Arg.(value & flag (info ~doc ["f"]))
     in
-    (Term.(const Remove.exec $ target_arg $ force_arg), Term.info ~doc "remove")
+    ( Term.(const Lwt_main.run $ (const Remove.exec $ target_arg $ force_arg))
+    , Term.info ~doc "remove" )
 
   let format_cmd =
     let doc = "Format a project or nodo." in
-    (Term.(const Format.exec $ target_arg), Term.info ~doc "format")
+    ( Term.(const Lwt_main.run $ (const Format.exec $ target_arg))
+    , Term.info ~doc "format" )
 
   let commands = [show_cmd; edit_cmd; remove_cmd; format_cmd]
 
