@@ -416,4 +416,6 @@ let%expect_test "render ordered bullet list" =
 
 let%expect_test "format" =
   parse "# test" |> render |> print_endline ;
+  [%expect {| # test |}] ;
+  parse "\n\n\n# test" |> render |> print_endline ;
   [%expect {| # test |}]

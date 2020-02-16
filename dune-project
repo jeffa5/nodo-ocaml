@@ -25,17 +25,19 @@
  (synopsis "A markdown formatting backend for Nodo")
  (depends
   (nodo :dev)
-  (ppx_expect (= v0.13.0))
-  (bisect_ppx :dev)
-   ))
+  (ppx_expect
+   (= v0.13.0))
+  (bisect_ppx :dev)))
 
 (package
  (name nodo-filesystem)
  (synopsis "A filesystem storage backend for Nodo")
  (depends
   (nodo :dev)
-  (astring (= 0.8.3))
-  (fileutils (= 0.6.1))
+  (astring
+   (= 0.8.3))
+  (fileutils
+   (= 0.6.1))
   (dune
    (>= 2.0.0))))
 
