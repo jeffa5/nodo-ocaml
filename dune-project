@@ -42,6 +42,14 @@
    (>= 2.0.0))))
 
 (package
+ (name nodo-git-filesystem)
+ (synopsis "A git filesystem storage backend for Nodo")
+ (depends
+  (nodo :dev)
+  (dune
+   (>= 2.0.0))))
+
+(package
  (name nodo-cli-lib)
  (synopsis "A cli frontend for Nodo")
  (depends
