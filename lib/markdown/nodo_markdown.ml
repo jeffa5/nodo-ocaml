@@ -205,7 +205,7 @@ let render_block b =
 let render (m, bs) =
   let meta = render_metadata m in
   let blocks = List.map render_block bs |> String.concat ~sep:"\n\n" in
-  meta ^ "\n" ^ blocks
+  (if meta = "" then "" else meta ^ "\n") ^ blocks
 
 let test_parse t = parse t |> Nodo.show |> print_endline
 
@@ -413,3 +413,7 @@ let%expect_test "render ordered bullet list" =
     1. text
       - text
     2. next |}]
+
+let%expect_test "format" =
+  parse "# test" |> render |> print_endline ;
+  [%expect {| # test |}]
