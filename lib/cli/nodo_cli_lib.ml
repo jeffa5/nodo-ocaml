@@ -4,6 +4,7 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
   module Show = Show.Make (S) (F) (Config.V)
   module Edit = Edit.Make (S) (F)
   module Remove = Remove.Make (S) (F)
+  module Format = Format.Make (S) (F)
 
   let target_arg =
     let doc = Arg.info ~docv:"TARGET" ~doc:"The target nodo or project" [] in
@@ -30,7 +31,11 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
     in
     (Term.(const Remove.exec $ target_arg $ force_arg), Term.info ~doc "remove")
 
-  let commands = [show_cmd; edit_cmd; remove_cmd]
+  let format_cmd =
+    let doc = "Format a project or nodo." in
+    (Term.(const Format.exec $ target_arg), Term.info ~doc "format")
+
+  let commands = [show_cmd; edit_cmd; remove_cmd; format_cmd]
 
   let exec ~formats ~storage =
     ignore formats ;
