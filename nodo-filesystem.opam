@@ -6,10 +6,10 @@ authors: ["Andrew Jeffery <dev@jeffas.io>"]
 homepage: "https://github.com/jeffa5/nodo"
 bug-reports: "https://github.com/jeffa5/nodo/issues"
 depends: [
+  "dune" {>= "2.3"}
   "nodo" {dev}
   "astring" {= "0.8.3"}
   "fileutils" {= "0.6.1"}
-  "dune" {>= "2.0.0"}
 ]
 build: [
   ["dune" "subst"] {pinned}

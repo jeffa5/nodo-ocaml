@@ -39,25 +39,19 @@
   (astring
    (= 0.8.3))
   (fileutils
-   (= 0.6.1))
-  (dune
-   (>= 2.0.0))))
+   (= 0.6.1))))
 
 (package
  (name nodo-git-filesystem)
  (synopsis "A git filesystem storage backend for Nodo")
  (depends
-  (nodo :dev)
-  (dune
-   (>= 2.0.0))))
+  (nodo :dev)))
 
 (package
  (name nodo-cli-lib)
  (synopsis "A cli frontend for Nodo")
  (depends
-  (nodo :dev)
-  (dune
-   (>= 2.0.0))))
+  (nodo :dev)))
 
 (package
  (name nodo-cli)
@@ -66,6 +60,4 @@
   (nodo :dev)
   (nodo-markdown :dev)
   (nodo-git-filesystem :dev)
-  (nodo-cli-lib :dev)
-  (dune
-   (>= 2.0.0))))
+  (nodo-cli-lib :dev)))
