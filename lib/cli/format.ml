@@ -23,15 +23,13 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
 
   let exec target =
     let open Astring in
-    let target = String.cuts ~sep:"/" target in
+    let target = String.cuts ~empty:false ~sep:"/" target in
     let* t = Storage.classify target in
     match t with
     | None ->
         Lwt_io.printl "target doesn't exist"
     | Some (`Nodo _ as n) -> (
-        let* r =
-          Storage.with_extension n (List.hd Format.extensions) |> format_nodo
-        in
+        let* r = format_nodo n in
         match r with Ok () -> Lwt.return_unit | Error e -> Lwt_io.printl e )
     | Some (`Project _ as p) -> (
         let* r = format_project p in

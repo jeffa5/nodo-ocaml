@@ -1,7 +1,11 @@
-module type Remote = sig
+module type Config = sig
+  val dir : string
+
   val remote : string
+
+  val author : string
 end
 
-module Make (R : Remote) : sig
+module Make (C : Config) : sig
   include Nodo.Storage
 end

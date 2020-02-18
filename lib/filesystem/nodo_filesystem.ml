@@ -50,7 +50,20 @@ module Make (Prefix : Prefix_type) = struct
                  `Nodo (p @ [f])
              | S_DIR ->
                  `Project (p @ [f])
-             | _ ->
+             | S_CHR ->
+                 print_endline "s_chr" ;
+                 assert false
+             | S_BLK ->
+                 print_endline "s_blk" ;
+                 assert false
+             | S_FIFO ->
+                 print_endline "fifo" ;
+                 assert false
+             | S_LNK ->
+                 print_endline "link" ;
+                 assert false
+             | S_SOCK ->
+                 print_endline "sock" ;
                  assert false)
       |> Lwt_stream.to_list
     in
@@ -82,12 +95,8 @@ module Make (Prefix : Prefix_type) = struct
     let parts = (match t with `Nodo n -> n | `Project p -> p) |> List.rev in
     match parts with [] -> "" | r :: _ -> r
 
-  let with_extension (`Nodo l) e =
-    match List.rev l with
-    | [] ->
-        `Nodo l
-    | x :: xs ->
-        `Nodo (List.rev ((x ^ "." ^ e) :: xs))
+  let with_extension l e =
+    match List.rev l with [] -> l | x :: xs -> List.rev ((x ^ "." ^ e) :: xs)
 
   let sync () = Lwt.return_ok ()
 end
