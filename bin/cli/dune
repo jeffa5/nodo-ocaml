@@ -2,4 +2,4 @@
  (name nodo_cli)
  (public_name nodo)
  (package nodo-cli)
- (libraries nodo nodo-cli-lib))
+ (libraries nodo nodo-cli-lib logs))
