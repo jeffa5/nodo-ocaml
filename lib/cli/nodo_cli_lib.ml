@@ -7,7 +7,7 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
   module Format = Format.Make (S) (F)
 
   let target_arg =
-    let doc = Arg.info ~docv:"TARGET" ~doc:"The target nodo or project" [] in
+    let doc = Arg.info ~docv:"TARGET" ~doc:"The target nodo or project." [] in
     Arg.(value & pos 0 string "" doc)
 
   let default_cmd =
@@ -22,7 +22,10 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
 
   let edit_cmd =
     let doc = "Edit a nodo." in
-    let create_arg = Arg.(value & flag (info ["c"])) in
+    let create_arg =
+      let doc = "Create the nodo if it does not exist." in
+      Arg.(value & flag (info ~doc ["c"]))
+    in
     ( Term.(const Lwt_main.run $ (const Edit.exec $ create_arg $ target_arg))
     , Term.info ~doc "edit" )
 
