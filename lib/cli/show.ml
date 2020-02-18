@@ -60,15 +60,35 @@ struct
         ("P: " ^ Storage.name p ^ "\n") ^ map_but_last prefix "│  " "   " tl
 
   let exec target =
-    let target =
-      if target = "" then target else target ^ "." ^ List.hd Format.extensions
-    in
     let open Astring in
-    let target = String.cuts ~sep:"/" target in
+    let target = String.cuts ~empty:false ~sep:"/" target in
     let* r = Storage.classify target in
     match r with
-    | None ->
-        Lwt_io.printl "target not found"
+    | None -> (
+      match target with
+      | [] ->
+          Lwt_io.printl "target not found"
+      | _ -> (
+          let target =
+            Storage.with_extension target (List.hd Format.extensions)
+          in
+          let* r = Storage.classify target in
+          match r with
+          | None ->
+              Lwt_io.printl "target not found"
+          | Some t -> (
+            match t with
+            | `Nodo _ as n ->
+                show_nodo n
+            | `Project _ as p -> (
+                let* l = Storage.list p in
+                match l with
+                | Ok l ->
+                    let* t = filter_hidden l |> build_tree in
+                    List.map (show_tree ~prefix:"") t
+                    |> String.concat ~sep:"" |> Lwt_io.print
+                | Error e ->
+                    Lwt_io.printl e ) ) ) )
     | Some t -> (
       match t with
       | `Nodo _ as n ->

@@ -84,8 +84,8 @@ module type Storage = sig
   val name : [< nodo | project] -> string
   (** [name t] returns the name part of the location in [t] *)
 
-  val with_extension : nodo -> string -> nodo
-  (** [with_format n e] returns [n] with the format (extension) added *)
+  val with_extension : location -> string -> location
+  (** [with_format l e] returns [l] with the format (extension) added *)
 
   val sync : unit -> (unit, string) Lwt_result.t
   (** [sync ()] asks the storage module to sync the current state with a configured remote state *)
