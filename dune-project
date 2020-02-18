@@ -1,4 +1,6 @@
-(lang dune 2.1)
+(lang dune 2.3)
+
+(strict_package_deps)
 
 (name nodo)
 
@@ -61,8 +63,9 @@
  (name nodo-cli)
  (synopsis "The Nodo cli")
  (depends
+  (nodo :dev)
   (nodo-markdown :dev)
-  (nodo-filesystem :dev)
+  (nodo-git-filesystem :dev)
   (nodo-cli-lib :dev)
   (dune
    (>= 2.0.0))))
