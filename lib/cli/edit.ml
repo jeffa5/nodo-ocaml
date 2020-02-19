@@ -32,28 +32,35 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
     Format.parse content |> Format.render |> Storage.write nodo
 
   let exec create target =
-    let extension = List.hd Format.extensions in
-    let target =
-      if target = "" then Sys.getcwd () ^ "/.nodo." ^ extension else target
-    in
     let open Astring in
     let target = String.cuts ~sep:"/" target in
     let* t = Storage.classify target in
     match t with
-    | None ->
-        if create then
-          let* t = Storage.create target in
-          match t with
-          | Ok f -> (
-              let* e = edit f in
-              match e with
-              | Ok () ->
-                  Lwt.return_unit
+    | None -> (
+        let target =
+          Storage.with_extension target (List.hd Format.extensions)
+        in
+        let* t = Storage.classify target in
+        match t with
+        | None ->
+            if create then
+              let* t = Storage.create target in
+              match t with
+              | Ok f -> (
+                  let* e = edit f in
+                  match e with
+                  | Ok () ->
+                      Lwt.return_unit
+                  | Error e ->
+                      Lwt_io.printl e )
               | Error e ->
-                  Lwt_io.printl e )
-          | Error e ->
-              Lwt_io.printl e
-        else Lwt.return_unit
+                  Lwt_io.printl e
+            else Lwt_io.printl "target not found"
+        | Some (`Nodo _ as n) -> (
+            let* e = edit n in
+            match e with Ok () -> Lwt.return_unit | Error e -> Lwt_io.printl e )
+        | Some (`Project _) ->
+            Lwt_io.printl "Unable to edit a project" )
     | Some (`Nodo _ as n) -> (
         let* e = edit n in
         match e with Ok () -> Lwt.return_unit | Error e -> Lwt_io.printl e )
