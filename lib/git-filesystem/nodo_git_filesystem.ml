@@ -96,11 +96,8 @@ module Make (C : Config) = struct
 
   let remove t =
     let* master = store in
-    ( match t with
-    | `Nodo n ->
-        Store.remove master ~info:(irmin_info "removing item") n
-    | `Project p ->
-        Store.remove master ~info:(irmin_info "removing item") p )
+    (match t with `Nodo n -> n | `Project p -> p)
+    |> Store.remove master ~info:(irmin_info "removing item")
     |> Lwt_result.map_err (function
          | `Too_many_retries _ ->
              "too many retries"
