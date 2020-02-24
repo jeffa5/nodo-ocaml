@@ -3,6 +3,8 @@ module type Config = sig
 
   val remote : string
 
+  val remote_headers : Cohttp.Header.t option
+
   val author : string
 end
 

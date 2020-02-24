@@ -10,6 +10,8 @@ module type Config = sig
 
   val remote : string
 
+  val remote_headers : Cohttp.Header.t option
+
   val author : string
 end
 
@@ -17,7 +19,12 @@ module Make (C : Config) = struct
   module Store = Irmin_unix.Git.FS.KV (Irmin.Contents.String)
   module Sync = Irmin.Sync (Store)
 
-  let remote = Store.remote C.remote
+  let remote =
+    match C.remote_headers with
+    | None ->
+        Store.remote C.remote
+    | Some h ->
+        Store.remote ~headers:h C.remote
 
   let irmin_config = Irmin_git.config C.dir
 
@@ -45,8 +52,6 @@ module Make (C : Config) = struct
     Lwt.return_ok contents
 
   let write (`Nodo p) content =
-    (* set only sets the content at the path rather than creating the intermediate nodes *)
-    (* create tree of nodes then set_tree *)
     let* master = store in
     let res = Store.set master ~info:(irmin_info "test update") p content in
     Lwt_result.map_err
@@ -112,17 +117,19 @@ module Make (C : Config) = struct
     match List.rev l with [] -> l | x :: xs -> List.rev ((x ^ "." ^ e) :: xs)
 
   let sync () =
-    let* () = Lwt_io.printl "syncing" in
     let* master = store in
     let* res = Sync.pull master remote `Set in
     match res with
     | Ok _ -> (
         let* res = Sync.push master remote in
         match res with
-        | Ok _ ->
+        | Ok s ->
+            let* () = Lwt.return @@ Sync.pp_status Fmt.stdout s in
             Lwt.return_ok ()
-        | Error _ ->
+        | Error p ->
+            let* () = Lwt.return @@ Sync.pp_push_error Fmt.stdout p in
             Lwt.return_error "push error" )
-    | Error _ ->
+    | Error p ->
+        let* () = Lwt.return @@ Sync.pp_pull_error Fmt.stdout p in
         Lwt.return_error "pull error"
 end
