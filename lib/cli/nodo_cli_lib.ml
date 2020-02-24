@@ -5,6 +5,7 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
   module Edit = Edit.Make (S) (F)
   module Remove = Remove.Make (S) (F)
   module Format = Format.Make (S) (F)
+  module Sync = Sync.Make (S)
 
   let target_arg =
     let doc = Arg.info ~docv:"TARGET" ~doc:"The target nodo or project." [] in
@@ -43,7 +44,12 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
     ( Term.(const Lwt_main.run $ (const Format.exec $ target_arg))
     , Term.info ~doc "format" )
 
-  let commands = [show_cmd; edit_cmd; remove_cmd; format_cmd]
+  let sync_cmd =
+    let doc = "Sync the nodo storage." in
+    ( Term.(const Lwt_main.run $ (const Sync.exec $ const ()))
+    , Term.info ~doc "sync" )
+
+  let commands = [show_cmd; edit_cmd; remove_cmd; format_cmd; sync_cmd]
 
   let exec ~formats ~storage =
     ignore formats ;
