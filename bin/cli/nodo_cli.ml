@@ -1,17 +1,43 @@
-(* module Prefix : Nodo_filesystem.Prefix_type = struct *)
-(*   let prefix = ["/home"; "andrew"; ".nodo"] *)
-(* end *)
-
-(* module Fs = Nodo_filesystem.Make (Prefix) *)
-(* module Cli = Nodo_cli_lib.Cli (Fs) (Nodo_markdown) *)
+open Stdlib.Option
 
 module Config : Nodo_git_filesystem.Config = struct
-  let dir = "/home/andrew/.nodo-git"
+  let dir =
+    match Sys.getenv_opt "NODO_STORE_DIR" with
+    | None ->
+        print_endline "Must provide nodo store dir" ;
+        exit 1
+    | Some s ->
+        s
 
-  (* let remote = "git://github.com/jeffat/nodo-test.git" *)
-  let remote = ""
+  let remote =
+    match Sys.getenv_opt "NODO_SYNC_REMOTE" with
+    | None ->
+        print_endline "Must provide sync remote environment variable" ;
+        exit 1
+    | Some s ->
+        s
 
-  let author = "andrew <dev@jeffas.io>"
+  let user =
+    match Sys.getenv_opt "NODO_SYNC_USER" with
+    | None ->
+        print_endline "Must provide user environment variable" ;
+        exit 1
+    | Some s ->
+        s
+
+  let remote_headers =
+    let e = Cohttp.Header.of_list [] in
+    let pass =
+      match Sys.getenv_opt "NODO_SYNC_PASS" with
+      | None ->
+          print_endline "Must provide pass environment variable" ;
+          exit 1
+      | Some s ->
+          s
+    in
+    Cohttp.Header.add_authorization e (`Basic (user, pass)) |> some
+
+  let author = user
 end
 
 module Git = Nodo_git_filesystem.Make (Config)
