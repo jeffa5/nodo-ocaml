@@ -12,23 +12,27 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
     else Lwt_io.printl "Refusing to remove a project without force"
 
   let exec target force =
-    let target = Astring.String.cuts ~sep:"/" target in
-    let* t = Storage.classify target in
-    match t with
-    | None -> (
-        let target =
-          Storage.with_extension target (List.hd Format.extensions)
-        in
+    match target with
+    | "" ->
+        Lwt_io.printl "TARGET cannot be empty"
+    | _ -> (
+        let target = Astring.String.cuts ~sep:"/" target in
         let* t = Storage.classify target in
         match t with
-        | None ->
-            Lwt_io.printl "target not found"
+        | None -> (
+            let target =
+              Storage.with_extension target (List.hd Format.extensions)
+            in
+            let* t = Storage.classify target in
+            match t with
+            | None ->
+                Lwt_io.printl "target not found"
+            | Some (`Nodo _ as n) ->
+                remove_nodo n
+            | Some (`Project _ as p) ->
+                remove_project ~force p )
         | Some (`Nodo _ as n) ->
             remove_nodo n
         | Some (`Project _ as p) ->
             remove_project ~force p )
-    | Some (`Nodo _ as n) ->
-        remove_nodo n
-    | Some (`Project _ as p) ->
-        remove_project ~force p
 end
