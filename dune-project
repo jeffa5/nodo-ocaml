@@ -28,6 +28,7 @@
  (name nodo-markdown)
  (synopsis "A markdown formatting backend for Nodo")
  (depends
+  (tyre (>= 0.5))
   (nodo :dev)
   (ppx_expect :with-test)
   (bisect_ppx :dev)))
