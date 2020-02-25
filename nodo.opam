@@ -8,6 +8,7 @@ bug-reports: "https://github.com/jeffa5/nodo/issues"
 depends: [
   "dune" {>= "2.3"}
   "ppx_deriving" {= "4.4"}
+  "lwt" {>= "5.1"}
   "ISO8601" {= "0.2.6"}
 ]
 build: [

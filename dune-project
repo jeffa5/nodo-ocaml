@@ -19,6 +19,8 @@
  (depends
   (ppx_deriving
    (= 4.4))
+  (lwt
+   (>= 5.1))
   (ISO8601
    (= 0.2.6))))
 
