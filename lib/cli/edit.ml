@@ -19,13 +19,14 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
     let* content =
       Lwt_io.with_temp_file (fun (f, o) ->
           let* r = Storage.read nodo in
-          let+ () =
+          let* () =
             match r with
             | Ok c ->
                 Format.parse c |> Format.render |> Lwt_io.write o
             | Error e ->
                 Lwt_io.printl e
           in
+          let+ () = Lwt_io.flush o in
           let _ = Sys.command @@ "vim " ^ f in
           read_file f)
     in
