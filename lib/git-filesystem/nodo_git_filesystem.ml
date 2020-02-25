@@ -120,8 +120,8 @@ module Make (C : Config) = struct
     | Ok _ -> (
         let* res = Sync.push master remote in
         match res with
-        | Ok s ->
-            let* () = Lwt.return @@ Sync.pp_status Fmt.stdout s in
+        | Ok _ ->
+            let* () = Lwt_io.printl "Successfully synced" in
             Lwt.return_ok ()
         | Error p ->
             let* () = Lwt.return @@ Sync.pp_push_error Fmt.stdout p in
