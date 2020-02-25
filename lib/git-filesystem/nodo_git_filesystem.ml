@@ -26,7 +26,7 @@ module Make (C : Config) = struct
     | Some h ->
         Store.remote ~headers:h C.remote
 
-  let irmin_config = Irmin_git.config C.dir
+  let irmin_config = Irmin_git.config ~bare:true C.dir
 
   let irmin_info fmt = Irmin_unix.info ~author:C.author fmt
 
