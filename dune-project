@@ -47,6 +47,8 @@
  (name nodo-git-filesystem)
  (synopsis "A git filesystem storage backend for Nodo")
  (depends
+  (irmin-git
+   (>= 2.0.0))
   (nodo :dev)))
 
 (package
