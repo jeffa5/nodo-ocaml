@@ -16,8 +16,9 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
     |> String.concat "\n"
 
   let edit nodo =
+    let name = Storage.name nodo in
     let* content =
-      Lwt_io.with_temp_file (fun (f, o) ->
+      Lwt_io.with_temp_file ~prefix:"nodo-" ~suffix:("-" ^ name) (fun (f, o) ->
           let* r = Storage.read nodo in
           let* () =
             match r with
