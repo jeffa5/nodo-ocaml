@@ -49,6 +49,8 @@
  (depends
   (irmin-git
    (>= 2.0.0))
+  (irmin-unix
+   (>= 2.0.0))
   (nodo :dev)))
 
 (package
