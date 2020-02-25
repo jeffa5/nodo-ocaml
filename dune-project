@@ -29,6 +29,7 @@
  (synopsis "A markdown formatting backend for Nodo")
  (depends
   (tyre (>= 0.5))
+  (omd (>= 2.0.0))
   (nodo :dev)
   (ppx_expect :with-test)
   (bisect_ppx :dev)))
