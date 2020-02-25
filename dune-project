@@ -29,8 +29,7 @@
  (synopsis "A markdown formatting backend for Nodo")
  (depends
   (nodo :dev)
-  (ppx_expect
-   (= v0.13.0))
+  (ppx_expect :with-test)
   (bisect_ppx :dev)))
 
 (package
