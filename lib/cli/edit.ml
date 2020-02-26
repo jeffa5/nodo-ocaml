@@ -28,7 +28,7 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
                 Lwt_io.printl e
           in
           let+ () = Lwt_io.flush o in
-          let _ = Sys.command @@ "vim " ^ f in
+          let _ = Sys.command @@ "nvim " ^ f in
           read_file f)
     in
     Format.parse content |> Format.render |> Storage.write nodo
