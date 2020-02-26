@@ -27,7 +27,17 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
       let doc = "Create the nodo if it does not exist." in
       Arg.(value & flag (info ~doc ["c"]))
     in
-    ( Term.(const Lwt_main.run $ (const Edit.exec $ create_arg $ target_arg))
+    let editor_arg =
+      let doc =
+        "The editor to launch when editing. The command will be run as "
+        ^ Arg.doc_quote "$(docv) file"
+      in
+      let env = Arg.env_var "NODO_EDITOR" in
+      Arg.(value & opt string "vim" & info ~env ~docv:"EDITOR" ~doc ["e"])
+    in
+    ( Term.(
+        const Lwt_main.run
+        $ (const Edit.exec $ create_arg $ target_arg $ editor_arg))
     , Term.info ~doc "edit" )
 
   let remove_cmd =

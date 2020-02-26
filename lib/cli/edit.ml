@@ -15,7 +15,7 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
       with End_of_file -> close_in chan ; List.rev !lines )
     |> String.concat "\n"
 
-  let edit nodo =
+  let edit nodo editor =
     let name = Storage.name nodo in
     let* content =
       Lwt_io.with_temp_file ~prefix:"nodo-" ~suffix:("-" ^ name) (fun (f, o) ->
@@ -28,12 +28,12 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
                 Lwt_io.printl e
           in
           let+ () = Lwt_io.flush o in
-          let _ = Sys.command @@ "nvim " ^ f in
+          let _ = Sys.command @@ editor ^ " " ^ f in
           read_file f)
     in
     Format.parse content |> Format.render |> Storage.write nodo
 
-  let exec create target =
+  let exec create target editor =
     let open Astring in
     match target with
     | "" ->
@@ -53,7 +53,7 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
                   let* t = Storage.create target in
                   match t with
                   | Ok f -> (
-                      let* e = edit f in
+                      let* e = edit f editor in
                       match e with
                       | Ok () ->
                           Lwt.return_unit
@@ -63,7 +63,7 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
                       Lwt_io.printl e
                 else Lwt_io.printl "target not found"
             | Some (`Nodo _ as n) -> (
-                let* e = edit n in
+                let* e = edit n editor in
                 match e with
                 | Ok () ->
                     Lwt.return_unit
@@ -72,7 +72,7 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
             | Some (`Project _) ->
                 Lwt_io.printl "Unable to edit a project" )
         | Some (`Nodo _ as n) -> (
-            let* e = edit n in
+            let* e = edit n editor in
             match e with Ok () -> Lwt.return_unit | Error e -> Lwt_io.printl e )
         | Some (`Project _) ->
             Lwt_io.printl "Unable to edit a project" )
