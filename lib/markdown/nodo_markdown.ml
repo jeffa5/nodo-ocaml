@@ -39,6 +39,8 @@ let rec parse_text i =
           assert false ) )
   | Code c ->
       [(Code, c.content)]
+  | Soft_break ->
+      []
   | i ->
       Omd.to_sexp [Omd.Paragraph i] |> print_endline ;
       assert false
