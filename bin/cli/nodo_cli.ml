@@ -42,8 +42,6 @@ end
 
 module Git = Nodo_git_filesystem.Make (Config)
 module Cli = Nodo_cli_lib.Cli (Git) (Nodo_markdown)
+open Cmdliner
 
-let () =
-  Logs.set_reporter (Logs_fmt.reporter ()) ;
-  (* Logs.set_level (Some Logs.Debug) ; *)
-  Cli.exec ~formats:[] ~storage:[]
+let () = Cli.exec Term.(const ()) ~formats:[] ~storage:[]
