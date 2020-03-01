@@ -6,29 +6,29 @@ let ( let* ) = Lwt.bind
 let ( let+ ) x y = Lwt.map y x
 
 module type Config = sig
-  val dir : string
+  val dir : string ref
 
-  val remote : string
+  val remote : string ref
 
-  val remote_headers : Cohttp.Header.t option
+  val remote_headers : Cohttp.Header.t option ref
 
-  val author : string
+  val author : string ref
 end
 
 module Make (C : Config) = struct
   module Store = Irmin_unix.Git.FS.KV (Irmin.Contents.String)
   module Sync = Irmin.Sync (Store)
 
-  let remote =
-    match C.remote_headers with
+  let remote () =
+    match !C.remote_headers with
     | None ->
-        Store.remote C.remote
+        Store.remote !C.remote
     | Some h ->
-        Store.remote ~headers:h C.remote
+        Store.remote ~headers:h !C.remote
 
-  let irmin_config = Irmin_git.config ~bare:true C.dir
+  let irmin_config () = Irmin_git.config ~bare:true !C.dir
 
-  let irmin_info fmt = Irmin_unix.info ~author:C.author fmt
+  let irmin_info fmt = Irmin_unix.info ~author:!C.author fmt
 
   include Nodo.Storage_types
 
@@ -42,17 +42,17 @@ module Make (C : Config) = struct
 
   type t = [nodo | project]
 
-  let store =
-    let* repo = Store.Repo.v irmin_config in
+  let store () =
+    let* repo = Store.Repo.v (irmin_config ()) in
     Store.master repo
 
   let read (`Nodo p) =
-    let* master = store in
+    let* master = store () in
     let* contents = Store.get master p in
     Lwt.return_ok contents
 
   let write (`Nodo p) content =
-    let* master = store in
+    let* master = store () in
     let res = Store.set master ~info:(irmin_info "test update") p content in
     Lwt_result.map_err
       (function
@@ -65,7 +65,7 @@ module Make (C : Config) = struct
       res
 
   let list (`Project p) =
-    let* master = store in
+    let* master = store () in
     let+ l = Store.list master p in
     l
     |> List.map (function
@@ -76,7 +76,7 @@ module Make (C : Config) = struct
     |> ok
 
   let classify p =
-    let* master = store in
+    let* master = store () in
     match p with
     | [] ->
         Lwt.return_some (`Project p)
@@ -95,7 +95,7 @@ module Make (C : Config) = struct
     write nodo "" |> Lwt_result.map (fun () -> nodo)
 
   let remove t =
-    let* master = store in
+    let* master = store () in
     (match t with `Nodo n -> n | `Project p -> p)
     |> Store.remove master ~info:(irmin_info "removing item")
     |> Lwt_result.map_err (function
@@ -114,7 +114,8 @@ module Make (C : Config) = struct
     match List.rev l with [] -> l | x :: xs -> List.rev ((x ^ "." ^ e) :: xs)
 
   let sync () =
-    let* master = store in
+    let* master = store () in
+    let remote = remote () in
     let* res = Sync.pull master remote `Set in
     match res with
     | Ok _ -> (
