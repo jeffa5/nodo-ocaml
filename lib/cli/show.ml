@@ -34,6 +34,39 @@ struct
         let contained = contains s config.hidden_dirs in
         not contained)
 
+  let progress (`Nodo _ as n) =
+    let handle_item = function
+      | Nodo.T.Task (c, _) ->
+          Some c
+      | Bullet _ ->
+          None
+    in
+    let handle_t (_, bs) =
+      List.map
+        (function
+          | Nodo.T.List l ->
+              let l =
+                match l with
+                | Ordered l ->
+                    List.filter_map (fun (_, i, _) -> handle_item i) l
+                | Unordered l ->
+                    List.filter_map (fun (i, _) -> handle_item i) l
+              in
+              ( List.fold_left (fun a b -> if b then a + 1 else a) 0 l
+              , List.length l )
+          | _ ->
+              (0, 0))
+        bs
+      |> List.fold_left (fun (a, b) (c, d) -> (a + c, b + d)) (0, 0)
+    in
+    let* r = Storage.read n in
+    match r with
+    | Ok c ->
+        let c, t = Format.parse c |> handle_t in
+        (if t > 0 then Printf.sprintf "(%i/%i)" c t else "") |> Lwt.return
+    | Error e ->
+        Lwt.return e
+
   let show_nodo nodo =
     let* r = Storage.read nodo in
     match r with
@@ -44,20 +77,23 @@ struct
 
   let rec map_but_last prefix a l = function
     | [] ->
-        ""
+        Lwt.return ""
     | [x] ->
-        (prefix ^ "└─ ") ^ show_tree ~prefix:(prefix ^ l) x
+        let+ t = show_tree ~prefix:(prefix ^ l) x in
+        (prefix ^ "└─ ") ^ t
     | x :: xs ->
-        (prefix ^ "├─ ")
-        ^ show_tree ~prefix:(prefix ^ a) x
-        ^ map_but_last prefix a l xs
+        let* t = show_tree ~prefix:(prefix ^ a) x in
+        let+ m = map_but_last prefix a l xs in
+        (prefix ^ "├─ ") ^ t ^ m
 
   and show_tree ~prefix t =
     match t with
     | Nodo n ->
-        "N: " ^ Storage.name n ^ "\n"
+        let+ p = progress n in
+        "N: " ^ Storage.name n ^ " " ^ p ^ "\n"
     | Project (p, tl) ->
-        ("P: " ^ Storage.name p ^ "\n") ^ map_but_last prefix "│  " "   " tl
+        let+ m = map_but_last prefix "│  " "   " tl in
+        ("P: " ^ Storage.name p ^ "\n") ^ m
 
   let exec target =
     let open Astring in
@@ -85,8 +121,8 @@ struct
                 match l with
                 | Ok l ->
                     let* t = filter_hidden l |> build_tree in
-                    List.map (show_tree ~prefix:"") t
-                    |> String.concat ~sep:"" |> Lwt_io.print
+                    let* ts = Lwt_list.map_s (show_tree ~prefix:"") t in
+                    String.concat ~sep:"" ts |> Lwt_io.print
                 | Error e ->
                     Lwt_io.printl e ) ) ) )
     | Some t -> (
@@ -98,8 +134,8 @@ struct
           match l with
           | Ok l ->
               let* t = filter_hidden l |> build_tree in
-              List.map (show_tree ~prefix:"") t
-              |> String.concat ~sep:"" |> Lwt_io.print
+              let* ts = Lwt_list.map_s (show_tree ~prefix:"") t in
+              String.concat ~sep:"" ts |> Lwt_io.print
           | Error e ->
               Lwt_io.printl e ) )
 end
