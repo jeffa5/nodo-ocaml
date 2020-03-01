@@ -29,22 +29,22 @@ let config_args =
       match Sys.getenv_opt "HOME" with Some h -> h | None -> "/tmp"
     in
     let doc = "Directory to store the nodos." in
-    Arg.(value & opt string (home ^ "/.nodo") & info ~docv:"DIR" ~doc ["d"])
+    Arg.(value & opt string (home ^ "/.nodo") & info ~docv:"DIR" ~doc ["dir"])
   in
   let remote_arg =
     let env = Arg.env_var "NODO_SYNC_REMOTE" in
     let doc = "Remote to sync with." in
-    Arg.(value & opt string "" & info ~env ~docv:"REMOTE" ~doc ["r"])
+    Arg.(value & opt string "" & info ~env ~docv:"REMOTE" ~doc ["remote"])
   in
   let user_arg =
     let env = Arg.env_var "NODO_SYNC_USER" in
     let doc = "Username to use for syncing and authoring commits." in
-    Arg.(value & opt string "" & info ~env ~docv:"USER" ~doc ["u"])
+    Arg.(value & opt string "" & info ~env ~docv:"USER" ~doc ["user"])
   in
   let pass_arg =
     let env = Arg.env_var "NODO_SYNC_PASS" in
     let doc = "Password to use for syncing." in
-    Arg.(value & opt string "" & info ~env ~docv:"PASS" ~doc ["p"])
+    Arg.(value & opt string "" & info ~env ~docv:"PASS" ~doc ["pass"])
   in
   Term.(const Config.make_config $ dir_arg $ remote_arg $ user_arg $ pass_arg)
 
