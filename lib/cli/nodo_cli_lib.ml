@@ -4,7 +4,6 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
   module Show = Show.Make (S) (F) (Config.V)
   module Edit = Edit.Make (S) (F)
   module Remove = Remove.Make (S) (F)
-  module Format = Format.Make (S) (F)
   module Sync = Sync.Make (S)
 
   let setup_log style_renderer level =
@@ -61,14 +60,10 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
       ( run Term.(const Remove.exec $ target_arg $ force_arg)
       , Term.info ~doc "remove" )
     in
-    let format_cmd =
-      let doc = "Format a project or nodo." in
-      (run Term.(const Format.exec $ target_arg), Term.info ~doc "format")
-    in
     let sync_cmd =
       let doc = "Sync the nodo storage." in
       (run Term.(const Sync.exec $ const ()), Term.info ~doc "sync")
     in
-    let commands = [show_cmd; edit_cmd; remove_cmd; format_cmd; sync_cmd] in
+    let commands = [show_cmd; edit_cmd; remove_cmd; sync_cmd] in
     Term.(exit @@ eval_choice default_cmd commands)
 end
