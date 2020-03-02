@@ -1,4 +1,4 @@
-module T = struct
+module S = struct
   type metadata = {due_date: string [@default ""]}
   [@@deriving show {with_path= false}, make]
   (** [metadata] is the available metadata about a nodo *)
@@ -32,10 +32,10 @@ module T = struct
 end
 
 module type Format = sig
-  val parse : string -> T.t
+  val parse : string -> S.t
   (** [parse s] attempts to parse [s] into a t *)
 
-  val render : T.t -> string
+  val render : S.t -> string
   (** [render t] formats [t] *)
 
   val extensions : string list

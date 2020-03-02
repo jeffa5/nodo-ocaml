@@ -1,5 +1,5 @@
 open Astring
-module Nodo = Nodo.T
+module Nodo = Nodo.S
 
 let extensions = ["md"]
 

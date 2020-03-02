@@ -36,7 +36,7 @@ struct
 
   let progress (`Nodo _ as n) =
     let handle_item = function
-      | Nodo.T.Task (c, _) ->
+      | Nodo.S.Task (c, _) ->
           Some c
       | Bullet _ ->
           None
@@ -44,7 +44,7 @@ struct
     let handle_t (_, bs) =
       List.map
         (function
-          | Nodo.T.List l ->
+          | Nodo.S.List l ->
               let l =
                 match l with
                 | Ordered l ->
