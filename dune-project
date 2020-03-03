@@ -18,7 +18,7 @@
  (synopsis "A notes and todo organiser")
  (depends
   (ppx_deriving
-   (= 4.4))
+   (>= 4.4))
   (lwt
    (>= 5.1))
   (ISO8601
@@ -33,8 +33,7 @@
   (omd
    (>= 2.0.0))
   (nodo :dev)
-  (ppx_expect :with-test)
-  (bisect_ppx :dev)))
+  (ppx_expect :with-test)))
 
 (package
  (name nodo-filesystem)
