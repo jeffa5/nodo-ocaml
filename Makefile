@@ -40,3 +40,7 @@ completion:
 .PHONY: ci
 ci:
 	dune exec ci/nodo_ci.exe
+
+.PHONY: docker-build
+docker-build:
+	docker build .
