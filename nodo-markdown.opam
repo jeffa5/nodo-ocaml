@@ -9,6 +9,7 @@ depends: [
   "dune" {>= "2.3"}
   "tyre" {>= "0.5"}
   "omd" {>= "2.0.0"}
+  "astring" {= "0.8.3"}
   "nodo" {dev}
   "ppx_expect" {>= "v0.13.0"}
 ]
