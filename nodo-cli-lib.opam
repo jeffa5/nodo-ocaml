@@ -7,6 +7,7 @@ homepage: "https://github.com/jeffa5/nodo"
 bug-reports: "https://github.com/jeffa5/nodo/issues"
 depends: [
   "dune" {>= "2.3"}
+  "fmt" {>= "0.8.0"}
   "logs" {>= "0.7.0"}
   "nodo" {dev}
 ]
