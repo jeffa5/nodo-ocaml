@@ -33,7 +33,8 @@
   (omd
    (>= 2.0.0))
   (nodo :dev)
-  (ppx_expect :with-test)))
+  (ppx_expect
+   (>= v0.13.0))))
 
 (package
  (name nodo-filesystem)
@@ -75,8 +76,6 @@
  (depends
   (tls
    (>= 0.10.4))
-  (ppx_expect
-   (>= v0.13.0))
   (nodo :dev)
   (nodo-markdown :dev)
   (nodo-git-filesystem :dev)
