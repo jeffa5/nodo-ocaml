@@ -27,7 +27,8 @@ module S = struct
   type block = Paragraph of text | List of list_ | Heading of int * text
   [@@deriving show {with_path= false}]
 
-  type t = metadata * block list [@@deriving show {with_path= false}]
+  type t = {metadata: metadata; blocks: block list}
+  [@@deriving show {with_path= false}, make]
   (** [t] is the root type for a nodo. It contains some metadata about the nodo and a list of the content blocks *)
 end
 

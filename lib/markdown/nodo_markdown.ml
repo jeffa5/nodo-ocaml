@@ -133,11 +133,11 @@ let parse_element (e : Omd.inline Omd.block) : Nodo.block option =
 
 let parse_elements e = List.filter_map parse_element e
 
-let parse content =
+let parse content : Nodo.t =
   let omd = Omd.of_string content in
   let metadata, els = parse_metadata omd in
-  let l = parse_elements els in
-  (metadata, l)
+  let blocks = parse_elements els in
+  {metadata; blocks}
 
 let render_metadata (m : Nodo.metadata) =
   let due_date =
@@ -204,9 +204,9 @@ let render_block b =
   | List l ->
       render_list l
 
-let render (m, bs) =
-  let meta = render_metadata m in
-  let blocks = List.map render_block bs |> String.concat ~sep:"\n\n" in
+let render ({metadata; blocks} : Nodo.t) =
+  let meta = render_metadata metadata in
+  let blocks = List.map render_block blocks |> String.concat ~sep:"\n\n" in
   (if meta = "" then "" else meta ^ "\n") ^ blocks
 
 let test_parse t = parse t |> Nodo.show |> print_endline
@@ -214,164 +214,218 @@ let test_parse t = parse t |> Nodo.show |> print_endline
 let test_render n = render n |> print_endline
 
 let%expect_test "Empty text gives empty nodo" =
-  test_parse "" ; [%expect {| ({ due_date = "" }, []) |}]
+  test_parse "" ; [%expect {| { metadata = { due_date = "" }; blocks = [] } |}]
 
 let%expect_test "reading in a heading" =
   test_parse "# A level 1 heading" ;
   [%expect
-    {| ({ due_date = "" }, [(Heading (1, [(Plain, "A level 1 heading")]))]) |}] ;
+    {|
+      { metadata = { due_date = "" };
+        blocks = [(Heading (1, [(Plain, "A level 1 heading")]))] } |}] ;
   test_parse "## A level 2 heading" ;
   [%expect
-    {| ({ due_date = "" }, [(Heading (2, [(Plain, "A level 2 heading")]))]) |}] ;
+    {|
+      { metadata = { due_date = "" };
+        blocks = [(Heading (2, [(Plain, "A level 2 heading")]))] } |}] ;
   test_parse "### A level 3 heading" ;
   [%expect
-    {| ({ due_date = "" }, [(Heading (3, [(Plain, "A level 3 heading")]))]) |}] ;
+    {|
+      { metadata = { due_date = "" };
+        blocks = [(Heading (3, [(Plain, "A level 3 heading")]))] } |}] ;
   test_parse "#### A level 4 heading" ;
   [%expect
-    {| ({ due_date = "" }, [(Heading (4, [(Plain, "A level 4 heading")]))]) |}] ;
+    {|
+      { metadata = { due_date = "" };
+        blocks = [(Heading (4, [(Plain, "A level 4 heading")]))] } |}] ;
   test_parse "##### A level 5 heading" ;
   [%expect
-    {| ({ due_date = "" }, [(Heading (5, [(Plain, "A level 5 heading")]))]) |}] ;
+    {|
+      { metadata = { due_date = "" };
+        blocks = [(Heading (5, [(Plain, "A level 5 heading")]))] } |}] ;
   test_parse "###### A level 6 heading" ;
   [%expect
-    {| ({ due_date = "" }, [(Heading (6, [(Plain, "A level 6 heading")]))]) |}]
+    {|
+      { metadata = { due_date = "" };
+        blocks = [(Heading (6, [(Plain, "A level 6 heading")]))] } |}]
 
 let%expect_test "reading in metadata" =
   test_parse "---\n due_date: test\n  ---" ;
-  [%expect {| ({ due_date = "test" }, []) |}] ;
+  [%expect {| { metadata = { due_date = "test" }; blocks = [] } |}] ;
   test_parse "---\n---" ;
-  [%expect {| ({ due_date = "" }, []) |}]
+  [%expect {| { metadata = { due_date = "" }; blocks = [] } |}]
 
 let%expect_test "reading in a plain list" =
   test_parse "- some text" ;
   [%expect
     {|
-      ({ due_date = "" },
-       [(List (Unordered [((Bullet [(Plain, "some text")]), None)]))]) |}]
+      { metadata = { due_date = "" };
+        blocks = [(List (Unordered [((Bullet [(Plain, "some text")]), None)]))] } |}]
 
 let%expect_test "reading in an incomplete task list" =
   test_parse "- [] some text" ;
   [%expect
     {|
-      ({ due_date = "" },
-       [(List (Unordered [((Task (false, [(Plain, "some text")])), None)]))]) |}] ;
+      { metadata = { due_date = "" };
+        blocks =
+        [(List (Unordered [((Task (false, [(Plain, "some text")])), None)]))] } |}] ;
   test_parse "-   [   ]   some text" ;
   [%expect
     {|
-      ({ due_date = "" },
-       [(List (Unordered [((Task (false, [(Plain, "some text")])), None)]))]) |}]
+      { metadata = { due_date = "" };
+        blocks =
+        [(List (Unordered [((Task (false, [(Plain, "some text")])), None)]))] } |}]
 
 let%expect_test "reading in a complete task list" =
   test_parse "- [x] some text" ;
   [%expect
     {|
-      ({ due_date = "" },
-       [(List (Unordered [((Task (true, [(Plain, "some text")])), None)]))]) |}] ;
+      { metadata = { due_date = "" };
+        blocks =
+        [(List (Unordered [((Task (true, [(Plain, "some text")])), None)]))] } |}] ;
   test_parse "-    [   x  ]   some text" ;
   [%expect
     {|
-      ({ due_date = "" },
-       [(List (Unordered [((Task (true, [(Plain, "some text")])), None)]))]) |}]
+      { metadata = { due_date = "" };
+        blocks =
+        [(List (Unordered [((Task (true, [(Plain, "some text")])), None)]))] } |}]
 
 let%expect_test "reading in a nested list" =
   test_parse "- text\n  - nested" ;
   [%expect
     {|
-    ({ due_date = "" },
-     [(List
-         (Unordered
-            [((Bullet [(Plain, "text")]),
-              (Some (Unordered [((Bullet [(Plain, "nested")]), None)])))]))
-       ]) |}]
+    { metadata = { due_date = "" };
+      blocks =
+      [(List
+          (Unordered
+             [((Bullet [(Plain, "text")]),
+               (Some (Unordered [((Bullet [(Plain, "nested")]), None)])))]))
+        ]
+      } |}]
 
 let%expect_test "reading in a heading after metadata" =
   test_parse "---\n---\n# A level 1 heading" ;
   [%expect
-    {| ({ due_date = "" }, [(Heading (1, [(Plain, "A level 1 heading")]))]) |}] ;
+    {|
+      { metadata = { due_date = "" };
+        blocks = [(Heading (1, [(Plain, "A level 1 heading")]))] } |}] ;
   test_parse "---\n---\n\n\n# A level 1 heading" ;
   [%expect
-    {| ({ due_date = "" }, [(Heading (1, [(Plain, "A level 1 heading")]))]) |}] ;
+    {|
+      { metadata = { due_date = "" };
+        blocks = [(Heading (1, [(Plain, "A level 1 heading")]))] } |}] ;
   test_parse "---\ndue_date: test\n---\n\n# A level 1 heading" ;
   [%expect
-    {| ({ due_date = "test" }, [(Heading (1, [(Plain, "A level 1 heading")]))]) |}]
+    {|
+      { metadata = { due_date = "test" };
+        blocks = [(Heading (1, [(Plain, "A level 1 heading")]))] } |}]
 
 let%expect_test "reading in bold text" =
   test_parse "**bold**" ;
-  [%expect {| ({ due_date = "" }, [(Paragraph [(Bold, "bold")])])|}] ;
+  [%expect {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Bold, "bold")])] }|}] ;
   test_parse "__bold__" ;
-  [%expect {| ({ due_date = "" }, [(Paragraph [(Bold, "bold")])])|}]
+  [%expect {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Bold, "bold")])] }|}]
 
 let%expect_test "reading in italic text" =
   test_parse "*italic*" ;
-  [%expect {| ({ due_date = "" }, [(Paragraph [(Italic, "italic")])])|}] ;
+  [%expect {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Italic, "italic")])] }|}] ;
   test_parse "_italic_" ;
-  [%expect {| ({ due_date = "" }, [(Paragraph [(Italic, "italic")])])|}]
+  [%expect {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Italic, "italic")])] }|}]
 
 let%expect_test "reading in inline code text" =
   test_parse "`code`" ;
-  [%expect {| ({ due_date = "" }, [(Paragraph [(Code, "code")])])|}] ;
+  [%expect {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Code, "code")])] }|}] ;
   test_parse "`code text`" ;
-  [%expect {| ({ due_date = "" }, [(Paragraph [(Code, "code text")])])|}]
+  [%expect {|
+    { metadata = { due_date = "" }; blocks = [(Paragraph [(Code, "code text")])]
+      }|}]
 
 let%expect_test "render metadata" =
-  test_render (Nodo.make_metadata (), []) ;
+  test_render (Nodo.make ~metadata:(Nodo.make_metadata ()) ()) ;
   [%expect {| |}] ;
-  test_render ({due_date= "test"}, []) ;
+  test_render (Nodo.make ~metadata:(Nodo.make_metadata ~due_date:"test" ()) ()) ;
   [%expect {|
     ---
     due_date: test
     --- |}]
 
 let%expect_test "render paragraph block" =
-  test_render (Nodo.make_metadata (), [Nodo.Paragraph [(Plain, "text")]]) ;
+  test_render
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:[Nodo.Paragraph [(Plain, "text")]]
+       ()) ;
   [%expect {| text |}]
 
 let%expect_test "render heading block" =
-  test_render (Nodo.make_metadata (), [Nodo.Heading (1, [(Plain, "text")])]) ;
+  test_render
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:[Nodo.Heading (1, [(Plain, "text")])]
+       ()) ;
   [%expect {| # text |}] ;
-  test_render (Nodo.make_metadata (), [Nodo.Heading (2, [(Plain, "text")])]) ;
+  test_render
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:[Nodo.Heading (2, [(Plain, "text")])]
+       ()) ;
   [%expect {| ## text |}] ;
-  test_render (Nodo.make_metadata (), [Nodo.Heading (3, [(Plain, "text")])]) ;
+  test_render
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:[Nodo.Heading (3, [(Plain, "text")])]
+       ()) ;
   [%expect {| ### text |}] ;
-  test_render (Nodo.make_metadata (), [Nodo.Heading (4, [(Plain, "text")])]) ;
+  test_render
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:[Nodo.Heading (4, [(Plain, "text")])]
+       ()) ;
   [%expect {| #### text |}] ;
-  test_render (Nodo.make_metadata (), [Nodo.Heading (5, [(Plain, "text")])]) ;
+  test_render
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:[Nodo.Heading (5, [(Plain, "text")])]
+       ()) ;
   [%expect {| ##### text |}] ;
-  test_render (Nodo.make_metadata (), [Nodo.Heading (6, [(Plain, "text")])]) ;
+  test_render
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:[Nodo.Heading (6, [(Plain, "text")])]
+       ()) ;
   [%expect {| ###### text |}]
 
 let%expect_test "render unordered bullet list" =
   test_render
-    ( Nodo.make_metadata ()
-    , [Nodo.List (Unordered [(Bullet [(Plain, "text")], None)])] ) ;
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:[Nodo.List (Unordered [(Bullet [(Plain, "text")], None)])]
+       ()) ;
   [%expect {| - text |}] ;
   test_render
-    ( Nodo.make_metadata ()
-    , [ Nodo.List
-          (Unordered
-             [(Bullet [(Plain, "text")], None); (Bullet [(Plain, "next")], None)])
-      ] ) ;
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:
+         [ Nodo.List
+             (Unordered
+                [ (Bullet [(Plain, "text")], None)
+                ; (Bullet [(Plain, "next")], None) ]) ]
+       ()) ;
   [%expect {|
     - text
     - next |}] ;
   test_render
-    ( Nodo.make_metadata ()
-    , [ Nodo.List
-          (Unordered
-             [ ( Bullet [(Plain, "text")]
-               , Some (Unordered [(Bullet [(Plain, "text")], None)]) )
-             ; (Bullet [(Plain, "next")], None) ]) ] ) ;
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:
+         [ Nodo.List
+             (Unordered
+                [ ( Bullet [(Plain, "text")]
+                  , Some (Unordered [(Bullet [(Plain, "text")], None)]) )
+                ; (Bullet [(Plain, "next")], None) ]) ]
+       ()) ;
   [%expect {|
     - text
       - text
     - next |}] ;
   test_render
-    ( Nodo.make_metadata ()
-    , [ Nodo.List
-          (Unordered
-             [ ( Bullet [(Plain, "text")]
-               , Some (Ordered [(1, Bullet [(Plain, "text")], None)]) )
-             ; (Bullet [(Plain, "next")], None) ]) ] ) ;
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:
+         [ Nodo.List
+             (Unordered
+                [ ( Bullet [(Plain, "text")]
+                  , Some (Ordered [(1, Bullet [(Plain, "text")], None)]) )
+                ; (Bullet [(Plain, "next")], None) ]) ]
+       ()) ;
   [%expect {|
     - text
       1. text
@@ -379,38 +433,45 @@ let%expect_test "render unordered bullet list" =
 
 let%expect_test "render ordered bullet list" =
   test_render
-    ( Nodo.make_metadata ()
-    , [Nodo.List (Ordered [(1, Bullet [(Plain, "text")], None)])] ) ;
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:[Nodo.List (Ordered [(1, Bullet [(Plain, "text")], None)])]
+       ()) ;
   [%expect {| 1. text |}] ;
   test_render
-    ( Nodo.make_metadata ()
-    , [ Nodo.List
-          (Ordered
-             [ (1, Bullet [(Plain, "text")], None)
-             ; (2, Bullet [(Plain, "next")], None) ]) ] ) ;
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:
+         [ Nodo.List
+             (Ordered
+                [ (1, Bullet [(Plain, "text")], None)
+                ; (2, Bullet [(Plain, "next")], None) ]) ]
+       ()) ;
   [%expect {|
     1. text
     2. next |}] ;
   test_render
-    ( Nodo.make_metadata ()
-    , [ Nodo.List
-          (Ordered
-             [ ( 1
-               , Bullet [(Plain, "text")]
-               , Some (Ordered [(1, Bullet [(Plain, "text")], None)]) )
-             ; (2, Bullet [(Plain, "next")], None) ]) ] ) ;
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:
+         [ Nodo.List
+             (Ordered
+                [ ( 1
+                  , Bullet [(Plain, "text")]
+                  , Some (Ordered [(1, Bullet [(Plain, "text")], None)]) )
+                ; (2, Bullet [(Plain, "next")], None) ]) ]
+       ()) ;
   [%expect {|
     1. text
       1. text
     2. next |}] ;
   test_render
-    ( Nodo.make_metadata ()
-    , [ Nodo.List
-          (Ordered
-             [ ( 1
-               , Bullet [(Plain, "text")]
-               , Some (Unordered [(Bullet [(Plain, "text")], None)]) )
-             ; (2, Bullet [(Plain, "next")], None) ]) ] ) ;
+    (Nodo.make ~metadata:(Nodo.make_metadata ())
+       ~blocks:
+         [ Nodo.List
+             (Ordered
+                [ ( 1
+                  , Bullet [(Plain, "text")]
+                  , Some (Unordered [(Bullet [(Plain, "text")], None)]) )
+                ; (2, Bullet [(Plain, "next")], None) ]) ]
+       ()) ;
   [%expect {|
     1. text
       - text
