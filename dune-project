@@ -59,6 +59,8 @@
  (name nodo-cli-lib)
  (synopsis "A cli frontend for Nodo")
  (depends
+  (cmdliner
+   (>= 1.0.0))
   (fmt
    (>= 0.8.0))
   (logs
