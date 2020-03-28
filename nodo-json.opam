@@ -7,6 +7,8 @@ homepage: "https://github.com/jeffa5/nodo"
 bug-reports: "https://github.com/jeffa5/nodo/issues"
 depends: [
   "dune" {>= "2.3"}
+  "ppx_deriving_yojson" {>= "3.5.1"}
+  "ppx_import" {>= "1.7.1"}
   "nodo" {dev}
   "ppx_expect" {>= "v0.13.0"}
 ]

@@ -42,6 +42,10 @@
  (name nodo-json)
  (synopsis "A json formatting backend for Nodo")
  (depends
+  (ppx_deriving_yojson
+   (>= 3.5.1))
+  (ppx_import
+   (>= 1.7.1))
   (nodo :dev)
   (ppx_expect
    (>= v0.13.0))))

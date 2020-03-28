@@ -1,4 +1,4 @@
-FROM ocaml/opam2:latest AS base
+FROM ocurrent/opam:alpine-3.10-ocaml-4.09 AS base
 
 COPY . .
 RUN opam pin add . --no-action

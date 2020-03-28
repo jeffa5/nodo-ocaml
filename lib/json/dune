@@ -4,4 +4,4 @@
  (inline_tests)
  (preprocess
   (staged_pps ppx_expect ppx_import ppx_deriving_yojson))
- (libraries nodo omd astring tyre re yojson ppx_deriving_yojson.runtime))
+ (libraries nodo yojson ppx_deriving_yojson.runtime))
