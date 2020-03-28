@@ -37,6 +37,14 @@
    (>= v0.13.0))))
 
 (package
+ (name nodo-json)
+ (synopsis "A json formatting backend for Nodo")
+ (depends
+  (nodo :dev)
+  (ppx_expect
+   (>= v0.13.0))))
+
+(package
  (name nodo-filesystem)
  (synopsis "A filesystem storage backend for Nodo")
  (depends
