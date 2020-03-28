@@ -75,6 +75,8 @@
  (depends
   (tls
    (>= 0.10.4))
+  (ppx_expect
+   (>= v0.13.0))
   (nodo :dev)
   (nodo-markdown :dev)
   (nodo-git-filesystem :dev)

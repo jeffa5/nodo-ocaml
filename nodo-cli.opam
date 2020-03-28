@@ -8,6 +8,7 @@ bug-reports: "https://github.com/jeffa5/nodo/issues"
 depends: [
   "dune" {>= "2.3"}
   "tls" {>= "0.10.4"}
+  "ppx_expect" {>= "v0.13.0"}
   "nodo" {dev}
   "nodo-markdown" {dev}
   "nodo-git-filesystem" {dev}
