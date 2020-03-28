@@ -41,7 +41,7 @@ struct
       | Bullet _ ->
           None
     in
-    let handle_t (_, bs) =
+    let handle_t (t : Nodo.S.t) =
       List.map
         (function
           | Nodo.S.List l ->
@@ -56,7 +56,7 @@ struct
               , List.length l )
           | _ ->
               (0, 0))
-        bs
+        t.blocks
       |> List.fold_left (fun (a, b) (c, d) -> (a + c, b + d)) (0, 0)
     in
     let* r = Storage.read n in
