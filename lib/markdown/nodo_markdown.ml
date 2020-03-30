@@ -80,9 +80,7 @@ let rec parse_list_item l =
       in
       let x = Tyre.(opt blanks *> opt (str "x") <* opt blanks) in
       let box = Tyre.(start *> str "[" *> x <* str "]") in
-      let text =
-        Tyre.(opt blanks *> regex (Re.rep1 @@ Re.alt [Re.wordc; Re.blank]))
-      in
+      let text = Tyre.(opt blanks *> regex (Re.rep1 @@ Re.any)) in
       let list_item = Tyre.(box <&> text) in
       let re = Tyre.compile list_item in
       let s, rest =
@@ -321,21 +319,27 @@ let%expect_test "reading in a heading after metadata" =
 
 let%expect_test "reading in bold text" =
   test_parse "**bold**" ;
-  [%expect {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Bold, "bold")])] }|}] ;
+  [%expect
+    {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Bold, "bold")])] }|}] ;
   test_parse "__bold__" ;
-  [%expect {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Bold, "bold")])] }|}]
+  [%expect
+    {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Bold, "bold")])] }|}]
 
 let%expect_test "reading in italic text" =
   test_parse "*italic*" ;
-  [%expect {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Italic, "italic")])] }|}] ;
+  [%expect
+    {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Italic, "italic")])] }|}] ;
   test_parse "_italic_" ;
-  [%expect {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Italic, "italic")])] }|}]
+  [%expect
+    {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Italic, "italic")])] }|}]
 
 let%expect_test "reading in inline code text" =
   test_parse "`code`" ;
-  [%expect {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Code, "code")])] }|}] ;
+  [%expect
+    {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Code, "code")])] }|}] ;
   test_parse "`code text`" ;
-  [%expect {|
+  [%expect
+    {|
     { metadata = { due_date = "" }; blocks = [(Paragraph [(Code, "code text")])]
       }|}]
 
@@ -481,4 +485,24 @@ let%expect_test "format" =
   parse "# test" |> render |> print_endline ;
   [%expect {| # test |}] ;
   parse "\n\n\n# test" |> render |> print_endline ;
-  [%expect {| # test |}]
+  [%expect {| # test |}] ;
+  parse "- (test1)" |> render |> print_endline ;
+  [%expect {| - (test1) |}] ;
+  parse "- something (1)" |> render |> print_endline ;
+  [%expect {| - something (1) |}] ;
+  parse "- [ ] something (1)" |> render |> print_endline ;
+  [%expect {| - [ ] something (1) |}] ;
+  parse "- [ ] something [1]" |> render |> print_endline ;
+  [%expect {| - [ ] something [1] |}] ;
+  parse "- [ ] something {1}" |> render |> print_endline ;
+  [%expect {| - [ ] something {1} |}] ;
+  parse "- [x] something (1)" |> render |> print_endline ;
+  [%expect {| - [x] something (1) |}] ;
+  parse "- [x] something [1]" |> render |> print_endline ;
+  [%expect {| - [x] something [1] |}] ;
+  parse "- [x] something {1}" |> render |> print_endline ;
+  [%expect {| - [x] something {1} |}] ;
+  parse "- [x] something 1.2.3" |> render |> print_endline ;
+  [%expect {| - [x] something 1.2.3 |}] ;
+  parse "- [x] something '1.2.3'" |> render |> print_endline ;
+  [%expect {| - [x] something '1.2.3' |}]
