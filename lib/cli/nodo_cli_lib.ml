@@ -5,6 +5,7 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
   module Edit = Edit.Make (S) (F)
   module Remove = Remove.Make (S) (F)
   module Sync = Sync.Make (S)
+  module Complete = Complete.Make (S) (F) (Config.V)
 
   let setup_log style_renderer level =
     Fmt_tty.setup_std_outputs ?style_renderer () ;
@@ -64,6 +65,10 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
       let doc = "Sync the nodo storage." in
       (run Term.(const Sync.exec $ const ()), Term.info ~doc "sync")
     in
-    let commands = [show_cmd; edit_cmd; remove_cmd; sync_cmd] in
+    let complete_cmd =
+      let all_args = Arg.(value & pos_all string [] (info [])) in
+      (run Term.(const Complete.exec $ all_args), Term.info "complete")
+    in
+    let commands = [complete_cmd; show_cmd; edit_cmd; remove_cmd; sync_cmd] in
     Term.(exit @@ eval_choice default_cmd commands)
 end

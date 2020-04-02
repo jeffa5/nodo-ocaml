@@ -79,7 +79,7 @@ module Make (C : Config) = struct
     let* master = store () in
     match p with
     | [] ->
-        Lwt.return_some (`Project p)
+        Lwt.return_some (`Project [])
     | _ -> (
         let* kind = Store.kind master p in
         match kind with
@@ -105,6 +105,8 @@ module Make (C : Config) = struct
              "test was"
          | `Conflict s ->
              s)
+
+  let location = function `Nodo n -> n | `Project p -> p
 
   let name t =
     let parts = (match t with `Nodo n -> n | `Project p -> p) |> List.rev in

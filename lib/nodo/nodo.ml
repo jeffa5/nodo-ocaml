@@ -82,6 +82,8 @@ module type Storage = sig
   val classify : location -> t option Lwt.t
   (** [classify l] attempts to classify the given location as either a project or a nodo *)
 
+  val location : [< nodo | project] -> location
+
   val name : [< nodo | project] -> string
   (** [name t] returns the name part of the location in [t] *)
 

@@ -27,6 +27,7 @@ promote:
 install: build
 	dune build @install
 	dune install
+	cp zcomp ~/.zsh/functions/_nodo
 
 .PHONY: coverage
 coverage:

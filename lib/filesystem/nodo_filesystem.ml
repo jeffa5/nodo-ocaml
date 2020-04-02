@@ -91,6 +91,8 @@ module Make (Prefix : Prefix_type) = struct
         let path = String.concat "/" p in
         FileUtil.rm ~recurse:true [path] |> Lwt.return_ok
 
+  let location = function `Nodo n -> n | `Project p -> p
+
   let name t =
     let parts = (match t with `Nodo n -> n | `Project p -> p) |> List.rev in
     match parts with [] -> "" | r :: _ -> r
