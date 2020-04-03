@@ -32,15 +32,23 @@ struct
 
   let print_commands () = Lwt_list.iter_s Lwt_io.printl commands
 
-  let exec opts =
-    match opts with
-    | [] ->
-        assert false
-    | [_] ->
-        print_commands ()
-    | [_; x] ->
-        if List.exists (fun c -> x = c) commands then print_targets ()
-        else print_commands ()
-    | _ ->
-        print_targets ()
+  let exec gen opts =
+    match gen with
+    | None -> (
+      match opts with
+      | [] ->
+          assert false
+      | [_] ->
+          print_commands ()
+      | [_; x] ->
+          if List.exists (fun c -> x = c) commands then print_targets ()
+          else print_commands ()
+      | _ ->
+          print_targets () )
+    | Some shell -> (
+      match shell with
+      | "zsh" ->
+          Lwt_io.printl Zshcomp.completions
+      | _ ->
+          Lwt_io.printl @@ "No completion available for " ^ shell )
 end
