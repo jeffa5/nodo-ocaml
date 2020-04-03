@@ -1,5 +1,0 @@
-#compdef nodo
-
-for l in $(nodo complete -- $words); do
-    compadd $l
-done
