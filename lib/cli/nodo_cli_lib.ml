@@ -67,13 +67,19 @@ module Cli (S : Nodo.Storage) (F : Nodo.Format) = struct
     in
     let completion_cmd =
       let generate_arg =
-        let doc = "" in
+        let doc =
+          "The shell to generate completion scripts for. The value of $(docv) \
+           must be "
+          ^ Arg.doc_alts ~quoted:true ["zsh"]
+          ^ "."
+        in
         Arg.(
           value & opt (some string) None (info ~docv:"SHELL" ~doc ["generate"]))
       in
       let all_args = Arg.(value & pos_all string [] (info [])) in
+      let doc = "Generate completion scripts and options." in
       ( run Term.(const Completion.exec $ generate_arg $ all_args)
-      , Term.info "completion" )
+      , Term.info ~doc "completion" )
     in
     let commands = [completion_cmd; show_cmd; edit_cmd; remove_cmd; sync_cmd] in
     Term.(exit @@ eval_choice default_cmd commands)
