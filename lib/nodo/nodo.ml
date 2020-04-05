@@ -1,17 +1,17 @@
 module S = struct
+  (** [metadata] is the available metadata about a nodo *)
   type metadata = {due_date: string [@default ""]}
   [@@deriving show {with_path= false}, make]
-  (** [metadata] is the available metadata about a nodo *)
 
   (** [text_type] is the possible stylings of text *)
   type text_type = Plain | Bold | Italic | Code
   [@@deriving show {with_path= false}]
 
-  type text_item = text_type * string [@@deriving show {with_path= false}]
   (** [text_item] is a style and a string *)
+  type text_item = text_type * string [@@deriving show {with_path= false}]
 
-  type text = text_item list [@@deriving show {with_path= false}]
   (** [text] is a list of styled strings *)
+  type text = text_item list [@@deriving show {with_path= false}]
 
   (** [list_item] is an item of either an ordered or unordered list *)
   type list_item = Task of bool * text | Bullet of text
@@ -27,9 +27,9 @@ module S = struct
   type block = Paragraph of text | List of list_ | Heading of int * text
   [@@deriving show {with_path= false}]
 
+  (** [t] is the root type for a nodo. It contains some metadata about the nodo and a list of the content blocks *)
   type t = {metadata: metadata; blocks: block list}
   [@@deriving show {with_path= false}, make]
-  (** [t] is the root type for a nodo. It contains some metadata about the nodo and a list of the content blocks *)
 end
 
 module type Format = sig
