@@ -33,6 +33,15 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
     in
     Format.parse content |> Format.render |> Storage.write nodo
 
+  let create_edit target editor =
+    let* t = Storage.create target in
+    match t with
+    | Ok f -> (
+        let* e = edit f editor in
+        match e with Ok () -> Lwt.return_unit | Error e -> Lwt_io.printl e )
+    | Error e ->
+        Lwt_io.printl e
+
   let exec create target editor =
     let open Astring in
     match target with
@@ -48,20 +57,23 @@ module Make (Storage : Nodo.Storage) (Format : Nodo.Format) = struct
             in
             let* t = Storage.classify target in
             match t with
-            | None ->
-                if create then
-                  let* t = Storage.create target in
-                  match t with
-                  | Ok f -> (
-                      let* e = edit f editor in
-                      match e with
-                      | Ok () ->
-                          Lwt.return_unit
-                      | Error e ->
-                          Lwt_io.printl e )
-                  | Error e ->
-                      Lwt_io.printl e
-                else Lwt_io.printl "target not found"
+            | None -> (
+                if create then create_edit target editor
+                else
+                  let* () =
+                    Lwt_io.print
+                      "Target not found, would you like to create it? [y/N]: "
+                  in
+                  let* line = Lwt_io.read_line_opt Lwt_io.stdin in
+                  match line with
+                  | None ->
+                      Lwt.return_unit
+                  | Some line -> (
+                    match String.Ascii.lowercase line with
+                    | "y" | "yes" ->
+                        create_edit target editor
+                    | _ ->
+                        Lwt.return_unit ) )
             | Some (`Nodo _ as n) -> (
                 let* e = edit n editor in
                 match e with
