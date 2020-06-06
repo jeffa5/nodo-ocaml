@@ -4,7 +4,7 @@ build:
 
 .PHONY: watch
 watch:
-	dune build @runtest --watch
+	dune build @all @runtest --watch
 
 .PHONY: check
 check:
