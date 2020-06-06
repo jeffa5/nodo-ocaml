@@ -71,6 +71,14 @@
   (nodo :dev)))
 
 (package
+ (name nodo-git-memory)
+ (synopsis "A git memory storage backend for Nodo")
+ (depends
+  (irmin-git
+   (>= 2.0.0))
+  (nodo :dev)))
+
+(package
  (name nodo-cli-lib)
  (synopsis "A cli frontend for Nodo")
  (depends

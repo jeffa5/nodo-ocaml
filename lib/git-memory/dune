@@ -1,0 +1,4 @@
+(library
+ (name nodo_git_memory)
+ (public_name nodo-git-memory)
+ (libraries nodo git-http irmin irmin-git irmin-mirage-git cohttp-lwt-jsoo))
