@@ -40,3 +40,7 @@ completion:
 .PHONY: docker-build
 docker-build:
 	docker build .
+
+.PHONY: deps
+deps:
+	opam install . --deps-only
