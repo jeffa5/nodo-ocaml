@@ -529,4 +529,6 @@ let%expect_test "format" =
   test_format "text `code`" ;
   [%expect {| text `code` |}] ;
   test_format "text `code` text" ;
-  [%expect {| text `code` text |}]
+  [%expect {| text `code` text |}] ;
+  test_format "don't" ;
+  [%expect {| don't |}]
