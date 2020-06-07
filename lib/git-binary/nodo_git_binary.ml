@@ -137,8 +137,6 @@ module Make (C : Config) = struct
   let sync () =
     let open Lwt_result.Syntax in
     let* () = exec_to_result ~cwd:!C.dir "git checkout master" in
-    let* () =
-      exec_to_result ~cwd:!C.dir ("git pull " ^ !C.remote ^ " master")
-    in
-    exec_to_result ~cwd:!C.dir ("git push " ^ !C.remote ^ " master")
+    let* () = exec_to_result ~cwd:!C.dir ("git pull " ^ !C.remote) in
+    exec_to_result ~cwd:!C.dir ("git push " ^ !C.remote)
 end
