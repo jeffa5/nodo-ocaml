@@ -13,20 +13,30 @@ struct
   type tree = Project of (Storage.project * tree list) | Nodo of Storage.nodo
 
   let rec build_tree l =
-    Lwt_list.filter_map_s
-      (fun item ->
-        match item with
-        | `Nodo _ as n ->
-            Lwt.return_some (Nodo n)
-        | `Project _ as p ->
-            let+ r =
-              let l = Storage.list p in
-              Lwt_result.bind l (fun l ->
-                  let* sub_tree = build_tree l in
-                  Lwt.return_ok (Project (p, sub_tree)))
-            in
-            Result.to_option r)
+    List.sort
+      (fun a b ->
+        match (a, b) with
+        | (`Nodo _ as a), (`Nodo _ as b) ->
+            String.compare (Storage.name a) (Storage.name b)
+        | `Nodo _, `Project _ ->
+            -1
+        | `Project _, `Nodo _ ->
+            1
+        | (`Project _ as a), (`Project _ as b) ->
+            String.compare (Storage.name a) (Storage.name b))
       l
+    |> Lwt_list.filter_map_s (fun item ->
+           match item with
+           | `Nodo _ as n ->
+               Lwt.return_some (Nodo n)
+           | `Project _ as p ->
+               let+ r =
+                 let l = Storage.list p in
+                 Lwt_result.bind l (fun l ->
+                     let* sub_tree = build_tree l in
+                     Lwt.return_ok (Project (p, sub_tree)))
+               in
+               Result.to_option r)
 
   let filter_hidden =
     List.filter (fun d ->
