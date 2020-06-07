@@ -45,11 +45,13 @@ module Make (C : Config) = struct
     if FilePath.is_relative path then !C.dir @ p else p
 
   let read (`Nodo p) =
+    let p = build_path p in
     let path = String.concat "/" p in
     let+ s = Lwt_io.lines_of_file path |> Lwt_stream.to_list in
     String.concat "\n" s |> ok
 
   let write (`Nodo p) content =
+    let p = build_path p in
     let path = String.concat "/" p in
     let* () =
       String.split_on_char '\n' content
@@ -61,7 +63,7 @@ module Make (C : Config) = struct
       ("git commit -m 'Updated " ^ path ^ "' --author='" ^ !C.author ^ "'")
 
   let list (`Project p) =
-    let path = String.concat "/" p in
+    let path = String.concat "/" (build_path p) in
     let* l =
       Lwt_unix.files_of_directory path
       |> Lwt_stream.filter_map_s (fun f ->
@@ -100,24 +102,26 @@ module Make (C : Config) = struct
     let path = String.concat "/" p in
     let* exists = Lwt_unix.file_exists path in
     if exists then
-      if Sys.is_directory path then Lwt.return_some (`Project p)
-      else Lwt.return_some (`Nodo p)
+      if Sys.is_directory path then Lwt.return_some (`Project target)
+      else Lwt.return_some (`Nodo target)
     else Lwt.return_none
 
   let create l =
-    let path = build_path l in
-    let nodo = `Nodo path in
+    let nodo = `Nodo l in
     write nodo "" |> Lwt_result.map (fun _ -> nodo)
 
-  let remove = function
+  let remove t =
+    match t with
     | `Nodo n ->
-        let path = String.concat "/" n in
+        let p = build_path n in
+        let path = String.concat "/" p in
         let () = FileUtil.rm [path] in
         let open Lwt_result.Syntax in
         let* () = exec_to_result ~cwd:!C.dir ("git add " ^ path) in
         exec_to_result ~cwd:!C.dir
           ("git commit -m 'Removed " ^ path ^ "' --author='" ^ !C.author ^ "'")
     | `Project p ->
+        let p = build_path p in
         let path = String.concat "/" p in
         let () = FileUtil.rm ~recurse:true [path] in
         let open Lwt_result.Syntax in
