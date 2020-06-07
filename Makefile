@@ -44,3 +44,8 @@ docker-build:
 .PHONY: deps
 deps:
 	opam install . --deps-only
+
+.PHONY: clean
+clean:
+	dune clean
+
