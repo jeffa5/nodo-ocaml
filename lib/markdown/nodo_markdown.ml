@@ -211,6 +211,8 @@ let test_parse t = parse t |> Nodo.show |> print_endline
 
 let test_render n = render n |> print_endline
 
+let test_format t = parse t |> render |> print_endline
+
 let%expect_test "Empty text gives empty nodo" =
   test_parse "" ; [%expect {| { metadata = { due_date = "" }; blocks = [] } |}]
 
@@ -482,27 +484,27 @@ let%expect_test "render ordered bullet list" =
     2. next |}]
 
 let%expect_test "format" =
-  parse "# test" |> render |> print_endline ;
+  test_format "# test" ;
   [%expect {| # test |}] ;
-  parse "\n\n\n# test" |> render |> print_endline ;
+  test_format "\n\n\n# test" ;
   [%expect {| # test |}] ;
-  parse "- (test1)" |> render |> print_endline ;
+  test_format "- (test1)" ;
   [%expect {| - (test1) |}] ;
-  parse "- something (1)" |> render |> print_endline ;
+  test_format "- something (1)" ;
   [%expect {| - something (1) |}] ;
-  parse "- [ ] something (1)" |> render |> print_endline ;
+  test_format "- [ ] something (1)" ;
   [%expect {| - [ ] something (1) |}] ;
-  parse "- [ ] something [1]" |> render |> print_endline ;
+  test_format "- [ ] something [1]" ;
   [%expect {| - [ ] something [1] |}] ;
-  parse "- [ ] something {1}" |> render |> print_endline ;
+  test_format "- [ ] something {1}" ;
   [%expect {| - [ ] something {1} |}] ;
-  parse "- [x] something (1)" |> render |> print_endline ;
+  test_format "- [x] something (1)" ;
   [%expect {| - [x] something (1) |}] ;
-  parse "- [x] something [1]" |> render |> print_endline ;
+  test_format "- [x] something [1]" ;
   [%expect {| - [x] something [1] |}] ;
-  parse "- [x] something {1}" |> render |> print_endline ;
+  test_format "- [x] something {1}" ;
   [%expect {| - [x] something {1} |}] ;
-  parse "- [x] something 1.2.3" |> render |> print_endline ;
+  test_format "- [x] something 1.2.3" ;
   [%expect {| - [x] something 1.2.3 |}] ;
-  parse "- [x] something '1.2.3'" |> render |> print_endline ;
+  test_format "- [x] something '1.2.3'" ;
   [%expect {| - [x] something '1.2.3' |}]
