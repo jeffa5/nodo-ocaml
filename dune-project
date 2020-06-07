@@ -61,6 +61,16 @@
    (= 0.6.1))))
 
 (package
+ (name nodo-git-binary)
+ (synopsis "A git binary storage backend for Nodo")
+ (depends
+  (nodo :dev)
+  (astring
+   (= 0.8.3))
+  (fileutils
+   (= 0.6.1))))
+
+(package
  (name nodo-git-filesystem)
  (synopsis "A git filesystem storage backend for Nodo")
  (depends
@@ -100,5 +110,5 @@
    (>= 0.10.4))
   (nodo :dev)
   (nodo-markdown :dev)
-  (nodo-git-filesystem :dev)
+  (nodo-git-binary :dev)
   (nodo-cli-lib :dev)))

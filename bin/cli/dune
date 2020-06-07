@@ -2,4 +2,4 @@
  (name nodo_cli)
  (public_name nodo)
  (package nodo-cli)
- (libraries nodo-cli-lib nodo-git-filesystem nodo-markdown logs))
+ (libraries nodo-cli-lib nodo-git-binary nodo-markdown logs))

@@ -2,25 +2,17 @@ open Stdlib.Option
 open Cmdliner
 
 module Config = struct
-  let dir = ref ""
+  let dir = ref []
 
   let remote = ref ""
 
-  let user = ref ""
+  let author = ref ""
 
-  let remote_headers = ref None
-
-  let author = user
-
-  let create_headers u p =
-    let e = Cohttp.Header.of_list [] in
-    Cohttp.Header.add_authorization e (`Basic (u, p)) |> some
-
-  let make_config d r u p =
+  let make_config d r u =
+    let d = String.split_on_char '/' d in
     dir := d ;
     remote := r ;
-    user := u ;
-    remote_headers := create_headers u p
+    author := u
 end
 
 let config_args =
@@ -36,19 +28,14 @@ let config_args =
     let doc = "Remote to sync with." in
     Arg.(value & opt string "" & info ~env ~docv:"REMOTE" ~doc ["remote"])
   in
-  let user_arg =
-    let env = Arg.env_var "NODO_SYNC_USER" in
+  let author_arg =
+    let env = Arg.env_var "NODO_SYNC_AUTHOR" in
     let doc = "Username to use for syncing and authoring commits." in
     Arg.(value & opt string "" & info ~env ~docv:"USER" ~doc ["user"])
   in
-  let pass_arg =
-    let env = Arg.env_var "NODO_SYNC_PASS" in
-    let doc = "Password to use for syncing." in
-    Arg.(value & opt string "" & info ~env ~docv:"PASS" ~doc ["pass"])
-  in
-  Term.(const Config.make_config $ dir_arg $ remote_arg $ user_arg $ pass_arg)
+  Term.(const Config.make_config $ dir_arg $ remote_arg $ author_arg)
 
-module Git = Nodo_git_filesystem.Make (Config)
+module Git = Nodo_git_binary.Make (Config)
 module Cli = Nodo_cli_lib.Cli (Git) (Nodo_markdown)
 
 let () = Cli.exec config_args ~formats:[] ~storage:[]
