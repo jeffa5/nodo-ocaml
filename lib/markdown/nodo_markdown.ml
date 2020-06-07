@@ -19,9 +19,10 @@ let rec parse_text i =
   match i with
   | Omd.Concat l ->
       List.map parse_text l |> List.flatten |> flatten_text
-  | Text s ->
+  | Omd.Text s ->
+      let s = String.trim s in
       [(Nodo.Plain, s)]
-  | Emph e -> (
+  | Omd.Emph e -> (
     match e.kind with
     | Normal -> (
       match e.content with
@@ -37,9 +38,9 @@ let rec parse_text i =
       | _ ->
           Omd.to_sexp [Omd.Paragraph i] |> print_endline ;
           assert false ) )
-  | Code c ->
+  | Omd.Code c ->
       [(Code, c.content)]
-  | Soft_break ->
+  | Omd.Soft_break ->
       []
   | i ->
       Omd.to_sexp [Omd.Paragraph i] |> print_endline ;
@@ -345,6 +346,21 @@ let%expect_test "reading in inline code text" =
     { metadata = { due_date = "" }; blocks = [(Paragraph [(Code, "code text")])]
       }|}]
 
+let%expect_test "parse in code" =
+  test_parse "`code`" ;
+  [%expect
+    {| { metadata = { due_date = "" }; blocks = [(Paragraph [(Code, "code")])] } |}] ;
+  test_parse "text `code`" ;
+  [%expect
+    {|
+    { metadata = { due_date = "" };
+      blocks = [(Paragraph [(Plain, "text"); (Code, "code")])] } |}] ;
+  test_parse "text `code` text" ;
+  [%expect
+    {|
+    { metadata = { due_date = "" };
+      blocks = [(Paragraph [(Plain, "text"); (Code, "code"); (Plain, "text")])] } |}]
+
 let%expect_test "render metadata" =
   test_render (Nodo.make ~metadata:(Nodo.make_metadata ()) ()) ;
   [%expect {| |}] ;
@@ -507,4 +523,10 @@ let%expect_test "format" =
   test_format "- [x] something 1.2.3" ;
   [%expect {| - [x] something 1.2.3 |}] ;
   test_format "- [x] something '1.2.3'" ;
-  [%expect {| - [x] something '1.2.3' |}]
+  [%expect {| - [x] something '1.2.3' |}] ;
+  test_format "`code`" ;
+  [%expect {| `code` |}] ;
+  test_format "text `code`" ;
+  [%expect {| text `code` |}] ;
+  test_format "text `code` text" ;
+  [%expect {| text `code` text |}]
