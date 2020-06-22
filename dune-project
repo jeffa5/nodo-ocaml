@@ -89,20 +89,6 @@
   (nodo :dev)))
 
 (package
- (name nodo-cli-lib)
- (synopsis "A cli frontend for Nodo")
- (depends
-  (astring
-   (>= 0.8.0))
-  (cmdliner
-   (>= 1.0.0))
-  (fmt
-   (>= 0.8.0))
-  (logs
-   (>= 0.7.0))
-  (nodo :dev)))
-
-(package
  (name nodo-cli)
  (synopsis "The Nodo cli")
  (depends
@@ -110,5 +96,4 @@
    (>= 0.10.4))
   (nodo :dev)
   (nodo-markdown :dev)
-  (nodo-git-binary :dev)
-  (nodo-cli-lib :dev)))
+  (nodo-git-binary :dev)))

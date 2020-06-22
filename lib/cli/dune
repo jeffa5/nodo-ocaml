@@ -1,4 +1,0 @@
-(library
- (name nodo_cli_lib)
- (public_name nodo-cli-lib)
- (libraries nodo lwt.unix astring cmdliner fmt.tty fmt.cli logs.cli logs.fmt))

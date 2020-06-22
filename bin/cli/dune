@@ -1,5 +1,8 @@
 (executable
- (name nodo_cli)
- (public_name nodo)
+ (name cli)
+ (public_name nodo-cli)
  (package nodo-cli)
- (libraries nodo-cli-lib nodo-git-binary nodo-markdown logs))
+ (preprocess
+  (pps ppx_deriving.make))
+ (libraries nodo nodo-git-binary nodo-markdown lwt.unix astring cmdliner
+   fmt.tty fmt.cli logs.cli logs.fmt))
