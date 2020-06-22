@@ -1,4 +1,5 @@
 open Astring
+open Omd
 module Nodo = Nodo.S
 
 let extensions = ["md"]
@@ -17,40 +18,40 @@ let rec flatten_text l : Nodo.text =
 
 let rec parse_text i =
   match i with
-  | Omd.Concat l ->
+  | Inline.Concat l ->
       List.map parse_text l |> List.flatten |> flatten_text
-  | Omd.Text s ->
+  | Inline.Text s ->
       let s = String.trim s in
       [(Nodo.Plain, s)]
-  | Omd.Emph e -> (
+  | Inline.Emph e -> (
     match e.kind with
     | Normal -> (
       match e.content with
-      | Omd.Text s ->
+      | Inline.Text s ->
           [(Italic, s)]
       | _ ->
-          Omd.to_sexp [Omd.Paragraph i] |> print_endline ;
+          Omd.to_sexp [Block.Paragraph i] |> print_endline ;
           assert false )
     | Strong -> (
       match e.content with
-      | Omd.Text s ->
+      | Inline.Text s ->
           [(Bold, s)]
       | _ ->
-          Omd.to_sexp [Omd.Paragraph i] |> print_endline ;
+          Omd.to_sexp [Block.Paragraph i] |> print_endline ;
           assert false ) )
-  | Omd.Code c ->
+  | Inline.Code c ->
       [(Code, c.content)]
-  | Omd.Soft_break ->
+  | Inline.Soft_break ->
       []
   | i ->
-      Omd.to_sexp [Omd.Paragraph i] |> print_endline ;
+      Omd.to_sexp [Block.Paragraph i] |> print_endline ;
       assert false
 
 and text_contents l = List.map (fun (_, s) -> s) l |> String.concat ~sep:" "
 
 let rec parse_inner_metadata (m : Nodo.metadata) l : Nodo.metadata * Omd.t =
   match l with
-  | Omd.Heading h :: xs when h.level = 2 -> (
+  | Block.Heading h :: xs when h.level = 2 -> (
       let text = parse_text h.text in
       match String.trim (text_contents text) |> String.cut ~sep:":" with
       | None ->
@@ -68,16 +69,16 @@ let rec parse_inner_metadata (m : Nodo.metadata) l : Nodo.metadata * Omd.t =
 
 let parse_metadata l =
   match l with
-  | Omd.Thematic_break :: xs ->
+  | Omd.Block.Thematic_break :: xs ->
       parse_inner_metadata (Nodo.make_metadata ()) xs
   | _ ->
       (Nodo.make_metadata (), l)
 
 let rec parse_list_item l =
   match l with
-  | Omd.Paragraph e :: l -> (
+  | Omd.Block.Paragraph e :: l -> (
       let nested =
-        match l with Omd.List l :: _ -> Some (parse_list l) | _ -> None
+        match l with Omd.Block.List l :: _ -> Some (parse_list l) | _ -> None
       in
       let x = Tyre.(opt blanks *> opt (str "x") <* opt blanks) in
       let box = Tyre.(start *> str "[" *> x <* str "]") in
@@ -112,19 +113,19 @@ and parse_list l =
       Nodo.Unordered items
 
 let parse_inline = function
-  | Omd.Text s ->
+  | Omd.Inline.Text s ->
       (Nodo.Plain, s)
   | i ->
-      Omd.to_sexp [Omd.Paragraph i] |> print_endline ;
+      Omd.to_sexp [Omd.Block.Paragraph i] |> print_endline ;
       assert false
 
-let parse_element (e : Omd.inline Omd.block) : Nodo.block option =
+let parse_element (e : Omd.Block.t) : Nodo.block option =
   match e with
-  | Omd.Heading h ->
+  | Block.Heading h ->
       Some (Heading (h.level, [parse_inline h.text]))
-  | Paragraph i ->
+  | Block.Paragraph i ->
       Some (Paragraph (parse_text i))
-  | List l ->
+  | Block.List l ->
       Some (List (parse_list l))
   | _ ->
       Omd.to_sexp [e] |> print_endline ;
