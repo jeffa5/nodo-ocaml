@@ -17,42 +17,40 @@ let rec flatten_text l : Nodo.text =
       x :: flatten_text xs
 
 let rec parse_text i =
-  match i with
-  | Inline.Concat l ->
+  match i.il_desc with
+  | Concat l ->
       List.map parse_text l |> List.flatten |> flatten_text
-  | Inline.Text s ->
+  | Text s ->
       let s = String.trim s in
       [(Nodo.Plain, s)]
-  | Inline.Emph e -> (
-    match e.kind with
-    | Normal -> (
-      match e.content with
-      | Inline.Text s ->
-          [(Italic, s)]
-      | _ ->
-          Omd.to_sexp [Block.Paragraph i] |> print_endline ;
-          assert false )
-    | Strong -> (
-      match e.content with
-      | Inline.Text s ->
-          [(Bold, s)]
-      | _ ->
-          Omd.to_sexp [Block.Paragraph i] |> print_endline ;
-          assert false ) )
-  | Inline.Code c ->
-      [(Code, c.content)]
-  | Inline.Soft_break ->
+  | Emph i -> (
+    match i.il_desc with
+    | Text s ->
+        [(Italic, s)]
+    | _ ->
+        Omd.to_sexp [{bl_desc= Paragraph i; bl_attributes= []}] |> print_endline ;
+        assert false )
+  | Code c ->
+      [(Code, c)]
+  | Soft_break ->
       []
-  | i ->
-      Omd.to_sexp [Block.Paragraph i] |> print_endline ;
+  | Strong i -> (
+    match i.il_desc with
+    | Text s ->
+        [(Bold, s)]
+    | _ ->
+        Omd.to_sexp [{bl_desc= Paragraph i; bl_attributes= []}] |> print_endline ;
+        assert false )
+  | _ ->
+      Omd.to_sexp [{bl_desc= Paragraph i; bl_attributes= []}] |> print_endline ;
       assert false
 
 and text_contents l = List.map (fun (_, s) -> s) l |> String.concat ~sep:" "
 
-let rec parse_inner_metadata (m : Nodo.metadata) l : Nodo.metadata * Omd.t =
+let rec parse_inner_metadata (m : Nodo.metadata) l : Nodo.metadata * Omd.doc =
   match l with
-  | Block.Heading h :: xs when h.level = 2 -> (
-      let text = parse_text h.text in
+  | {bl_desc= Heading (h, i); bl_attributes= _} :: xs when h = 2 -> (
+      let text = parse_text i in
       match String.trim (text_contents text) |> String.cut ~sep:":" with
       | None ->
           parse_inner_metadata m xs
@@ -62,23 +60,27 @@ let rec parse_inner_metadata (m : Nodo.metadata) l : Nodo.metadata * Omd.t =
             match l with "due_date" -> {due_date= r} | _ -> m
           in
           parse_inner_metadata meta xs )
-  | Thematic_break :: xs ->
+  | {bl_desc= Thematic_break; bl_attributes= _} :: xs ->
       (m, xs)
   | _ ->
       (m, l)
 
 let parse_metadata l =
   match l with
-  | Omd.Block.Thematic_break :: xs ->
+  | {bl_desc= Thematic_break; bl_attributes= _} :: xs ->
       parse_inner_metadata (Nodo.make_metadata ()) xs
   | _ ->
       (Nodo.make_metadata (), l)
 
 let rec parse_list_item l =
   match l with
-  | Omd.Block.Paragraph e :: l -> (
+  | {bl_desc= Paragraph e; bl_attributes= _} :: l -> (
       let nested =
-        match l with Omd.Block.List l :: _ -> Some (parse_list l) | _ -> None
+        match l with
+        | {bl_desc= List (lt, _, bs); bl_attributes= _} :: _ ->
+            Some (parse_list lt bs)
+        | _ ->
+            None
       in
       let x = Tyre.(opt blanks *> opt (str "x") <* opt blanks) in
       let box = Tyre.(start *> str "[" *> x <* str "]") in
@@ -104,29 +106,29 @@ let rec parse_list_item l =
       print_endline @@ Omd.to_sexp t ;
       assert false
 
-and parse_list l =
-  let items = List.map parse_list_item l.blocks in
-  match l.kind with
+and parse_list lt bs =
+  let items = List.map parse_list_item bs in
+  match lt with
   | Ordered (_, _) ->
       Nodo.Ordered (List.mapi (fun i (a, b) -> (i, a, b)) items)
-  | Unordered _ ->
+  | Bullet _ ->
       Nodo.Unordered items
 
 let parse_inline = function
-  | Omd.Inline.Text s ->
+  | {il_desc= Text s; il_attributes= _} ->
       (Nodo.Plain, s)
   | i ->
-      Omd.to_sexp [Omd.Block.Paragraph i] |> print_endline ;
+      Omd.to_sexp [{bl_desc= Paragraph i; bl_attributes= []}] |> print_endline ;
       assert false
 
-let parse_element (e : Omd.Block.t) : Nodo.block option =
-  match e with
-  | Block.Heading h ->
-      Some (Heading (h.level, [parse_inline h.text]))
-  | Block.Paragraph i ->
+let parse_element e : Nodo.block option =
+  match e.bl_desc with
+  | Heading (h, i) ->
+      Some (Heading (h, [parse_inline i]))
+  | Paragraph i ->
       Some (Paragraph (parse_text i))
-  | Block.List l ->
-      Some (List (parse_list l))
+  | List (lt, _, bs) ->
+      Some (List (parse_list lt bs))
   | _ ->
       Omd.to_sexp [e] |> print_endline ;
       assert false
