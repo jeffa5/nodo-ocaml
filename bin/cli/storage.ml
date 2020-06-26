@@ -19,7 +19,8 @@ let cmdliner_term =
   in
   let remote =
     let doc = "The remote url to sync with" in
-    Arg.(required & opt (some string) None & info ["remote"] ~docs ~doc)
+    let env = Arg.env_var "NODO_REMOTE" ~doc in
+    Arg.(value & opt string "" & info ["remote"] ~env ~docs ~doc)
   in
   Term.(const build $ dir $ author $ remote)
 
