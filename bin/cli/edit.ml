@@ -21,11 +21,8 @@ let cmdliner_term =
     let env = Arg.env_var "NODO_EDITOR" in
     Arg.(value & opt string "vim" & info ~env ~docv:"EDITOR" ~doc ["e"])
   in
-  let target =
-    let doc = "The target to show" in
-    Arg.(required & pos 0 (some string) None & info [] ~doc)
-  in
-  Term.(const build $ Config.cmdliner_term $ create $ editor $ target)
+  Term.(
+    const build $ Config.cmdliner_term $ create $ editor $ Common.target_arg)
 
 module Make (C : sig
   val t : config

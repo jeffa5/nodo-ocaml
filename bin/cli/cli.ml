@@ -9,10 +9,6 @@ let setup_log style_renderer level =
 let setup_log =
   Term.(const setup_log $ Fmt_cli.style_renderer () $ Logs_cli.level ())
 
-let target_arg =
-  let doc = Arg.info ~docv:"TARGET" ~doc:"The target nodo or project." [] in
-  Arg.(value & pos 0 string "" doc)
-
 let () =
   let run lwt =
     let l () r = r in

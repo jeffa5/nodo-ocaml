@@ -9,11 +9,7 @@ let cmdliner_term =
     let doc = "Use force, for removing projects." in
     Arg.(value & flag (info ~doc ["f"]))
   in
-  let target =
-    let doc = "The target to show" in
-    Arg.(required & pos 0 (some string) None & info [] ~doc)
-  in
-  Term.(const build $ Config.cmdliner_term $ force $ target)
+  Term.(const build $ Config.cmdliner_term $ force $ Common.target_arg)
 
 module Make (C : sig
   val t : config

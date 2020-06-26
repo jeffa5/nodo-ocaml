@@ -9,11 +9,7 @@ type config = {global: Config.t; target: string}
 let cmdliner_term =
   let build global target = {global; target} in
   let open Cmdliner in
-  let target =
-    let doc = "The target to show" in
-    Arg.(required & pos 0 (some string) None & info [] ~doc)
-  in
-  Term.(const build $ Config.cmdliner_term $ target)
+  Term.(const build $ Config.cmdliner_term $ Common.target_arg)
 
 module Make (C : sig
   val t : config
