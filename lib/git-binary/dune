@@ -1,4 +1,0 @@
-(library
- (name nodo_git_binary)
- (public_name nodo-git-binary)
- (libraries nodo fileutils astring lwt.unix))

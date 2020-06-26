@@ -1,4 +1,0 @@
-(library
- (name nodo_git_filesystem)
- (public_name nodo-git-filesystem)
- (libraries nodo irmin irmin-unix irmin-git lwt.unix))

@@ -51,44 +51,6 @@
    (>= v0.13.0))))
 
 (package
- (name nodo-filesystem)
- (synopsis "A filesystem storage backend for Nodo")
- (depends
-  (nodo :dev)
-  (astring
-   (= 0.8.3))
-  (fileutils
-   (= 0.6.1))))
-
-(package
- (name nodo-git-binary)
- (synopsis "A git binary storage backend for Nodo")
- (depends
-  (nodo :dev)
-  (astring
-   (= 0.8.3))
-  (fileutils
-   (= 0.6.1))))
-
-(package
- (name nodo-git-filesystem)
- (synopsis "A git filesystem storage backend for Nodo")
- (depends
-  (irmin-git
-   (>= 2.0.0))
-  (irmin-unix
-   (>= 2.0.0))
-  (nodo :dev)))
-
-(package
- (name nodo-git-memory)
- (synopsis "A git memory storage backend for Nodo")
- (depends
-  (irmin-git
-   (>= 2.0.0))
-  (nodo :dev)))
-
-(package
  (name nodo-cli)
  (synopsis "The Nodo cli")
  (depends
