@@ -30,5 +30,4 @@
  (depends
   (tls
    (>= 0.10.4))
-  (nodo :dev)
-  (nodo-markdown :dev)))
+  (nodo :dev)))
