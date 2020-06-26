@@ -1,4 +1,5 @@
-type t = {hidden_dirs: string list; storage: Storage.config} [@@deriving make]
+type t = {hidden_dirs: string list; storage: Storage.config}
+[@@deriving make, show]
 
 let cmdliner_term =
   let build hidden_dirs storage = {hidden_dirs; storage} in

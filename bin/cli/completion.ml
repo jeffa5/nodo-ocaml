@@ -3,6 +3,7 @@ open Astring
 let ( let* ) = Lwt.bind
 
 type config = {global: Config.t; generate: string option; all_pos: string list}
+[@@deriving show]
 
 let cmdliner_term =
   let build global generate all_pos = {global; generate; all_pos} in

@@ -1,6 +1,6 @@
 let ( let* ) = Lwt.bind
 
-type config = {global: Config.t; target: string; force: bool}
+type config = {global: Config.t; target: string; force: bool} [@@deriving show]
 
 let cmdliner_term =
   let build global force target = {global; force; target} in

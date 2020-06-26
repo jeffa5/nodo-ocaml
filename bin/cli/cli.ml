@@ -17,6 +17,7 @@ let () =
   let default_cmd =
     let doc = "A note and todo manager." in
     let cmd c =
+      Logs.debug (fun f -> f "Using config: %a" Show.pp_config c) ;
       let module E = Show.Make (struct
         let t = c
       end) in
@@ -27,6 +28,7 @@ let () =
   let show_cmd =
     let doc = "Show the project tree or nodo." in
     let cmd c =
+      Logs.debug (fun f -> f "Using config: %a" Show.pp_config c) ;
       let module E = Show.Make (struct
         let t = c
       end) in
@@ -37,6 +39,7 @@ let () =
   let edit_cmd =
     let doc = "Edit a nodo." in
     let cmd c =
+      Logs.debug (fun f -> f "Using config: %a" Edit.pp_config c) ;
       let module E = Edit.Make (struct
         let t = c
       end) in
@@ -47,6 +50,7 @@ let () =
   let remove_cmd =
     let doc = "Remove a nodo." in
     let cmd c =
+      Logs.debug (fun f -> f "Using config: %a" Remove.pp_config c) ;
       let module E = Remove.Make (struct
         let t = c
       end) in
@@ -57,6 +61,7 @@ let () =
   let sync_cmd =
     let doc = "Sync the nodo storage." in
     let cmd c =
+      Logs.debug (fun f -> f "Using config: %a" Sync.pp_config c) ;
       let module E = Sync.Make (struct
         let t = c
       end) in
@@ -67,6 +72,7 @@ let () =
   let completion_cmd =
     let doc = "Generate completion scripts and options." in
     let cmd c =
+      Logs.debug (fun f -> f "Using config: %a" Completion.pp_config c) ;
       let module E = Completion.Make (struct
         let t = c
       end) in

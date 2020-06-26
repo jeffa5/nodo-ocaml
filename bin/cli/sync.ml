@@ -2,7 +2,7 @@ module Result = Stdlib.Result
 
 let ( let* ) = Lwt.bind
 
-type config = {global: Config.t}
+type config = {global: Config.t} [@@deriving show]
 
 let cmdliner_term =
   let build global = {global} in

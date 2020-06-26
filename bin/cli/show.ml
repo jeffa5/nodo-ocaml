@@ -4,7 +4,7 @@ let ( let* ) = Lwt.bind
 
 let ( let+ ) x y = Lwt.map y x
 
-type config = {global: Config.t; target: string}
+type config = {global: Config.t; target: string} [@@deriving show]
 
 let cmdliner_term =
   let build global target = {global; target} in

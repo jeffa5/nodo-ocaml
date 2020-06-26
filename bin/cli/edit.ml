@@ -5,6 +5,7 @@ let ( let* ) = Lwt.bind
 let ( let+ ) x y = Lwt.map y x
 
 type config = {global: Config.t; create: bool; editor: string; target: string}
+[@@deriving show]
 
 let cmdliner_term =
   let build global create editor target = {global; create; editor; target} in

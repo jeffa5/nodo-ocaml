@@ -1,6 +1,7 @@
 type location = string
 
-type config = {dir: string; author: string; remote: string} [@@deriving make]
+type config = {dir: string; author: string; remote: string}
+[@@deriving make, show]
 
 let cmdliner_term =
   let build dir author remote = {dir; author; remote} in
