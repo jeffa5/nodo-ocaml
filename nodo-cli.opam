@@ -9,7 +9,6 @@ depends: [
   "dune" {>= "2.3"}
   "tls" {>= "0.10.4"}
   "nodo" {dev}
-  "nodo-markdown" {dev}
 ]
 build: [
   ["dune" "subst"] {pinned}
