@@ -1,6 +1,7 @@
 (library
  (name nodo)
  (public_name nodo)
+ (inline_tests)
  (preprocess
-  (pps ppx_deriving.show ppx_deriving.make))
- (libraries ISO8601 lwt))
+  (pps ppx_deriving.show ppx_deriving.make ppx_deriving_yojson ppx_expect))
+ (libraries ISO8601 omd astring tyre re lwt ppx_deriving_yojson.runtime))

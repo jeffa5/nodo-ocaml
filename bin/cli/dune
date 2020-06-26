@@ -4,5 +4,5 @@
  (package nodo-cli)
  (preprocess
   (pps ppx_deriving.make ppx_deriving.show))
- (libraries nodo nodo-git-binary nodo-markdown lwt.unix astring cmdliner
-   fmt.tty fmt.cli logs.cli logs.fmt))
+ (libraries nodo fileutils lwt.unix astring cmdliner fmt.tty fmt.cli logs.cli
+   logs.fmt))

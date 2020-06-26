@@ -1,4 +1,4 @@
-let parse _config _content = Nodo_markdown.parse ""
+let parse _config _content = Nodo.Markdown.parse ""
 
 let render _config _nodo = ""
 

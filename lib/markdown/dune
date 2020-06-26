@@ -1,7 +1,0 @@
-(library
- (name nodo_markdown)
- (public_name nodo-markdown)
- (inline_tests)
- (preprocess
-  (pps ppx_expect))
- (libraries nodo omd astring tyre re))

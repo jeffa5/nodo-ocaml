@@ -1,16 +1,15 @@
 open Astring
 open Omd
-module Nodo = Nodo.S
 
 let extensions = ["md"]
 
-let rec flatten_text l : Nodo.text =
+let rec flatten_text l : Nodo_core.S.text =
   match l with
   | [] ->
       []
   | [x] ->
       [x]
-  | (Nodo.Plain, s) :: (Plain, t) :: xs ->
+  | (Nodo_core.S.Plain, s) :: (Plain, t) :: xs ->
       let x = s ^ t in
       flatten_text ((Plain, x) :: xs)
   | x :: xs ->
@@ -22,7 +21,7 @@ let rec parse_text i =
       List.map parse_text l |> List.flatten |> flatten_text
   | Text s ->
       let s = String.trim s in
-      [(Nodo.Plain, s)]
+      [(Nodo_core.S.Plain, s)]
   | Emph i -> (
     match i.il_desc with
     | Text s ->
@@ -47,7 +46,8 @@ let rec parse_text i =
 
 and text_contents l = List.map (fun (_, s) -> s) l |> String.concat ~sep:" "
 
-let rec parse_inner_metadata (m : Nodo.metadata) l : Nodo.metadata * Omd.doc =
+let rec parse_inner_metadata (m : Nodo_core.S.metadata) l :
+    Nodo_core.S.metadata * Omd.doc =
   match l with
   | {bl_desc= Heading (h, i); bl_attributes= _} :: xs when h = 2 -> (
       let text = parse_text i in
@@ -56,7 +56,7 @@ let rec parse_inner_metadata (m : Nodo.metadata) l : Nodo.metadata * Omd.doc =
           parse_inner_metadata m xs
       | Some (l, r) ->
           let l = String.trim l and r = String.trim r in
-          let meta : Nodo.metadata =
+          let meta : Nodo_core.S.metadata =
             match l with "due_date" -> {due_date= r} | _ -> m
           in
           parse_inner_metadata meta xs )
@@ -68,9 +68,9 @@ let rec parse_inner_metadata (m : Nodo.metadata) l : Nodo.metadata * Omd.doc =
 let parse_metadata l =
   match l with
   | {bl_desc= Thematic_break; bl_attributes= _} :: xs ->
-      parse_inner_metadata (Nodo.make_metadata ()) xs
+      parse_inner_metadata (Nodo_core.S.make_metadata ()) xs
   | _ ->
-      (Nodo.make_metadata (), l)
+      (Nodo_core.S.make_metadata (), l)
 
 let rec parse_list_item l =
   match l with
@@ -92,16 +92,17 @@ let rec parse_list_item l =
       in
       match Tyre.exec re s with
       | Error (`NoMatch _) ->
-          (Nodo.Bullet (if s = "" then rest else (Plain, s) :: rest), nested)
+          ( Nodo_core.S.Bullet (if s = "" then rest else (Plain, s) :: rest)
+          , nested )
       | Error (`ConverterFailure _) ->
           print_endline "converter failure" ;
           assert false
       | Ok (None, s) ->
-          ( Nodo.Task (false, if s = "" then rest else (Plain, s) :: rest)
+          ( Nodo_core.S.Task (false, if s = "" then rest else (Plain, s) :: rest)
           , nested )
       | Ok (Some (), s) ->
-          (Nodo.Task (true, if s = "" then rest else (Plain, s) :: rest), nested)
-      )
+          ( Nodo_core.S.Task (true, if s = "" then rest else (Plain, s) :: rest)
+          , nested ) )
   | t ->
       print_endline @@ Omd.to_sexp t ;
       assert false
@@ -110,18 +111,18 @@ and parse_list lt bs =
   let items = List.map parse_list_item bs in
   match lt with
   | Ordered (_, _) ->
-      Nodo.Ordered (List.mapi (fun i (a, b) -> (i, a, b)) items)
+      Nodo_core.S.Ordered (List.mapi (fun i (a, b) -> (i, a, b)) items)
   | Bullet _ ->
-      Nodo.Unordered items
+      Nodo_core.S.Unordered items
 
 let parse_inline = function
   | {il_desc= Text s; il_attributes= _} ->
-      (Nodo.Plain, s)
+      (Nodo_core.S.Plain, s)
   | i ->
       Omd.to_sexp [{bl_desc= Paragraph i; bl_attributes= []}] |> print_endline ;
       assert false
 
-let parse_element e : Nodo.block option =
+let parse_element e : Nodo_core.S.block option =
   match e.bl_desc with
   | Heading (h, i) ->
       Some (Heading (h, [parse_inline i]))
@@ -135,13 +136,13 @@ let parse_element e : Nodo.block option =
 
 let parse_elements e = List.filter_map parse_element e
 
-let parse content : Nodo.t =
+let parse content : Nodo_core.S.t =
   let omd = Omd.of_string content in
   let metadata, els = parse_metadata omd in
   let blocks = parse_elements els in
   {metadata; blocks}
 
-let render_metadata (m : Nodo.metadata) =
+let render_metadata (m : Nodo_core.S.metadata) =
   let due_date =
     if m.due_date = "" then "" else "due_date: " ^ m.due_date ^ "\n"
   in
@@ -151,7 +152,7 @@ let render_metadata (m : Nodo.metadata) =
 
 let render_text_item t =
   match t with
-  | Nodo.Plain, s ->
+  | Nodo_core.S.Plain, s ->
       s
   | Italic, s ->
       "*" ^ s ^ "*"
@@ -164,14 +165,14 @@ let render_text t = List.map render_text_item t |> String.concat ~sep:" "
 
 let render_list_item ~prefix i =
   match i with
-  | Nodo.Task (b, t) ->
+  | Nodo_core.S.Task (b, t) ->
       prefix ^ "[" ^ (if b then "x" else " ") ^ "] " ^ render_text t
   | Bullet t ->
       prefix ^ render_text t
 
 let rec render_list ?(prefix = "") l =
   ( match l with
-  | Nodo.Ordered l ->
+  | Nodo_core.S.Ordered l ->
       List.map
         (fun (i, li, l) ->
           prefix
@@ -199,19 +200,19 @@ let rec render_list ?(prefix = "") l =
 
 let render_block b =
   match b with
-  | Nodo.Heading (l, t) ->
+  | Nodo_core.S.Heading (l, t) ->
       String.v ~len:l (fun _ -> '#') ^ " " ^ render_text t
   | Paragraph t ->
       render_text t
   | List l ->
       render_list l
 
-let render ({metadata; blocks} : Nodo.t) =
+let render ({metadata; blocks} : Nodo_core.S.t) =
   let meta = render_metadata metadata in
   let blocks = List.map render_block blocks |> String.concat ~sep:"\n\n" in
   (if meta = "" then "" else meta ^ "\n") ^ blocks
 
-let test_parse t = parse t |> Nodo.show |> print_endline
+let test_parse t = parse t |> Nodo_core.S.show |> print_endline
 
 let test_render n = render n |> print_endline
 
@@ -365,9 +366,12 @@ let%expect_test "parse in code" =
       blocks = [(Paragraph [(Plain, "text"); (Code, "code"); (Plain, "text")])] } |}]
 
 let%expect_test "render metadata" =
-  test_render (Nodo.make ~metadata:(Nodo.make_metadata ()) ()) ;
+  test_render (Nodo_core.S.make ~metadata:(Nodo_core.S.make_metadata ()) ()) ;
   [%expect {| |}] ;
-  test_render (Nodo.make ~metadata:(Nodo.make_metadata ~due_date:"test" ()) ()) ;
+  test_render
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ~due_date:"test" ())
+       ()) ;
   [%expect {|
     ---
     due_date: test
@@ -375,53 +379,62 @@ let%expect_test "render metadata" =
 
 let%expect_test "render paragraph block" =
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
-       ~blocks:[Nodo.Paragraph [(Plain, "text")]]
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
+       ~blocks:[Nodo_core.S.Paragraph [(Plain, "text")]]
        ()) ;
   [%expect {| text |}]
 
 let%expect_test "render heading block" =
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
-       ~blocks:[Nodo.Heading (1, [(Plain, "text")])]
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
+       ~blocks:[Nodo_core.S.Heading (1, [(Plain, "text")])]
        ()) ;
   [%expect {| # text |}] ;
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
-       ~blocks:[Nodo.Heading (2, [(Plain, "text")])]
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
+       ~blocks:[Nodo_core.S.Heading (2, [(Plain, "text")])]
        ()) ;
   [%expect {| ## text |}] ;
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
-       ~blocks:[Nodo.Heading (3, [(Plain, "text")])]
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
+       ~blocks:[Nodo_core.S.Heading (3, [(Plain, "text")])]
        ()) ;
   [%expect {| ### text |}] ;
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
-       ~blocks:[Nodo.Heading (4, [(Plain, "text")])]
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
+       ~blocks:[Nodo_core.S.Heading (4, [(Plain, "text")])]
        ()) ;
   [%expect {| #### text |}] ;
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
-       ~blocks:[Nodo.Heading (5, [(Plain, "text")])]
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
+       ~blocks:[Nodo_core.S.Heading (5, [(Plain, "text")])]
        ()) ;
   [%expect {| ##### text |}] ;
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
-       ~blocks:[Nodo.Heading (6, [(Plain, "text")])]
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
+       ~blocks:[Nodo_core.S.Heading (6, [(Plain, "text")])]
        ()) ;
   [%expect {| ###### text |}]
 
 let%expect_test "render unordered bullet list" =
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
-       ~blocks:[Nodo.List (Unordered [(Bullet [(Plain, "text")], None)])]
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
+       ~blocks:[Nodo_core.S.List (Unordered [(Bullet [(Plain, "text")], None)])]
        ()) ;
   [%expect {| - text |}] ;
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
        ~blocks:
-         [ Nodo.List
+         [ Nodo_core.S.List
              (Unordered
                 [ (Bullet [(Plain, "text")], None)
                 ; (Bullet [(Plain, "next")], None) ]) ]
@@ -430,9 +443,10 @@ let%expect_test "render unordered bullet list" =
     - text
     - next |}] ;
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
        ~blocks:
-         [ Nodo.List
+         [ Nodo_core.S.List
              (Unordered
                 [ ( Bullet [(Plain, "text")]
                   , Some (Unordered [(Bullet [(Plain, "text")], None)]) )
@@ -443,9 +457,10 @@ let%expect_test "render unordered bullet list" =
       - text
     - next |}] ;
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
        ~blocks:
-         [ Nodo.List
+         [ Nodo_core.S.List
              (Unordered
                 [ ( Bullet [(Plain, "text")]
                   , Some (Ordered [(1, Bullet [(Plain, "text")], None)]) )
@@ -458,14 +473,16 @@ let%expect_test "render unordered bullet list" =
 
 let%expect_test "render ordered bullet list" =
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
-       ~blocks:[Nodo.List (Ordered [(1, Bullet [(Plain, "text")], None)])]
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
+       ~blocks:[Nodo_core.S.List (Ordered [(1, Bullet [(Plain, "text")], None)])]
        ()) ;
   [%expect {| 1. text |}] ;
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
        ~blocks:
-         [ Nodo.List
+         [ Nodo_core.S.List
              (Ordered
                 [ (1, Bullet [(Plain, "text")], None)
                 ; (2, Bullet [(Plain, "next")], None) ]) ]
@@ -474,9 +491,10 @@ let%expect_test "render ordered bullet list" =
     1. text
     2. next |}] ;
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
        ~blocks:
-         [ Nodo.List
+         [ Nodo_core.S.List
              (Ordered
                 [ ( 1
                   , Bullet [(Plain, "text")]
@@ -488,9 +506,10 @@ let%expect_test "render ordered bullet list" =
       1. text
     2. next |}] ;
   test_render
-    (Nodo.make ~metadata:(Nodo.make_metadata ())
+    (Nodo_core.S.make
+       ~metadata:(Nodo_core.S.make_metadata ())
        ~blocks:
-         [ Nodo.List
+         [ Nodo_core.S.List
              (Ordered
                 [ ( 1
                   , Bullet [(Plain, "text")]

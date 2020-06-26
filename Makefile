@@ -1,3 +1,7 @@
+.PHONY: all
+all:
+	dune build @all @runtest
+
 .PHONY: build
 build:
 	dune build

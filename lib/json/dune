@@ -1,7 +1,0 @@
-(library
- (name nodo_json)
- (public_name nodo-json)
- (inline_tests)
- (preprocess
-  (staged_pps ppx_expect ppx_import ppx_deriving_yojson))
- (libraries nodo yojson ppx_deriving_yojson.runtime))
