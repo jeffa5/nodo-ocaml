@@ -1,6 +1,6 @@
 (executable
  (name cli)
- (public_name nodo-cli)
+ (public_name nodo)
  (package nodo-cli)
  (preprocess
   (pps ppx_deriving.make))
