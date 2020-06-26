@@ -61,8 +61,7 @@ struct
 
   type t = [nodo | project]
 
-  let build_path path =
-    if FilePath.is_relative path then C.t.dir ^ "/" ^ path else path
+  let build_path path = C.t.dir ^ "/" ^ path
 
   let read (`Nodo p) =
     let path = build_path p in
