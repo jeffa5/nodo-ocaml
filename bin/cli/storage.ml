@@ -12,7 +12,10 @@ let cmdliner_term =
       match Sys.getenv_opt "HOME" with Some h -> h | None -> "/tmp"
     in
     let doc = "The base dir to use for storage" in
-    Arg.(value & opt string (home ^ "/.nodo") & info ["dir"] ~docs ~doc)
+    Arg.(
+      value
+      & opt string (Filename.concat home ".nodo")
+      & info ["dir"] ~docs ~doc)
   in
   let author =
     let doc = "The author name to use for commits" in
@@ -61,7 +64,7 @@ struct
 
   type t = [nodo | project]
 
-  let build_path path = C.t.dir ^ "/" ^ path
+  let build_path path = Filename.concat C.t.dir path
 
   let read (`Nodo p) =
     let path = build_path p in
@@ -84,17 +87,17 @@ struct
     let* l =
       Lwt_unix.files_of_directory path
       |> Lwt_stream.filter_map_s (fun f ->
-             let path = path ^ "/" ^ f in
+             let path = Filename.concat path f in
              let+ stat = Lwt_unix.stat path in
              match stat.st_kind with
              | Lwt_unix.S_REG ->
-                 Some (`Nodo (p ^ "/" ^ f))
+                 Some (`Nodo (Filename.concat p f))
              | S_DIR -> (
                match f with
                | ".git" | "." | ".." ->
                    None
                | _ ->
-                   Some (`Project (p ^ "/" ^ f)) )
+                   Some (`Project (Filename.concat p f)) )
              | S_CHR ->
                  print_endline "s_chr" ;
                  assert false
