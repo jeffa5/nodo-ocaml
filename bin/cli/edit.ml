@@ -44,10 +44,10 @@ struct
     |> String.concat "\n"
 
   let edit nodo =
-    let name = Storage.name nodo in
+    let path = Storage.path nodo in
     let content =
-      let _ = Sys.command @@ C.t.editor ^ " " ^ name in
-      read_file name
+      let _ = Sys.command @@ C.t.editor ^ " " ^ path in
+      read_file path
     in
     match Format.find_format_from_extension C.t.global.format_ext with
     | None ->

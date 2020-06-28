@@ -72,16 +72,23 @@ struct
     let+ s = Lwt_io.lines_of_file path |> Lwt_stream.to_list in
     String.concat "\n" s |> ok
 
-  let write (`Nodo p) content =
+  let write (`Nodo p as n) content =
     let path = build_path p in
-    let* () =
-      String.split_on_char '\n' content
-      |> Lwt_stream.of_list |> Lwt_io.lines_to_file path
-    in
-    let open Lwt_result.Syntax in
-    let* () = exec_to_result ~cwd:C.t.dir ("git add " ^ path) in
-    exec_to_result ~cwd:C.t.dir
-      ("git commit -m 'Updated " ^ path ^ "' --author='" ^ C.t.author ^ "'")
+    let* prev = read n in
+    match prev with
+    | Error e ->
+        Lwt.return_error (Printf.sprintf "failed to read: %s" e)
+    | Ok s ->
+        if s = content then Lwt.return_ok ()
+        else
+          let* () =
+            String.split_on_char '\n' content
+            |> Lwt_stream.of_list |> Lwt_io.lines_to_file path
+          in
+          let open Lwt_result.Syntax in
+          let* () = exec_to_result ~cwd:C.t.dir ("git add " ^ path) in
+          exec_to_result ~cwd:C.t.dir
+            ("git commit -m 'Updated " ^ p ^ "' --author='" ^ C.t.author ^ "'")
 
   let list (`Project p) =
     let path = build_path p in
@@ -151,6 +158,8 @@ struct
 
   let name t =
     match t with `Nodo n -> n | `Project p -> p |> Filename.basename
+
+  let path t = (match t with `Nodo n -> n | `Project p -> p) |> build_path
 
   let with_extension ~ext l = l ^ "." ^ ext
 
