@@ -25,7 +25,7 @@ let test_name =
     ; test_case "from path" `Quick (fun _ _ ->
           with_storage (fun (module S) ->
               Alcotest.(check string)
-                "equal" "project/nodo"
+                "equal" "nodo"
                 (S.name (`Nodo "project/nodo"))
               |> Lwt.return)) ] )
 

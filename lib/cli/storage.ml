@@ -169,7 +169,7 @@ end) : S = struct
   let location = function `Nodo n -> n | `Project p -> p
 
   let name t =
-    match t with `Nodo n -> n | `Project p -> p |> Filename.basename
+    (match t with `Nodo n -> n | `Project p -> p) |> Filename.basename
 
   let path t = (match t with `Nodo n -> n | `Project p -> p) |> build_path
 
