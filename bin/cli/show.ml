@@ -82,17 +82,25 @@ struct
     in
     let* r = Storage.read n in
     match r with
-    | Ok c ->
-        let c, t = Format.parse () c |> handle_t in
-        (if t > 0 then Printf.sprintf "(%i/%i)" c t else "") |> Lwt.return
+    | Ok c -> (
+      match Format.find_format_from_extension C.t.global.format_ext with
+      | None ->
+          Lwt.return ""
+      | Some (module F) ->
+          let c, t = F.parse c |> handle_t in
+          (if t > 0 then Printf.sprintf "(%i/%i)" c t else "") |> Lwt.return )
     | Error e ->
         Lwt.return e
 
   let show_nodo nodo =
     let* r = Storage.read nodo in
     match r with
-    | Ok c ->
-        Format.parse () c |> Format.render () |> Lwt_io.printl
+    | Ok c -> (
+      match Format.find_format_from_extension C.t.global.format_ext with
+      | None ->
+          Lwt.return_unit
+      | Some (module F) ->
+          F.parse c |> F.render |> Lwt_io.printl )
     | Error e ->
         Lwt_io.printl e
 
@@ -126,7 +134,7 @@ struct
           Lwt_io.printl "target not found"
       | _ -> (
           let target =
-            Storage.with_extension C.t.target (List.hd Format.formats)
+            Storage.with_extension ~ext:C.t.global.format_ext C.t.target
           in
           let* r = Storage.classify target in
           match r with

@@ -38,7 +38,7 @@ struct
         match t with
         | None -> (
             let target =
-              Storage.with_extension C.t.target (List.hd Format.formats)
+              Storage.with_extension C.t.target ~ext:C.t.global.format_ext
             in
             let* t = Storage.classify target in
             match t with

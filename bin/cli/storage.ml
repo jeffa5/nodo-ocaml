@@ -19,7 +19,8 @@ let cmdliner_term =
   in
   let author =
     let doc = "The author name to use for commits" in
-    Arg.(value & opt string "Nodo" & info ["author"] ~docs ~doc)
+    Arg.(
+      value & opt string "Nodo <nodo@jeffas.io>" & info ["author"] ~docs ~doc)
   in
   let remote =
     let doc = "The remote url to sync with" in
@@ -151,7 +152,7 @@ struct
   let name t =
     match t with `Nodo n -> n | `Project p -> p |> Filename.basename
 
-  let with_extension l e = l ^ "." ^ e
+  let with_extension ~ext l = l ^ "." ^ ext
 
   let sync () =
     let open Lwt_result.Syntax in

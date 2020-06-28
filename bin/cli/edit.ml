@@ -45,21 +45,15 @@ struct
 
   let edit nodo =
     let name = Storage.name nodo in
-    let* content =
-      Lwt_io.with_temp_file ~prefix:"nodo-" ~suffix:("-" ^ name) (fun (f, o) ->
-          let* r = Storage.read nodo in
-          let* () =
-            match r with
-            | Ok c ->
-                Format.parse () c |> Format.render () |> Lwt_io.write o
-            | Error e ->
-                Lwt_io.printl e
-          in
-          let+ () = Lwt_io.flush o in
-          let _ = Sys.command @@ C.t.editor ^ " " ^ f in
-          read_file f)
+    let content =
+      let _ = Sys.command @@ C.t.editor ^ " " ^ name in
+      read_file name
     in
-    Format.parse content |> Format.render () |> Storage.write nodo
+    match Format.find_format_from_extension C.t.global.format_ext with
+    | None ->
+        Lwt.return_error "No format found"
+    | Some (module F) ->
+        F.parse content |> F.render |> Storage.write nodo
 
   let create_edit () =
     let* t = Storage.create C.t.target in
@@ -80,7 +74,7 @@ struct
         match t with
         | None -> (
             let target =
-              Storage.with_extension C.t.target (List.hd Format.formats)
+              Storage.with_extension C.t.target ~ext:C.t.global.format_ext
             in
             let* t = Storage.classify target in
             match t with
