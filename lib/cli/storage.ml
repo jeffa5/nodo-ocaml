@@ -1,10 +1,7 @@
-type location = string
-
-type config = {dir: string; author: string; remote: string}
-[@@deriving make, show]
+type config = {dir: string} [@@deriving make, show]
 
 let cmdliner_term =
-  let build dir author remote = {dir; author; remote} in
+  let build dir = {dir} in
   let open Cmdliner in
   let docs = Manpage.s_common_options in
   let dir =
@@ -17,25 +14,44 @@ let cmdliner_term =
       & opt string (Filename.concat home ".nodo")
       & info ["dir"] ~docs ~doc)
   in
-  let author =
-    let doc = "The author name to use for commits" in
-    Arg.(
-      value & opt string "Nodo <nodo@jeffas.io>" & info ["author"] ~docs ~doc)
-  in
-  let remote =
-    let doc = "The remote url to sync with" in
-    let env = Arg.env_var "NODO_REMOTE" in
-    Arg.(value & opt string "" & info ["remote"] ~env ~docs ~doc)
-  in
-  Term.(const build $ dir $ author $ remote)
+  Term.(const build $ dir)
 
 open Stdlib.Result
 open Lwt.Syntax
 
+module type S = sig
+  type nodo = [`Nodo of string]
+
+  type project = [`Project of string]
+
+  type t = [nodo | project]
+
+  val list : project -> (t list, string) Lwt_result.t
+
+  val classify : string -> t option Lwt.t
+
+  val create : string -> (nodo, string) Lwt_result.t
+
+  val remove : [< nodo | project] -> (unit, string) Lwt_result.t
+
+  val location : [< nodo | project] -> string
+
+  val name : [< nodo | project] -> string
+
+  val path : [< nodo | project] -> string
+
+  val with_extension : ext:string -> string -> string
+
+  val read : nodo -> (string, string) Lwt_result.t
+
+  val write : nodo -> string -> (unit, string) Lwt_result.t
+
+  val sync : unit -> (unit, string) Lwt_result.t
+end
+
 module Make (C : sig
   val t : config
-end) =
-struct
+end) : S = struct
   let exec_to_result ~cwd c =
     let* () = Lwt_io.printl ("+ " ^ c) in
     let open Lwt_process in
@@ -55,13 +71,9 @@ struct
     | _ ->
         Lwt.return_error ("Failed executing command: " ^ c)
 
-  type n = location
+  type nodo = [`Nodo of string]
 
-  type nodo = [`Nodo of n]
-
-  type p = location
-
-  type project = [`Project of p]
+  type project = [`Project of string]
 
   type t = [nodo | project]
 
@@ -87,8 +99,7 @@ struct
           in
           let open Lwt_result.Syntax in
           let* () = exec_to_result ~cwd:C.t.dir ("git add " ^ path) in
-          exec_to_result ~cwd:C.t.dir
-            ("git commit -m 'Updated " ^ p ^ "' --author='" ^ C.t.author ^ "'")
+          exec_to_result ~cwd:C.t.dir ("git commit -m 'Updated " ^ p ^ "'")
 
   let list (`Project p) =
     let path = build_path p in
@@ -144,15 +155,13 @@ struct
         let () = FileUtil.rm [path] in
         let open Lwt_result.Syntax in
         let* () = exec_to_result ~cwd:C.t.dir ("git add " ^ path) in
-        exec_to_result ~cwd:C.t.dir
-          ("git commit -m 'Removed " ^ path ^ "' --author='" ^ C.t.author ^ "'")
+        exec_to_result ~cwd:C.t.dir ("git commit -m 'Removed " ^ path ^ "'")
     | `Project p ->
         let path = build_path p in
         let () = FileUtil.rm ~recurse:true [path] in
         let open Lwt_result.Syntax in
         let* () = exec_to_result ~cwd:C.t.dir ("git add " ^ path) in
-        exec_to_result ~cwd:C.t.dir
-          ("git commit -m 'Removed " ^ path ^ "' --author='" ^ C.t.author ^ "'")
+        exec_to_result ~cwd:C.t.dir ("git commit -m 'Removed " ^ path ^ "'")
 
   let location = function `Nodo n -> n | `Project p -> p
 
@@ -166,6 +175,6 @@ struct
   let sync () =
     let open Lwt_result.Syntax in
     let* () = exec_to_result ~cwd:C.t.dir "git checkout master" in
-    let* () = exec_to_result ~cwd:C.t.dir ("git pull " ^ C.t.remote) in
-    exec_to_result ~cwd:C.t.dir ("git push " ^ C.t.remote)
+    let* () = exec_to_result ~cwd:C.t.dir "git pull" in
+    exec_to_result ~cwd:C.t.dir "git push"
 end

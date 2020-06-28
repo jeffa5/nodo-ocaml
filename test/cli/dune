@@ -1,0 +1,3 @@
+(test
+ (name cli)
+ (libraries nodo_cli_lib alcotest-lwt lwt))
