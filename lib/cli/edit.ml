@@ -51,7 +51,8 @@ struct
           F.parse content |> F.render |> Storage.write nodo )
 
   let create_edit () =
-    let* t = Storage.create C.t.target in
+    let target = Storage.with_extension ~ext:C.t.global.format_ext C.t.target in
+    let* t = Storage.create target in
     match t with
     | Ok n -> (
         let* e = edit n in
