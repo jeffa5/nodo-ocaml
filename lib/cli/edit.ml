@@ -33,27 +33,22 @@ struct
     let t = C.t.global.storage
   end)
 
-  let read_file f =
-    let chan = open_in f and lines = ref [] in
-    ( try
-        while true do
-          lines := input_line chan :: !lines
-        done ;
-        !lines
-      with End_of_file -> close_in chan ; List.rev !lines )
-    |> String.concat "\n"
-
   let edit nodo =
     let path = Storage.path nodo in
-    let content =
+    let* content =
       let _ = Sys.command @@ C.t.editor ^ " " ^ path in
-      read_file path
+      Storage.read (`Nodo path)
     in
-    match Format.find_format_from_extension C.t.global.format_ext with
-    | None ->
-        Lwt.return_error "No format found"
-    | Some (module F) ->
-        F.parse content |> F.render |> Storage.write nodo
+    match content with
+    | Error e ->
+        let* () = Lwt_io.printl e in
+        Lwt.return_ok ()
+    | Ok content -> (
+      match Format.find_format_from_extension C.t.global.format_ext with
+      | None ->
+          Lwt.return_error "No format found"
+      | Some (module F) ->
+          F.parse content |> F.render |> Storage.write nodo )
 
   let create_edit () =
     let* t = Storage.create C.t.target in

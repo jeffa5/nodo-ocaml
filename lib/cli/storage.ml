@@ -81,8 +81,11 @@ end) : S = struct
 
   let read (`Nodo p) =
     let path = build_path p in
-    let+ s = Lwt_io.lines_of_file path |> Lwt_stream.to_list in
-    String.concat "\n" s |> ok
+    let* exists = Lwt_unix.file_exists path in
+    if not exists then Lwt.return_ok ""
+    else
+      let+ s = Lwt_io.lines_of_file path |> Lwt_stream.to_list in
+      String.concat "\n" s |> ok
 
   let write (`Nodo p as n) content =
     let path = build_path p in
