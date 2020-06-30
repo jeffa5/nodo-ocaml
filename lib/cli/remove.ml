@@ -43,7 +43,7 @@ struct
             let* t = Storage.classify target in
             match t with
             | None ->
-                Lwt_io.printl "target not found"
+                Lwt_io.printl "Target not found"
             | Some (`Nodo _ as n) ->
                 remove_nodo n
             | Some (`Project _ as p) ->

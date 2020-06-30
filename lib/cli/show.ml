@@ -131,7 +131,7 @@ struct
     | None -> (
       match C.t.target with
       | "" ->
-          Lwt_io.printl "target not found"
+          Lwt_io.printl "Target not found"
       | _ -> (
           let target =
             Storage.with_extension ~ext:C.t.global.format_ext C.t.target
@@ -139,7 +139,7 @@ struct
           let* r = Storage.classify target in
           match r with
           | None ->
-              Lwt_io.printl "target not found"
+              Lwt_io.printl "Target not found"
           | Some t -> (
             match t with
             | `Nodo _ as n ->
