@@ -101,10 +101,10 @@ struct
             let* e = edit n in
             match e with Ok () -> Lwt.return_unit | Error e -> Lwt_io.printl e )
         | Some (`Project _) ->
-            Lwt_io.printl "Unable to edit a project" )
+            Lwt_io.printl "Projects are not editable" )
     | Some (`Nodo _ as n) -> (
         let* e = edit n in
         match e with Ok () -> Lwt.return_unit | Error e -> Lwt_io.printl e )
     | Some (`Project _) ->
-        Lwt_io.printl "Unable to edit a project"
+        Lwt_io.printl "Projects are not editable"
 end
