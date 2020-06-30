@@ -19,7 +19,7 @@ let cmdliner_term =
       "The editor to launch when editing. The command will be run as "
       ^ Arg.doc_quote "$(docv) file"
     in
-    let env = Arg.env_var "NODO_EDITOR" in
+    let env = Arg.env_var "EDITOR" in
     Arg.(value & opt string "vim" & info ~env ~docv:"EDITOR" ~doc ["e"])
   in
   Term.(
