@@ -85,7 +85,7 @@ struct
             else
               let* () =
                 Lwt_io.print
-                  "Target not found, would you like to create it? [y/N]: "
+                  "Target not found, would you like to create it? [Y/n]: "
               in
               let* line = Lwt_io.read_line_opt Lwt_io.stdin in
               match line with
@@ -93,10 +93,10 @@ struct
                   Lwt.return_unit
               | Some line -> (
                 match String.Ascii.lowercase line with
-                | "y" | "yes" ->
-                    create_edit ()
+                | "n" | "no" ->
+                    Lwt.return_unit
                 | _ ->
-                    Lwt.return_unit ) )
+                    create_edit () ) )
         | Some (`Nodo _ as n) -> (
             let* e = edit n in
             match e with Ok () -> Lwt.return_unit | Error e -> Lwt_io.printl e )
