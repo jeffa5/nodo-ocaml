@@ -1,6 +1,6 @@
 (library
  (name nodo_cli_lib)
  (preprocess
-  (pps ppx_deriving.make ppx_deriving.show))
+  (pps ppx_deriving.make ppx_deriving.show ppx_deriving.eq))
  (libraries nodo fileutils lwt.unix astring cmdliner fmt.tty fmt.cli logs.cli
    logs.fmt))

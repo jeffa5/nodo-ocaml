@@ -19,6 +19,12 @@ let cmdliner_term =
 open Stdlib.Result
 open Lwt.Syntax
 
+type nodo = [`Nodo of string] [@@deriving show, eq]
+
+type project = [`Project of string] [@@deriving show, eq]
+
+type t = [nodo | project] [@@deriving show, eq]
+
 module type S = sig
   type nodo = [`Nodo of string]
 
@@ -77,7 +83,10 @@ end) : S = struct
 
   type t = [nodo | project]
 
-  let build_path path = Filename.concat C.t.dir path
+  let build_path path =
+    let p = Filename.concat C.t.dir path in
+    Logs.debug (fun f -> f "Built path: %s" p) ;
+    p
 
   let read (`Nodo p) =
     let path = build_path p in
@@ -87,22 +96,23 @@ end) : S = struct
       let+ s = Lwt_io.lines_of_file path |> Lwt_stream.to_list in
       String.concat "\n" s |> ok
 
-  let write (`Nodo p as n) content =
-    let path = build_path p in
-    let* prev = read n in
-    match prev with
-    | Error e ->
-        Lwt.return_error (Printf.sprintf "failed to read: %s" e)
-    | Ok s ->
-        if s = content then Lwt.return_ok ()
-        else
-          let* () =
-            String.split_on_char '\n' content
-            |> Lwt_stream.of_list |> Lwt_io.lines_to_file path
-          in
+  let is_git_dir () = Sys.file_exists (Filename.concat C.t.dir ".git")
+
+  let write (`Nodo p) content =
+    match p with
+    | "" ->
+        Lwt.return_error "Nodo with empty path cannot exist"
+    | p ->
+        let path = build_path p in
+        let* () =
+          String.split_on_char '\n' content
+          |> Lwt_stream.of_list |> Lwt_io.lines_to_file path
+        in
+        if is_git_dir () then
           let open Lwt_result.Syntax in
           let* () = exec_to_result ~cwd:C.t.dir ("git add " ^ path) in
           exec_to_result ~cwd:C.t.dir ("git commit -m 'Updated " ^ p ^ "'")
+        else Lwt.return_ok ()
 
   let list (`Project p) =
     let path = build_path p in
@@ -173,7 +183,7 @@ end) : S = struct
 
   let path t = (match t with `Nodo n -> n | `Project p -> p) |> build_path
 
-  let with_extension ~ext l = l ^ "." ^ ext
+  let with_extension ~ext l = Filename.remove_extension l ^ "." ^ ext
 
   let sync () =
     let open Lwt_result.Syntax in

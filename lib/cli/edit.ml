@@ -23,7 +23,8 @@ let cmdliner_term =
     Arg.(value & opt string "vim" & info ~env ~docv:"EDITOR" ~doc ["e"])
   in
   Term.(
-    const build $ Config.cmdliner_term $ create $ editor $ Common.target_arg)
+    const build $ Config.cmdliner_term $ create $ editor
+    $ Common.required_target_arg)
 
 module Make (C : sig
   val t : config
@@ -36,19 +37,28 @@ struct
   let edit nodo =
     let path = Storage.path nodo in
     let* content =
-      let _ = Sys.command @@ C.t.editor ^ " " ^ path in
-      Storage.read (`Nodo path)
+      let command = Printf.sprintf "%s %s" C.t.editor path in
+      Logs.debug (fun f -> f "Executing edit command: %s" command) ;
+      let _ = Sys.command command in
+      Storage.read (`Nodo (Storage.location nodo))
     in
     match content with
     | Error e ->
         let* () = Lwt_io.printl e in
         Lwt.return_ok ()
     | Ok content -> (
-      match Format.find_format_from_extension C.t.global.format_ext with
-      | None ->
-          Lwt.return_error "No format found"
-      | Some (module F) ->
-          F.parse content |> F.render |> Storage.write nodo )
+        Logs.debug (fun f -> f "Read Content: %s" content) ;
+        Logs.debug (fun f ->
+            f "Finding format from extension: %s" C.t.global.format_ext) ;
+        match Format.find_format_from_extension C.t.global.format_ext with
+        | None ->
+            Lwt.return_error "No format found"
+        | Some (module F) ->
+            let parsed = F.parse content in
+            Logs.debug (fun f -> f "Parsed content: %a" Nodo.S.pp parsed) ;
+            let rendered = F.render parsed in
+            Logs.debug (fun f -> f "Rendered content: %s" rendered) ;
+            rendered |> Storage.write nodo )
 
   let create_edit () =
     let target = Storage.with_extension ~ext:C.t.global.format_ext C.t.target in
@@ -62,47 +72,39 @@ struct
 
   let exec () =
     let open Astring in
-    match C.t.target with
-    | "" ->
-        Lwt_io.printl "TARGET cannot be empty"
-    | _ -> (
-        let* t = Storage.classify C.t.target in
+    let* t = Storage.classify C.t.target in
+    match t with
+    | None -> (
+        let target =
+          Storage.with_extension C.t.target ~ext:C.t.global.format_ext
+        in
+        let* t = Storage.classify target in
         match t with
         | None -> (
-            let target =
-              Storage.with_extension C.t.target ~ext:C.t.global.format_ext
-            in
-            let* t = Storage.classify target in
-            match t with
-            | None -> (
-                if C.t.create then create_edit ()
-                else
-                  let* () =
-                    Lwt_io.print
-                      "Target not found, would you like to create it? [y/N]: "
-                  in
-                  let* line = Lwt_io.read_line_opt Lwt_io.stdin in
-                  match line with
-                  | None ->
-                      Lwt.return_unit
-                  | Some line -> (
-                    match String.Ascii.lowercase line with
-                    | "y" | "yes" ->
-                        create_edit ()
-                    | _ ->
-                        Lwt.return_unit ) )
-            | Some (`Nodo _ as n) -> (
-                let* e = edit n in
-                match e with
-                | Ok () ->
-                    Lwt.return_unit
-                | Error e ->
-                    Lwt_io.printl e )
-            | Some (`Project _) ->
-                Lwt_io.printl "Unable to edit a project" )
+            if C.t.create then create_edit ()
+            else
+              let* () =
+                Lwt_io.print
+                  "Target not found, would you like to create it? [y/N]: "
+              in
+              let* line = Lwt_io.read_line_opt Lwt_io.stdin in
+              match line with
+              | None ->
+                  Lwt.return_unit
+              | Some line -> (
+                match String.Ascii.lowercase line with
+                | "y" | "yes" ->
+                    create_edit ()
+                | _ ->
+                    Lwt.return_unit ) )
         | Some (`Nodo _ as n) -> (
             let* e = edit n in
             match e with Ok () -> Lwt.return_unit | Error e -> Lwt_io.printl e )
         | Some (`Project _) ->
             Lwt_io.printl "Unable to edit a project" )
+    | Some (`Nodo _ as n) -> (
+        let* e = edit n in
+        match e with Ok () -> Lwt.return_unit | Error e -> Lwt_io.printl e )
+    | Some (`Project _) ->
+        Lwt_io.printl "Unable to edit a project"
 end
