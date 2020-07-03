@@ -110,7 +110,7 @@ end) : S = struct
         in
         if is_git_dir () then
           let open Lwt_result.Syntax in
-          let* () = exec_to_result ~cwd:C.t.dir ("git add " ^ path) in
+          let* () = exec_to_result ~cwd:C.t.dir ("git add " ^ p) in
           exec_to_result ~cwd:C.t.dir ("git commit -m 'Updated " ^ p ^ "'")
         else Lwt.return_ok ()
 
@@ -167,14 +167,14 @@ end) : S = struct
         let path = build_path n in
         let () = FileUtil.rm [path] in
         let open Lwt_result.Syntax in
-        let* () = exec_to_result ~cwd:C.t.dir ("git add " ^ path) in
-        exec_to_result ~cwd:C.t.dir ("git commit -m 'Removed " ^ path ^ "'")
+        let* () = exec_to_result ~cwd:C.t.dir ("git add " ^ n) in
+        exec_to_result ~cwd:C.t.dir ("git commit -m 'Removed " ^ n ^ "'")
     | `Project p ->
         let path = build_path p in
         let () = FileUtil.rm ~recurse:true [path] in
         let open Lwt_result.Syntax in
-        let* () = exec_to_result ~cwd:C.t.dir ("git add " ^ path) in
-        exec_to_result ~cwd:C.t.dir ("git commit -m 'Removed " ^ path ^ "'")
+        let* () = exec_to_result ~cwd:C.t.dir ("git add " ^ p) in
+        exec_to_result ~cwd:C.t.dir ("git commit -m 'Removed " ^ p ^ "'")
 
   let location = function `Nodo n -> n | `Project p -> p
 
