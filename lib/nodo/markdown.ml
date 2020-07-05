@@ -103,6 +103,8 @@ let rec parse_list_item l =
       | Ok (Some (), s) ->
           ( Nodo_core.S.Task (true, if s = "" then rest else (Plain, s) :: rest)
           , nested ) )
+  | [] ->
+      (Nodo_core.S.Bullet [], None)
   | t ->
       print_endline @@ Omd.to_sexp t ;
       assert false
@@ -186,7 +188,7 @@ let rec render_list ?(prefix = "") l =
           | None ->
               ""
           | Some l ->
-              "\n" ^ render_list ~prefix:(prefix ^ "  ") l)
+              "\n" ^ render_list ~prefix:(prefix ^ "   ") l)
         l
   | Unordered l ->
       List.map
@@ -198,7 +200,7 @@ let rec render_list ?(prefix = "") l =
           | None ->
               ""
           | Some l ->
-              "\n" ^ render_list ~prefix:(prefix ^ "  ") l)
+              "\n" ^ render_list ~prefix:(prefix ^ "   ") l)
         l )
   |> String.concat ~sep:"\n"
 
@@ -462,7 +464,7 @@ let%expect_test "render unordered bullet list" =
        ()) ;
   [%expect {|
     - text
-      - text
+       - text
     - next |}] ;
   test_render
     (Nodo_core.S.make
@@ -476,7 +478,7 @@ let%expect_test "render unordered bullet list" =
        ()) ;
   [%expect {|
     - text
-      1. text
+       1. text
     - next |}]
 
 let%expect_test "render ordered bullet list" =
@@ -511,7 +513,7 @@ let%expect_test "render ordered bullet list" =
        ()) ;
   [%expect {|
     1. text
-      1. text
+       1. text
     2. next |}] ;
   test_render
     (Nodo_core.S.make
@@ -526,7 +528,7 @@ let%expect_test "render ordered bullet list" =
        ()) ;
   [%expect {|
     1. text
-      - text
+       - text
     2. next |}]
 
 let%expect_test "format" =
@@ -562,12 +564,10 @@ let%expect_test "format" =
   [%expect {| text `code` text |}] ;
   test_format "don't" ;
   [%expect {| don't |}] ;
-  test_format "1. one" ;
-  [%expect {| 1. one |}] ;
-  test_format "1. one\n2. two" ;
-  [%expect {|
-    1. one
-    2. two |}] ;
+  test_format "don't" ;
+  [%expect {| don't |}] ;
+  test_format "1. " ;
+  [%expect {| 1. |}] ;
   test_format
     {|# a title
 
@@ -627,11 +627,11 @@ let%expect_test "format" =
     ## another title
 
     - a
-      - b
-      - c
+       - b
+       - c
     - d
 
     1. a
-      - b
-      - c
+       - b
+       - c
     2. 2 |}]
