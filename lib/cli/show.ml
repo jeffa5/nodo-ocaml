@@ -4,12 +4,16 @@ let ( let* ) = Lwt.bind
 
 let ( let+ ) x y = Lwt.map y x
 
-type config = {global: Config.t; target: string} [@@deriving show]
+type config = {global: Config.t; target: string; depth: int} [@@deriving show]
 
 let cmdliner_term =
-  let build global target = {global; target} in
+  let build global target depth = {global; target; depth} in
   let open Cmdliner in
-  Term.(const build $ Config.cmdliner_term $ Common.target_arg)
+  let depth =
+    let doc = "Depth of the tree to show" in
+    Arg.(value & opt int 1 (info ~doc ["depth"]))
+  in
+  Term.(const build $ Config.cmdliner_term $ Common.target_arg $ depth)
 
 module Make (C : sig
   val t : config
@@ -23,31 +27,36 @@ struct
 
   type tree = Project of (Storage.project * tree list) | Nodo of Storage.nodo
 
-  let rec build_tree l =
-    List.sort
-      (fun a b ->
-        match (a, b) with
-        | (`Nodo _ as a), (`Nodo _ as b) ->
-            String.compare (Storage.name a) (Storage.name b)
-        | `Nodo _, `Project _ ->
-            -1
-        | `Project _, `Nodo _ ->
-            1
-        | (`Project _ as a), (`Project _ as b) ->
-            String.compare (Storage.name a) (Storage.name b))
-      l
-    |> Lwt_list.filter_map_s (fun item ->
-           match item with
-           | `Nodo _ as n ->
-               Lwt.return_some (Nodo n)
-           | `Project _ as p ->
-               let+ r =
-                 let l = Storage.list p in
-                 Lwt_result.bind l (fun l ->
-                     let* sub_tree = build_tree l in
-                     Lwt.return_ok (Project (p, sub_tree)))
-               in
-               Result.to_option r)
+  let build_tree depth l =
+    let rec loop depth l =
+      if depth = 0 then Lwt.return_nil
+      else
+        List.sort
+          (fun a b ->
+            match (a, b) with
+            | (`Nodo _ as a), (`Nodo _ as b) ->
+                String.compare (Storage.name a) (Storage.name b)
+            | `Nodo _, `Project _ ->
+                -1
+            | `Project _, `Nodo _ ->
+                1
+            | (`Project _ as a), (`Project _ as b) ->
+                String.compare (Storage.name a) (Storage.name b))
+          l
+        |> Lwt_list.filter_map_s (fun item ->
+               match item with
+               | `Nodo _ as n ->
+                   Lwt.return_some (Nodo n)
+               | `Project _ as p ->
+                   let+ r =
+                     let l = Storage.list p in
+                     Lwt_result.bind l (fun l ->
+                         let* sub_tree = loop (depth - 1) l in
+                         Lwt.return_ok (Project (p, sub_tree)))
+                   in
+                   Result.to_option r)
+    in
+    loop (if depth = 0 then -1 else depth) l
 
   let filter_hidden =
     List.filter (fun d ->
@@ -148,7 +157,7 @@ struct
                 let* l = Storage.list p in
                 match l with
                 | Ok l ->
-                    let* t = filter_hidden l |> build_tree in
+                    let* t = filter_hidden l |> build_tree C.t.depth in
                     let* ts = Lwt_list.map_s (show_tree ~prefix:"") t in
                     String.concat ~sep:"" ts |> Lwt_io.print
                 | Error e ->
@@ -161,7 +170,7 @@ struct
           let* l = Storage.list p in
           match l with
           | Ok l ->
-              let* t = filter_hidden l |> build_tree in
+              let* t = filter_hidden l |> build_tree C.t.depth in
               let* ts = Lwt_list.map_s (show_tree ~prefix:"") t in
               String.concat ~sep:"" ts |> Lwt_io.print
           | Error e ->
