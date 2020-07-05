@@ -111,7 +111,7 @@ and parse_list lt bs =
   let items = List.map parse_list_item bs in
   match lt with
   | Ordered (_, _) ->
-      Nodo_core.S.Ordered (List.mapi (fun i (a, b) -> (i, a, b)) items)
+      Nodo_core.S.Ordered (List.mapi (fun i (a, b) -> (i + 1, a, b)) items)
   | Bullet _ ->
       Nodo_core.S.Unordered items
 
@@ -130,6 +130,10 @@ let parse_element e : Nodo_core.S.block option =
       Some (Paragraph (parse_text i))
   | List (lt, _, bs) ->
       Some (List (parse_list lt bs))
+  | Code_block (t, content) ->
+      Some (Nodo_core.S.Code_block (t, content))
+  | Thematic_break ->
+      Some Break
   | _ ->
       Omd.to_sexp [e] |> print_endline ;
       assert false
@@ -206,6 +210,10 @@ let render_block b =
       render_text t
   | List l ->
       render_list l
+  | Code_block (tag, content) ->
+      Printf.sprintf "```%s\n%s```" tag content
+  | Break ->
+      "---"
 
 let render ({metadata; blocks} : Nodo_core.S.t) =
   let meta = render_metadata metadata in
@@ -553,4 +561,77 @@ let%expect_test "format" =
   test_format "text `code` text" ;
   [%expect {| text `code` text |}] ;
   test_format "don't" ;
-  [%expect {| don't |}]
+  [%expect {| don't |}] ;
+  test_format "1. one" ;
+  [%expect {| 1. one |}] ;
+  test_format "1. one\n2. two" ;
+  [%expect {|
+    1. one
+    2. two |}] ;
+  test_format
+    {|# a title
+
+  a test **paragraph**
+
+  a *test* paragraph _with_
+  soft __break__
+
+  - an unordered `list`
+  - another element
+
+  ```yaml
+  a: code block
+  ```
+
+  1. a numbered list
+  2. another item
+
+  ---
+
+  that was a rule
+
+  ## another title
+
+  - a
+    - b
+    - c
+  - d
+
+  1. a
+      - b
+      - c
+  3. 2
+  |} ;
+  [%expect
+    {|
+    # a title
+
+    a test **paragraph**
+
+    a *test* paragraph *with* soft **break**
+
+    - an unordered `list`
+    - another element
+
+    ```yaml
+    a: code block
+    ```
+
+    1. a numbered list
+    2. another item
+
+    ---
+
+    that was a rule
+
+    ## another title
+
+    - a
+      - b
+      - c
+    - d
+
+    1. a
+      - b
+      - c
+    2. 2 |}]

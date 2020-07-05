@@ -25,7 +25,12 @@ module S = struct
   [@@deriving show {with_path= false}, yojson]
 
   (** [block] is a content block *)
-  type block = Paragraph of text | List of list_ | Heading of int * text
+  type block =
+    | Paragraph of text
+    | List of list_
+    | Heading of int * text
+    | Code_block of string * string
+    | Break
   [@@deriving show {with_path= false}, yojson]
 
   (** [t] is the root type for a nodo. It contains some metadata about the nodo and a list of the content blocks *)
