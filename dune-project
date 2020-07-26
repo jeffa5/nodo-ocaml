@@ -3,6 +3,7 @@
 (strict_package_deps)
 
 (name nodo)
+(version 1943314)
 
 (generate_opam_files true)
 
