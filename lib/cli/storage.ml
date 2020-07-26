@@ -103,6 +103,14 @@ end) : S = struct
     | "" ->
         Lwt.return_error "Nodo with empty path cannot exist"
     | p ->
+        let dir = Filename.dirname p in
+        let* () =
+          match dir with
+          | "" | "." | ".." ->
+              Lwt.return_unit
+          | _ ->
+              Lwt_unix.mkdir dir 0755
+        in
         let path = build_path p in
         let* () =
           String.split_on_char '\n' content
