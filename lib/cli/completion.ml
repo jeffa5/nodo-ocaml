@@ -28,11 +28,14 @@ struct
     let t = C.t.global.storage
   end)
 
-  let print_targets () =
+  let print_targets prefix =
     let rec loop t =
       match t with
       | `Nodo _ as n ->
-          Lwt_io.printl (Storage.location n)
+          let loc = Storage.location n in
+          if prefix = loc then Lwt.return_unit
+          else if String.is_prefix ~affix:prefix loc then Lwt_io.printl loc
+          else Lwt.return_unit
       | `Project _ as p -> (
           let* () =
             let loc = Storage.location p in
@@ -40,7 +43,10 @@ struct
             | "" ->
                 Lwt.return_unit
             | _ ->
-                Lwt_io.printl (loc ^ "/")
+                if prefix = loc then Lwt.return_unit
+                else if String.is_prefix ~affix:prefix loc then
+                  Lwt_io.printl (loc ^ "/")
+                else Lwt.return_unit
           in
           let* l = Storage.list p in
           match l with
@@ -54,21 +60,29 @@ struct
 
   let commands = ["show"; "edit"; "remove"; "sync"]
 
-  let print_commands () = Lwt_list.iter_s Lwt_io.printl commands
+  let print_commands prefix =
+    Lwt_list.iter_s
+      (fun c ->
+        if String.is_prefix ~affix:prefix c then Lwt_io.printl c
+        else Lwt.return_unit)
+      commands
 
   let exec () =
     match C.t.generate with
     | None -> (
-      match C.t.all_pos with
-      | [] ->
-          assert false
-      | [_] ->
-          print_commands ()
-      | [_; x] ->
-          if List.exists (fun c -> x = c) commands then print_targets ()
-          else print_commands ()
-      | _ ->
-          print_targets () )
+        let args = match C.t.all_pos with [] -> [] | _nodo :: xs -> xs in
+        match args with
+        | [] ->
+            let* () = print_commands "" in
+            print_targets ""
+        | [arg] ->
+            if List.exists (fun c -> arg = c) commands then
+              (* default command is show *) print_targets ""
+            else print_commands arg
+        | [_c; arg] ->
+            print_targets arg
+        | _ ->
+            Lwt.return_unit )
     | Some shell -> (
       match shell with
       | "zsh" ->
