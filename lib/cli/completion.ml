@@ -73,8 +73,7 @@ struct
         let args = match C.t.all_pos with [] -> [] | _nodo :: xs -> xs in
         match args with
         | [] ->
-            let* () = print_commands "" in
-            print_targets ""
+            print_commands ""
         | [arg] ->
             if List.exists (fun c -> arg = c) commands then
               (* default command is show *) print_targets ""
