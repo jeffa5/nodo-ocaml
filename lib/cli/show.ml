@@ -11,7 +11,7 @@ let cmdliner_term =
   let open Cmdliner in
   let depth =
     let doc = "Depth of the tree to show" in
-    Arg.(value & opt int 1 (info ~doc ["depth"]))
+    Arg.(value & opt int 1 (info ~doc ["depth"; "d"]))
   in
   Term.(const build $ Config.cmdliner_term $ Common.target_arg $ depth)
 
