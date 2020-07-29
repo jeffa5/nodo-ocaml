@@ -109,7 +109,7 @@ end) : S = struct
           | "" | "." | ".." ->
               Lwt.return_unit
           | _ ->
-              Lwt_unix.mkdir dir 0755
+              FileUtil.mkdir ~mode:(`Octal 0755) dir |> Lwt.return
         in
         let path = build_path p in
         let* () =
